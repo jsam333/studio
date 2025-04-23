@@ -74,7 +74,7 @@ export default function Home() {
       if (!bricks) return;
 
       for (let c = 0; c < BRICK_COLUMNS; c++) {
-        if (!bricks[c]) continue; // Add this line to check if bricks[c] is defined
+        if (!bricks[c]) continue;
         for (let r = 0; r < BRICK_ROWS; r++) {
           if (bricks[c][r].status === 1) {
             const brickX = (c * (BRICK_WIDTH + BRICK_PADDING)) + BRICK_OFFSET_LEFT;
@@ -95,7 +95,7 @@ export default function Home() {
       if (!bricks) return;
 
       for (let c = 0; c < BRICK_COLUMNS; c++) {
-         if (!bricks[c]) continue; // Add this line to check if bricks[c] is defined
+        if (!bricks[c]) continue;
         for (let r = 0; r < BRICK_ROWS; r++) {
           const brick = bricks[c][r];
           if (brick.status === 1) {
@@ -103,11 +103,20 @@ export default function Home() {
               setBallSpeedY(-ballSpeedY);
               brick.status = 0;
               setScore(score + 1);
+
+               // Update the bricks state
+              setBricks(prevBricks => {
+                const updatedBricks = [...prevBricks];
+                updatedBricks[c] = [...updatedBricks[c]]; // Copy the column
+                updatedBricks[c][r] = { ...updatedBricks[c][r], status: 0 }; // Update the brick status
+                return updatedBricks;
+              });
             }
           }
         }
       }
     };
+
 
     const drawScore = () => {
       ctx.font = "16px Arial";
