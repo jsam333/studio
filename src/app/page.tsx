@@ -100,7 +100,13 @@ export default function Home() {
           const brick = bricks[c][r];
           if (brick.status === 1) {
             if (ballX > brick.x && ballX < brick.x + BRICK_WIDTH && ballY > brick.y && ballY < brick.y + BRICK_HEIGHT) {
-              setBallSpeedY(-ballSpeedY);
+              // Determine collision side
+              const previousBallY = ballY - ballSpeedY;
+              if (previousBallY < brick.y || previousBallY > brick.y + BRICK_HEIGHT) {
+                  setBallSpeedY(-ballSpeedY); // Reverse Y direction
+              } else {
+                  setBallSpeedX(-ballSpeedX); // Reverse X direction
+              }
               brick.status = 0;
               setScore(score + 1);
 
@@ -111,6 +117,7 @@ export default function Home() {
                 updatedBricks[c][r] = { ...updatedBricks[c][r], status: 0 }; // Update the brick status
                 return updatedBricks;
               });
+              return; // Prevent multiple collisions with the same brick
             }
           }
         }
