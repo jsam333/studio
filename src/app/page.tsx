@@ -74,6 +74,7 @@ export default function Home() {
       if (!bricks) return;
 
       for (let c = 0; c < BRICK_COLUMNS; c++) {
+        if (!bricks[c]) continue; // Add this line to check if bricks[c] is defined
         for (let r = 0; r < BRICK_ROWS; r++) {
           if (bricks[c][r].status === 1) {
             const brickX = (c * (BRICK_WIDTH + BRICK_PADDING)) + BRICK_OFFSET_LEFT;
@@ -94,6 +95,7 @@ export default function Home() {
       if (!bricks) return;
 
       for (let c = 0; c < BRICK_COLUMNS; c++) {
+         if (!bricks[c]) continue; // Add this line to check if bricks[c] is defined
         for (let r = 0; r < BRICK_ROWS; r++) {
           const brick = bricks[c][r];
           if (brick.status === 1) {
