@@ -94,36 +94,64 @@ export default function Home() {
     const collisionDetection = () => {
       if (!bricks) return;
 
+      let collision = false; // Flag to indicate a collision occurred
+
       for (let c = 0; c < BRICK_COLUMNS; c++) {
         if (!bricks[c]) continue;
         for (let r = 0; r < BRICK_ROWS; r++) {
           const brick = bricks[c][r];
           if (brick.status === 1) {
-            if (ballX > brick.x && ballX < brick.x + BRICK_WIDTH && ballY > brick.y && ballY < brick.y + BRICK_HEIGHT) {
+            if (ballX + ballSpeedX > brick.x &&
+              ballX + ballSpeedX < brick.x + BRICK_WIDTH &&
+              ballY + ballSpeedY > brick.y &&
+              ballY + ballSpeedY < brick.y + BRICK_HEIGHT) {
+
               // Determine collision side
-              const previousBallY = ballY - ballSpeedY;
-              if (previousBallY < brick.y || previousBallY > brick.y + BRICK_HEIGHT) {
-                  setBallSpeedY(-ballSpeedY); // Reverse Y direction
+              const ballLeft = ballX - BALL_SIZE;
+              const ballRight = ballX + BALL_SIZE;
+              const ballTop = ballY - BALL_SIZE;
+              const ballBottom = ballY + BALL_SIZE;
+
+              const brickLeft = brick.x;
+              const brickRight = brick.x + BRICK_WIDTH;
+              const brickTop = brick.y;
+              const brickBottom = brick.y + BRICK_HEIGHT;
+
+              // Calculate the intersection rectangle
+              const intersectionLeft = Math.max(ballLeft, brickLeft);
+              const intersectionTop = Math.max(ballTop, brickTop);
+              const intersectionRight = Math.min(ballRight, brickRight);
+              const intersectionBottom = Math.min(ballBottom, brickBottom);
+
+              const intersectionWidth = intersectionRight - intersectionLeft;
+              const intersectionHeight = intersectionBottom - intersectionTop;
+
+              // Horizontal collision (left or right side)
+              if (intersectionWidth > intersectionHeight) {
+                setBallSpeedY(-ballSpeedY);
               } else {
-                  setBallSpeedX(-ballSpeedX); // Reverse X direction
+                setBallSpeedX(-ballSpeedX);
               }
+
               brick.status = 0;
               setScore(score + 1);
 
-               // Update the bricks state
+              // Update the bricks state
               setBricks(prevBricks => {
                 const updatedBricks = [...prevBricks];
                 updatedBricks[c] = [...updatedBricks[c]]; // Copy the column
                 updatedBricks[c][r] = { ...updatedBricks[c][r], status: 0 }; // Update the brick status
                 return updatedBricks;
               });
-              return; // Prevent multiple collisions with the same brick
+
+              collision = true; // Set collision flag
+              break; // Break out of inner loop if collision detected
             }
           }
         }
+        if (collision) break; // Break out of outer loop if collision detected
       }
     };
-
 
     const drawScore = () => {
       ctx.font = "16px Arial";
