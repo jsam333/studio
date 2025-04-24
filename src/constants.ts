@@ -27,13 +27,12 @@ export const BIG_BALL_SIZE_INCREASE = 4; // Amount radius increases for BIG_BALL
 export const PIERCE_BALL_HITS = 3; // Number of bricks a PIERCE_BALL can destroy before reverting
 
 // Bricks
-export const BRICK_ROWS = 22;
+export const BRICK_ROWS = 20; // Was 22
 export const BRICK_COLUMNS = 53;
 export const BRICK_PADDING = 1; // Was 2
 // Calculated width: (600 - (53-1)*1) / 53 = 548/53 = 10.33 -> Using 10
 export const BRICK_WIDTH = 10; // Was 8
-// Calculated height: (Target 250px space: 250 - (22-1)*1) / 22 = 229 / 22 = 10.4 -> Using 9
-export const BRICK_HEIGHT = 9; // Was 8
+export const BRICK_HEIGHT = 9; // Was 11
 export const BRICK_OFFSET_TOP = 20; // Was 30
 // Calculated Offset Left: (600 - (53 * 10 + (53 - 1) * 1)) / 2 = (600 - 582) / 2 = 9
 export const BRICK_OFFSET_LEFT = (BOARD_WIDTH - (BRICK_COLUMNS * BRICK_WIDTH + (BRICK_COLUMNS - 1) * BRICK_PADDING)) / 2;
@@ -60,7 +59,7 @@ export const POWER_UP_SPEED = 2;
 export const BASE_POWER_UP_SPEED = 2;
 export const POWER_UP_SPAWN_THRESHOLD = 1.0;
 export const POWER_UP_CHANCE_REDUCTION_PER_EXTRA = 0.05;
-export const SAFETY_NET_HEIGHT = 5;
+export const SAFETY_NET_HEIGHT = 3; // Was 5
 export const BUILDER_BRICK_MAX_LEVEL = 3;
 export const BUILDER_BALL_SPAWN_CHANCE = 0.15;
 export const MULTI_BALL_COUNT = 3;

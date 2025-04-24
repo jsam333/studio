@@ -69,9 +69,9 @@ export const drawCollectionFieldRect = (
     paddleX: number,
     paddleWidth: number,
     fieldHeightOffset: number,
-    fieldWidthOffset: number 
+    fieldWidthOffset: number
 ) => {
-    if (fieldHeightOffset <= 0 && fieldWidthOffset <= 0) return; 
+    if (fieldHeightOffset <= 0 && fieldWidthOffset <= 0) return;
     const fieldTopY = PADDLE_Y - fieldHeightOffset;
     const fieldX = paddleX - fieldWidthOffset;
     const fieldWidth = paddleWidth + (fieldWidthOffset * 2);
@@ -85,23 +85,23 @@ export const drawCollectionFieldRect = (
         g = parseInt(fieldColor.substring(3, 5), 16);
         b = parseInt(fieldColor.substring(5, 7), 16);
     }
-    ctx.fillStyle = `rgba(${r}, ${g}, ${b}, 0.15)`; 
-    ctx.strokeStyle = `rgba(${r}, ${g}, ${b}, 0.4)`; 
+    ctx.fillStyle = `rgba(${r}, ${g}, ${b}, 0.15)`;
+    ctx.strokeStyle = `rgba(${r}, ${g}, ${b}, 0.4)`;
     ctx.lineWidth = 1;
     ctx.beginPath();
     if (fieldHeight > 0) { ctx.rect(fieldX, fieldTopY, fieldWidth, fieldHeight); }
     if (fieldWidthOffset > 0) { ctx.rect(fieldX, paddleTopY, fieldWidthOffset, PADDLE_HEIGHT); ctx.rect(paddleX + paddleWidth, paddleTopY, fieldWidthOffset, PADDLE_HEIGHT); }
-    ctx.fill(); 
-    ctx.closePath(); 
+    ctx.fill();
+    ctx.closePath();
     if (fieldHeight > 0) { ctx.strokeRect(fieldX, fieldTopY, fieldWidth, fieldHeight); }
     if (fieldWidthOffset > 0) {
         ctx.beginPath();
-        ctx.moveTo(fieldX, paddleTopY + PADDLE_HEIGHT); 
-        ctx.lineTo(fieldX, paddleTopY); 
-        if (fieldHeight <= 0) ctx.lineTo(fieldX + fieldWidthOffset, paddleTopY); 
-        ctx.moveTo(paddleX + paddleWidth, paddleTopY); 
-        if (fieldHeight <= 0) ctx.lineTo(paddleX + paddleWidth + fieldWidthOffset, paddleTopY); 
-        ctx.lineTo(paddleX + paddleWidth + fieldWidthOffset, paddleTopY + PADDLE_HEIGHT); 
+        ctx.moveTo(fieldX, paddleTopY + PADDLE_HEIGHT);
+        ctx.lineTo(fieldX, paddleTopY);
+        if (fieldHeight <= 0) ctx.lineTo(fieldX + fieldWidthOffset, paddleTopY);
+        ctx.moveTo(paddleX + paddleWidth, paddleTopY);
+        if (fieldHeight <= 0) ctx.lineTo(paddleX + paddleWidth + fieldWidthOffset, paddleTopY);
+        ctx.lineTo(paddleX + paddleWidth + fieldWidthOffset, paddleTopY + PADDLE_HEIGHT);
         ctx.stroke();
         ctx.closePath();
     }
@@ -117,7 +117,7 @@ export const drawBalls = (ctx: CanvasRenderingContext2D, allBalls: Ball[]) => {
     ctx.beginPath();
     ctx.arc(ball.x, ball.y, currentRadius, 0, Math.PI * 2);
 
-    if (ball.stuckOffset !== undefined) { 
+    if (ball.stuckOffset !== undefined) {
         ctx.fillStyle = "#cccccc"; // Indicate stuck ball visually
     } else if (ball.isHoming) {
         ctx.fillStyle = POWER_UP_COLORS['HOMING_BALL'] || '#f1c40f';
@@ -134,10 +134,10 @@ export const drawBalls = (ctx: CanvasRenderingContext2D, allBalls: Ball[]) => {
     }
     ctx.fill();
 
-    if (ball.isBlack || ball.isSplitting || ball.isHoming || ball.stuckOffset !== undefined) { 
-        ctx.strokeStyle = '#ffffff'; 
+    if (ball.isBlack || ball.isSplitting || ball.isHoming || ball.stuckOffset !== undefined) {
+        ctx.strokeStyle = '#ffffff';
         if ((ball.isSplitting || ball.isHoming || (ball.stuckOffset !== undefined && !ball.isBlack)) && !ball.isBlack) {
-            ctx.strokeStyle = '#000000'; 
+            ctx.strokeStyle = '#000000';
         }
         ctx.lineWidth = 1;
         ctx.stroke();
@@ -171,7 +171,7 @@ export const drawBricks = (ctx: CanvasRenderingContext2D, bricks: Brick[][]) => 
                 ctx.fillStyle = NORMAL_BRICK_COLOR;
             }
             ctx.fill();
-            ctx.closePath(); 
+            ctx.closePath();
 
             if (brick.isBomb) {
                 ctx.fillStyle = '#000000';
@@ -205,9 +205,9 @@ export const drawPowerUps = (ctx: CanvasRenderingContext2D, powerUps: PowerUp[])
       }
       ctx.fill();
       if (powerUp.type === 'BLACK_BALL' || powerUp.type === 'BOMB_BRICK' || powerUp.type === 'ALL_IN_ONE' || powerUp.type === 'STICKY_PADDLE') {
-           ctx.strokeStyle = (powerUp.type === 'ALL_IN_ONE') ? '#000000' : '#ffffff'; 
+           ctx.strokeStyle = (powerUp.type === 'ALL_IN_ONE') ? '#000000' : '#ffffff';
            ctx.lineWidth = 1;
-           ctx.stroke(); 
+           ctx.stroke();
       }
       ctx.closePath();
     }
@@ -221,15 +221,18 @@ export const drawLasers = (ctx: CanvasRenderingContext2D, lasers: Laser[]) => {
 };
 
 
-// Draw Safety Net - Reverted to original calculation
+// Draw Safety Net - Stacking from Bottom
 export const drawSafetyNet = (ctx: CanvasRenderingContext2D, count: number) => {
-    if (count > 0) { 
-      ctx.save(); 
-      ctx.fillStyle = POWER_UP_COLORS['SAFETY_NET']! + 'CC'; 
+    if (count > 0) {
+      ctx.save();
+      // Use the SAFETY_NET color from constants, add alpha
+      ctx.fillStyle = POWER_UP_COLORS['SAFETY_NET'] + 'CC'; // CC for ~80% opacity
       for (let i = 0; i < count; i++) {
          ctx.beginPath();
-         // Reverted yPosition calculation
-         const yPosition = PADDLE_Y + PADDLE_HEIGHT + i * SAFETY_NET_HEIGHT + 2; 
+         // Corrected yPosition calculation to draw stacking from the bottom of the board
+         const yPosition = BOARD_HEIGHT - (i + 1) * SAFETY_NET_HEIGHT;
+         // Ensure lines don't draw off-screen if too many nets are collected (optional safety)
+         if (yPosition < 0) continue;
          ctx.rect(0, yPosition, BOARD_WIDTH, SAFETY_NET_HEIGHT);
          ctx.fill();
          ctx.closePath();
