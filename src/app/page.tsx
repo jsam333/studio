@@ -9,6 +9,7 @@ import {
     FIELD_SHRINK_RATE_H, FIELD_SHRINK_RATE_W, FIELD_SHRINK_INTERVAL,
     ALL_TOGGLEABLE_POWER_UPS, 
     POWER_UP_COLORS, 
+    BIG_BALL_SIZE_INCREASE // Added import
 } from '../constants';
 import { Ball, Laser, PowerUp, Brick, PowerUpType } from '../interfaces'; 
 import { initializeBricks, initialBallState } from '../gameLogic';
@@ -187,50 +188,65 @@ export default function Home() {
 
     const launchStuckBalls = useCallback((isInitialLaunch = false) => {
         if (stuckBallsRef.current.length > 0) {
-            const currentPaddleX = paddleXRef.current; 
-            const currentPaddleWidth = paddleWidthRef.current; 
+            const currentPaddleX = paddleXRef.current;
+            const currentPaddleWidth = paddleWidthRef.current;
             const gameSpeed = gameSpeedFactorRef.current;
-            const launchTime = Date.now(); 
+            const launchTime = Date.now();
 
             const launchedBalls = stuckBallsRef.current.map(ball => {
-                const absoluteX = currentPaddleX + (ball.stuckOffset ?? currentPaddleWidth / 2); 
-                
-                // Timer resume logic ...
-                 let resumedBlackEndTime = undefined;
-                 if (ball.isBlack && ball.blackPausedDuration) { resumedBlackEndTime = launchTime + ball.blackPausedDuration; ball.blackPausedDuration = undefined; }
-                 let resumedBlueEndTime = undefined;
-                 if (ball.isBlue && ball.bluePausedDuration) { resumedBlueEndTime = launchTime + ball.bluePausedDuration; ball.bluePausedDuration = undefined; }
-                 let resumedBigEndTime = undefined;
-                 if (ball.isBig && ball.bigPausedDuration) { resumedBigEndTime = launchTime + ball.bigPausedDuration; ball.bigPausedDuration = undefined; }
-                 let resumedSplittingEndTime = undefined;
-                 if (ball.isSplitting && ball.splittingPausedDuration) { resumedSplittingEndTime = launchTime + ball.splittingPausedDuration; ball.splittingPausedDuration = undefined; }
+                const absoluteX = currentPaddleX + (ball.stuckOffset ?? currentPaddleWidth / 2);
+                const currentBallSize = ball.isBig ? BALL_SIZE + BIG_BALL_SIZE_INCREASE : BALL_SIZE;
 
+                // Timer resume logic
+                 let resumedBlackEndTime = undefined;
+                 if (ball.isBlack && ball.blackPausedDuration) { resumedBlackEndTime = launchTime + ball.blackPausedDuration; }
+                 let resumedBlueEndTime = undefined;
+                 if (ball.isBlue && ball.bluePausedDuration) { resumedBlueEndTime = launchTime + ball.bluePausedDuration; }
+                 let resumedBigEndTime = undefined;
+                 if (ball.isBig && ball.bigPausedDuration) { resumedBigEndTime = launchTime + ball.bigPausedDuration; }
+                 let resumedSplittingEndTime = undefined;
+                 if (ball.isSplitting && ball.splittingPausedDuration) { resumedSplittingEndTime = launchTime + ball.splittingPausedDuration; }
+
+                 // --- Ball Launch Speed Logic ---
                 let launchSpeedX = 0;
-                let launchSpeedY = INITIAL_BALL_SPEED_Y * gameSpeed; 
+                // *** FIX: Ensure launchSpeedY is negative for upward movement ***
+                let launchSpeedY = -Math.abs(INITIAL_BALL_SPEED_Y * gameSpeed);
 
                 if (isInitialLaunch) {
-                    launchSpeedX = 3 * gameSpeed; 
-                    launchSpeedY = INITIAL_BALL_SPEED_Y * gameSpeed; 
-                    isGameStartedRef.current = true; 
+                    // Initial launch (left-click) still has a slight angle
+                    launchSpeedX = 3 * gameSpeed;
+                    isGameStartedRef.current = true;
+                } else {
+                    // Sticky launch (right-click) goes straight up
+                    launchSpeedX = 0;
                 }
+                // Ensure vertical speed has a minimum magnitude if needed (already ensured negative)
+                // launchSpeedY = Math.sign(launchSpeedY) * Math.max(Math.abs(launchSpeedY), 1);
 
                 return {
                     ...ball,
-                    x: absoluteX, 
-                    y: PADDLE_Y - (ball.isBig ? BALL_SIZE * 1.5 : BALL_SIZE) - 1, 
-                    speedY: launchSpeedY, 
-                    speedX: launchSpeedX, 
-                    stuckOffset: undefined, 
+                    x: absoluteX,
+                    // *** FIX: Use calculated currentBallSize for correct Y positioning ***
+                    y: PADDLE_Y - currentBallSize - 1, // Position slightly above paddle
+                    speedY: launchSpeedY,
+                    speedX: launchSpeedX,
+                    stuckOffset: undefined, // No longer stuck
                     blackEndTime: resumedBlackEndTime ?? ball.blackEndTime,
                     blueEndTime: resumedBlueEndTime ?? ball.blueEndTime,
                     bigEndTime: resumedBigEndTime ?? ball.bigEndTime,
                     splittingEndTime: resumedSplittingEndTime ?? ball.splittingEndTime,
+                    // Ensure paused durations are cleared
+                    blackPausedDuration: undefined,
+                    bluePausedDuration: undefined,
+                    bigPausedDuration: undefined,
+                    splittingPausedDuration: undefined,
                 };
             });
-            ballsRef.current = [...ballsRef.current, ...launchedBalls];
-            stuckBallsRef.current = []; 
+            // *** Ensure refs are updated correctly ***
+            ballsRef.current.push(...launchedBalls); // Add ALL launched balls to active balls
+            stuckBallsRef.current = []; // Clear ALL stuck balls
         }
-    }, []); 
+    }, []); // Keep dependencies empty as refs don't need to be listed
 
     const handlePowerUpToggle = useCallback((type: PowerUpType) => {
         setEnabledPowerUps(prev => {
@@ -327,7 +343,7 @@ export default function Home() {
         const handleContextMenu = (event: MouseEvent) => {
             event.preventDefault(); 
             if (gameIsRunningRef.current && isGameStartedRef.current) { 
-                launchStuckBalls(false); 
+                launchStuckBalls(false); // Launch sticky balls straight up
             }
         };
 
