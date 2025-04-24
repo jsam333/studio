@@ -8,7 +8,7 @@ import {
     SPLITTING_BALL_DURATION, BIG_BALL_DURATION, BOARD_HEIGHT, PADDLE_HEIGHT,
     BALL_SIZE, BUILDER_BALL_DURATION, BLACK_BALL_DURATION, BRICK_COLUMNS,
     BRICK_ROWS, PIERCE_BALL_HITS, PADDLE_WIDEN_INCREMENT, MAX_PADDLE_WIDTH,
-    BOARD_WIDTH,
+    BOARD_WIDTH, MAX_BRICK_UPGRADE_LEVEL // Added MAX_BRICK_UPGRADE_LEVEL
     // STICKY_PADDLE_DURATION // Removed duration constant
     // Re-added SPEED_UP_INCREMENT, SPLITTING_BALL_DURATION, BIG_BALL_DURATION, BUILDER_BALL_DURATION, BLACK_BALL_DURATION
 } from '../constants';
@@ -22,7 +22,31 @@ export const applyPowerUpEffects = (
 ) => {
     collectedPowerUpTypes.forEach(type => {
         switch (type) {
-            // ... (other power-up cases remain the same) ...
+            // ... (other power-up cases) ...
+
+            case 'REINFORCE_BRICK': { // Change to set upgradeLevel to 2
+                const candidates: { c: number; r: number }[] = [];
+                for (let c = 0; c < BRICK_COLUMNS; c++) {
+                    for (let r = 0; r < BRICK_ROWS; r++) {
+                        const brick = refs.bricksRef.current[c]?.[r];
+                        // Find active bricks that are level 0 or 1 (can be reinforced to level 2)
+                        if (brick && brick.status === 1 && !brick.isSpecial && !brick.isBomb && (!brick.upgradeLevel || brick.upgradeLevel < 2)) {
+                            candidates.push({ c, r });
+                        }
+                    }
+                }
+                if (candidates.length > 0) {
+                    const index = Math.floor(Math.random() * candidates.length);
+                    const chosenCandidate = candidates[index];
+                    const brickToReinforce = refs.bricksRef.current[chosenCandidate.c]?.[chosenCandidate.r];
+                    if (brickToReinforce) {
+                        brickToReinforce.upgradeLevel = 2; // *** Set upgrade level to 2 ***
+                        brickToReinforce.isSpecial = false;
+                        brickToReinforce.isBomb = false;
+                    }
+                }
+                break;
+            }
 
             case 'BOMB_BRICK': {
                 const candidates: { c: number; r: number }[] = [];
@@ -139,12 +163,13 @@ export const applyPowerUpEffects = (
                  }
                  break;
              }
-             case 'UPGRADE_BRICK': {
+             case 'UPGRADE_BRICK': { // Change to set upgradeLevel to 3
                  const candidates: { c: number; r: number }[] = [];
                  for (let c = 0; c < BRICK_COLUMNS; c++) {
                      for (let r = 0; r < BRICK_ROWS; r++) {
                          const brick = refs.bricksRef.current[c]?.[r];
-                         if (brick && brick.status === 1 && !brick.isSpecial && !brick.isBomb && (!brick.upgradeLevel || brick.upgradeLevel < 2)) {
+                         // Find active bricks that are not special, not bomb, and below max upgrade level (3)
+                         if (brick && brick.status === 1 && !brick.isSpecial && !brick.isBomb && (!brick.upgradeLevel || brick.upgradeLevel < MAX_BRICK_UPGRADE_LEVEL)) {
                             candidates.push({ c, r });
                          }
                      }
@@ -154,8 +179,11 @@ export const applyPowerUpEffects = (
                      const chosenCandidate = candidates[index];
                      const brickToUpgrade = refs.bricksRef.current[chosenCandidate.c]?.[chosenCandidate.r];
                      if (brickToUpgrade) {
-                         brickToUpgrade.upgradeLevel = (brickToUpgrade.upgradeLevel || 0) + 1;
-                         brickToUpgrade.upgradeLevel = Math.min(brickToUpgrade.upgradeLevel, 2);
+                         // *** Set upgrade level directly to 3 ***
+                         brickToUpgrade.upgradeLevel = 3; 
+                         // Ensure it's not marked as special or bomb
+                         brickToUpgrade.isSpecial = false;
+                         brickToUpgrade.isBomb = false;
                      }
                  }
                  break;
@@ -266,7 +294,10 @@ export const applyPowerUpEffects = (
                 applyPowerUpEffects(refs, callbacks, ['SAFETY_NET'], currentTime, gameSpeedFactor);
                 applyPowerUpEffects(refs, callbacks, ['MAKE_SPECIAL'], currentTime, gameSpeedFactor);
                 applyPowerUpEffects(refs, callbacks, ['BOMB_BRICK'], currentTime, gameSpeedFactor);
-                applyPowerUpEffects(refs, callbacks, ['STICKY_PADDLE'], currentTime, gameSpeedFactor); // Still adds a charge
+                applyPowerUpEffects(refs, callbacks, ['STICKY_PADDLE'], currentTime, gameSpeedFactor);
+                // *** Add REINFORCE_BRICK and UPGRADE_BRICK to ALL_IN_ONE ***
+                applyPowerUpEffects(refs, callbacks, ['REINFORCE_BRICK'], currentTime, gameSpeedFactor);
+                applyPowerUpEffects(refs, callbacks, ['UPGRADE_BRICK'], currentTime, gameSpeedFactor); // Also add UPGRADE_BRICK
                 break;
             }
         }
