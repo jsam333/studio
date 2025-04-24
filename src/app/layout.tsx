@@ -23,11 +23,13 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
-      <body>
-        <div className={`${geistSans.variable} ${geistMono.variable} antialiased`}>{children}</div>
+    // Apply font classNames directly to the html tag
+    <html lang="en" className={`${geistSans.variable} ${geistMono.variable}`}>
+      {/* Keep suppressHydrationWarning for now, might be removable later */}
+      <body suppressHydrationWarning={true}>
+        {/* Remove font variables from here, apply antialiased */}
+        <div className="antialiased">{children}</div>
       </body>
     </html>
   );
 }
-

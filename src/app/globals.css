@@ -1,11 +1,33 @@
-
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
+html,
+body {
+  overscroll-behavior-y: contain; /* Prevent pull-to-refresh/scroll beyond limits vertically */
+  overscroll-behavior-x: none; /* Prevent horizontal scroll */
+  touch-action: none; /* Disable default touch actions like scrolling/zooming on the whole page */
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  overflow: hidden; /* Hide scrollbars */
+}
+
 body {
   font-family: Arial, Helvetica, sans-serif;
 }
+
+canvas {
+  touch-action: none; /* Specifically disable touch actions on the canvas */
+  display: block; /* Prevent potential extra space below canvas */
+  /* Removed width: 100% and height: 100% */
+  /* The actual width/height attributes set by JS will control the size and aspect ratio */
+  /* The flex container in page.tsx will handle centering */
+  max-width: 100%; /* Ensure canvas doesn't overflow its container horizontally */
+  max-height: 100%; /* Ensure canvas doesn't overflow its container vertically */
+}
+
 
 @layer base {
   :root {
