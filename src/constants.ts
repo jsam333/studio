@@ -5,7 +5,7 @@ export const BOARD_WIDTH = 600;
 export const BOARD_HEIGHT = 400;
 
 // Paddle
-export const INITIAL_PADDLE_WIDTH = 100;
+export const INITIAL_PADDLE_WIDTH = 80; // Was 100
 export const PADDLE_HEIGHT = 15;
 export const PADDLE_Y = BOARD_HEIGHT - PADDLE_HEIGHT;
 export const PADDLE_SPEED = 7; // Movement speed
@@ -34,7 +34,7 @@ export const BRICK_PADDING = 1; // Was 2
 export const BRICK_WIDTH = 10; // Was 8
 // Calculated height: (Target 250px space: 250 - (22-1)*1) / 22 = 229 / 22 = 10.4 -> Using 9
 export const BRICK_HEIGHT = 9; // Was 8
-export const BRICK_OFFSET_TOP = 30;
+export const BRICK_OFFSET_TOP = 20; // Was 30
 // Calculated Offset Left: (600 - (53 * 10 + (53 - 1) * 1)) / 2 = (600 - 582) / 2 = 9
 export const BRICK_OFFSET_LEFT = (BOARD_WIDTH - (BRICK_COLUMNS * BRICK_WIDTH + (BRICK_COLUMNS - 1) * BRICK_PADDING)) / 2;
 export const BRICK_REGEN_DELAY = 5000; // Delay in milliseconds before a brick regenerates
@@ -118,6 +118,7 @@ export const ALL_TOGGLEABLE_POWER_UPS: PowerUpType[] = [
 ];
 
 // Power-up specific constants
+// NOTE: The WIDEN_PADDLE increment and max width might need adjustment now that INITIAL_PADDLE_WIDTH changed
 export const PADDLE_WIDEN_INCREMENT = INITIAL_PADDLE_WIDTH * 0.1;
 export const MAX_PADDLE_WIDEN_DURATION = 5000;
 export const MIN_PADDLE_WIDEN_DURATION = 100;
