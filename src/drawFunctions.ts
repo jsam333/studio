@@ -10,7 +10,8 @@ import {
     RAINBOW_COLORS,
     RAINBOW_FLASH_INTERVAL,
     BIG_BALL_SIZE_INCREASE,
-    BOMB_BRICK_COLOR
+    BOMB_BRICK_COLOR,
+    GOLD_COLOR // Assuming GOLD_COLOR is defined in constants
 } from './constants';
 
 // Draw Paddle
@@ -181,9 +182,30 @@ export const drawBricks = (ctx: CanvasRenderingContext2D, bricks: Brick[][], col
   }
 };
 
-// Draw Score
-export const drawScore = (ctx: CanvasRenderingContext2D, score: number) => {
-  ctx.font = "16px Arial"; ctx.fillStyle = "#ffffff"; ctx.textAlign = 'left'; ctx.fillText("Score: " + score, 8, 20);
+// Draw Brick Counter and Gold (Replaces drawBrickCounter)
+export const drawGameInfo = (ctx: CanvasRenderingContext2D, currentBrickCount: number, totalBricks: number, gold: number, isTestMode: boolean) => {
+  const bricksBroken = totalBricks - currentBrickCount;
+  const brickText = `Bricks: ${bricksBroken}/${totalBricks}`;
+  ctx.font = "16px Arial";
+  ctx.fillStyle = "#ffffff"; // White for brick count
+  ctx.textAlign = 'left';
+  ctx.textBaseline = 'top'; 
+
+  const yPos = 10; // Y position for the text line
+  const xStart = 8; // Starting X position
+  const padding = 15; // Padding between texts
+
+  ctx.fillText(brickText, xStart, yPos);
+
+  // Only display gold if not in test mode
+  if (!isTestMode) {
+    const goldText = `Gold: ${gold}`;
+    // Measure the brick text width to position gold next to it
+    const brickTextWidth = ctx.measureText(brickText).width;
+    const goldXPos = xStart + brickTextWidth + padding;
+    ctx.fillStyle = GOLD_COLOR || "#FFD700"; // Gold color for gold count
+    ctx.fillText(goldText, goldXPos, yPos);
+  }
 };
 
 

@@ -34,7 +34,7 @@ export const BRICK_WIDTH = 10; // Default width (used for test mode)
 export const BRICK_HEIGHT = 9; // Default height
 export const TALL_BRICK_HEIGHT = 15; // Taller height for specific main levels
 export const TARGET_TOTAL_BRICK_GRID_HEIGHT = 165; // Target height for levels 8+
-export const BRICK_OFFSET_TOP = 20; 
+export const BRICK_OFFSET_TOP = 30; // Adjusted offset for space for info text
 export const BRICK_OFFSET_LEFT = (BOARD_WIDTH - (BRICK_COLUMNS * BRICK_WIDTH + (BRICK_COLUMNS - 1) * BRICK_PADDING)) / 2;
 export const BRICK_REGEN_DELAY = 5000; 
 export const NORMAL_BRICK_POINTS = 10;
@@ -122,6 +122,7 @@ export const LASER_COOLDOWN = 300;
 export const LASER_STRIPE_WIDTH_PER_SHOT = 4;
 
 // Colors
+export const GOLD_COLOR = '#FFD700'; // Added gold color
 export const NORMAL_BRICK_COLOR = '#e67e22'; 
 export const REINFORCED_BRICK_COLOR = '#0077AA';
 export const UPGRADED_BRICK_COLOR = '#005588';

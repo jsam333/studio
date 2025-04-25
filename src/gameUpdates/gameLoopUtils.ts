@@ -1,20 +1,25 @@
 // src/gameUpdates/gameLoopUtils.ts
-import { Ball, Brick, PowerUp, PowerUpType, GameMode } from '../interfaces'; // Import GameMode
+import { Ball, Brick, PowerUp, PowerUpType, GameMode } from '../interfaces';
 import {
-    BRICK_HEIGHT, POWER_UP_SIZE, 
-    ALL_TOGGLEABLE_POWER_UPS 
+    POWER_UP_SIZE, 
+    ALL_TOGGLEABLE_POWER_UPS // Used for test mode
 } from '../constants';
 
-const POWER_UP_SPAWN_THRESHOLD = 20;
-const POWER_UP_CHANCE_REDUCTION_PER_EXTRA = 0.02; 
+// Constants for spawn logic
+const BASE_SPAWN_CHANCE = 1.0; // Base chance is 100% if conditions met
+const POWER_UP_SPAWN_THRESHOLD = 20; // Limit before chance reduction starts
+const POWER_UP_CHANCE_REDUCTION_PER_EXTRA = 0.02; // Reduction factor per extra power-up
 
 export const createPowerUp = (x: number, y: number, brickWidth: number, type: PowerUpType, timeCreated?: number): PowerUp => ({
     x: x + brickWidth / 2 - POWER_UP_SIZE / 2, 
-    y: y + 5,
-    type, status: 'falling', id: Date.now() + Math.random() * 10, timeCreated
+    y: y + 5, // Spawn slightly below the brick
+    type, 
+    status: 'falling', 
+    id: Date.now() + Math.random() * 10, // Unique ID
+    timeCreated
 });
 
-// Updated trySpawnPowerUp to accept gameMode and conditionally spawn
+// Updated trySpawnPowerUp to apply spawn chance reduction in both modes
 export const trySpawnPowerUp = (
     brickX: number,
     brickY: number,
@@ -22,32 +27,38 @@ export const trySpawnPowerUp = (
     wasSpecial: boolean,
     currentFallingPowerUpCount: number,
     newlySpawnedPowerUps: PowerUp[],
-    enabledPowerUps: Set<PowerUpType>, 
-    gameMode: GameMode | null, // Added gameMode parameter
+    availablePowerUps: Set<PowerUpType>, 
+    gameMode: GameMode | null, 
     currentTime?: number
 ): void => {
     if (wasSpecial) {
-        // Special bricks always drop ALL_IN_ONE regardless of mode
+        // Special bricks always drop ALL_IN_ONE
         newlySpawnedPowerUps.push(createPowerUp(brickX, brickY, brickWidth, 'ALL_IN_ONE', currentTime));
-    } else if (gameMode === 'test') { // Only spawn random power-ups in 'test' mode
-        const possibleTypes = ALL_TOGGLEABLE_POWER_UPS.filter(type => enabledPowerUps.has(type));
-        if (possibleTypes.length === 0) {
-            return;
-        }
-        const totalEffectivePowerUpCount = currentFallingPowerUpCount + newlySpawnedPowerUps.length;
-        let spawnChance = 1.0; 
-        if (totalEffectivePowerUpCount > POWER_UP_SPAWN_THRESHOLD) {
-            const excessPowerUps = totalEffectivePowerUpCount - POWER_UP_SPAWN_THRESHOLD;
-            spawnChance -= excessPowerUps * POWER_UP_CHANCE_REDUCTION_PER_EXTRA;
-            spawnChance = Math.max(0, spawnChance); 
-        }
-        if (Math.random() < spawnChance) {
-            const type = possibleTypes[Math.floor(Math.random() * possibleTypes.length)];
-            newlySpawnedPowerUps.push(createPowerUp(brickX, brickY, brickWidth, type));
-        }
+        return; 
     }
-    // If mode is 'main' and brick wasn't special, do nothing (no power-up spawn)
+
+    const possibleTypes = Array.from(availablePowerUps);
+    if (possibleTypes.length === 0) {
+        return; // No power-ups available to spawn (either none purchased in main, or none enabled in test)
+    }
+
+    // Apply spawn chance reduction based on currently falling power-ups (Applies to both modes)
+    const totalEffectivePowerUpCount = currentFallingPowerUpCount + newlySpawnedPowerUps.length;
+    let spawnChance = BASE_SPAWN_CHANCE; // Start with 100% base chance
+    if (totalEffectivePowerUpCount > POWER_UP_SPAWN_THRESHOLD) {
+        const excessPowerUps = totalEffectivePowerUpCount - POWER_UP_SPAWN_THRESHOLD;
+        spawnChance -= excessPowerUps * POWER_UP_CHANCE_REDUCTION_PER_EXTRA;
+        spawnChance = Math.max(0, spawnChance); // Clamp chance at 0%
+    }
+
+    // Roll for spawn based on calculated chance
+    if (Math.random() < spawnChance) {
+        const type = possibleTypes[Math.floor(Math.random() * possibleTypes.length)];
+        newlySpawnedPowerUps.push(createPowerUp(brickX, brickY, brickWidth, type, currentTime));
+    }
 };
+
+// --- Other Utility Functions (Unchanged) ---
 
 export const createNewBall = (x: number, y: number, speedX: number, speedY: number, currentSpeedFactor: number): Ball => ({
     x, y,

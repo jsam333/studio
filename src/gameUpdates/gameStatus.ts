@@ -36,10 +36,11 @@ export const checkGameStatus = (
         }
         
         // Win/Shop condition met
-        if (remainingBricks === 0 && refs.scoreRef.current >= 0) { // Allow score 0 for win/shop
+        if (remainingBricks === 0) { 
              const currentMode = refs.gameModeRef.current;
              if (currentMode === 'main') {
-                 nextState = 'shop'; // Go to shop after winning level 1
+                 nextState = 'shop'; // Go to shop after winning a level in main mode
+                 refs.goldRef.current += 20; // AWARD GOLD
              } else {
                  nextState = 'won'; // Regular win for test level
              }

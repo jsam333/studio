@@ -1,7 +1,6 @@
 // src/gameLoop.ts
 import React from 'react';
-// Import GameMode type
-import { Ball, PowerUp, Laser, PowerUpType, PowerUpSpawnEvent, GameMode } from './interfaces'; 
+import { Ball, PowerUp, Laser, PowerUpType, PowerUpSpawnEvent, GameMode, Brick } from './interfaces'; 
 import { GameStateRefs, GameLoopCallbacks } from './interfaces';
 import { updateLasers } from './gameUpdates/laserUpdates';
 import { updateBalls } from './gameUpdates/ballUpdates';
@@ -12,7 +11,22 @@ import { trySpawnPowerUp } from './gameUpdates/gameLoopUtils';
 import {
     BOARD_WIDTH, BOARD_HEIGHT, BASE_BALL_SPEED_FACTOR, POWER_UP_COLORS 
 } from './constants';
-import { drawPaddle, drawBalls, drawBricks, drawScore, drawPowerUps, drawLasers, drawSafetyNet, drawCollectionFieldRect } from './drawFunctions';
+import { drawPaddle, drawBalls, drawBricks, drawGameInfo, drawPowerUps, drawLasers, drawSafetyNet, drawCollectionFieldRect } from './drawFunctions'; 
+
+// Helper function to count active bricks
+const countActiveBricks = (bricks: Brick[][], columns: number, rows: number): number => {
+    let count = 0;
+    for (let c = 0; c < columns; c++) {
+        if (bricks[c]) {
+            for (let r = 0; r < rows; r++) {
+                if (bricks[c][r] && bricks[c][r].status === 1) {
+                    count++;
+                }
+            }
+        }
+    }
+    return count;
+};
 
 export const gameUpdate = (
     ctx: CanvasRenderingContext2D,
@@ -20,9 +34,10 @@ export const gameUpdate = (
     callbacks: GameLoopCallbacks,
     deltaTime: number 
 ) => {
-    if (refs.gameOverStateRef.current !== 'playing') {
+    const currentGameState = refs.gameOverStateRef.current;
+    if (currentGameState !== 'playing') {
         ctx.clearRect(0, 0, BOARD_WIDTH, BOARD_HEIGHT); 
-        callbacks.drawEndMessage(ctx, refs.gameOverStateRef.current, refs.scoreRef.current);
+        callbacks.drawEndMessage(ctx, currentGameState, refs.scoreRef.current);
         return; 
     }
     
@@ -33,25 +48,36 @@ export const gameUpdate = (
 
     const columns = refs.brickColumnsRef.current;
     const rows = refs.brickRowsRef.current;
-    const gameMode = refs.gameModeRef.current; // Get the current game mode
+    const gameMode = refs.gameModeRef.current; 
+    const isTestMode = gameMode === 'test';
 
     updateBalls(refs, callbacks, spawnRequests, currentTime, gameSpeedFactor, deltaTime, columns, rows);
 
     if (!refs.isGameStartedRef.current) {
+        const currentBrickCount = countActiveBricks(refs.bricksRef.current, columns, rows);
+        const totalBricks = refs.totalBricksRef.current;
+        const currentGold = refs.goldRef.current;
+
         ctx.clearRect(0, 0, BOARD_WIDTH, BOARD_HEIGHT);
         drawBricks(ctx, refs.bricksRef.current, columns, rows);
         drawPaddle(ctx, refs.paddleXRef.current, refs.paddleWidthRef.current, 0, 0);
         drawBalls(ctx, refs.stuckBallsRef.current); 
+        drawGameInfo(ctx, currentBrickCount, totalBricks, currentGold, isTestMode);
         return; 
     }
 
     let collectedPowerUpTypes: PowerUpType[] = []; 
     updateLasers(refs, callbacks, spawnRequests, currentTime, deltaTime, columns, rows); 
 
-    // Process spawn requests - Pass gameMode
+    // Process spawn requests
     let newlySpawnedPowerUps: PowerUp[] = [];
     const currentFallingPowerUpCount = refs.powerUpsRef.current.filter(p => p.status === 'falling').length;
-    const enabledPowerUps = refs.enabledPowerUpsRef.current;
+    
+    // Determine which set of power-ups to use for spawning based on game mode
+    const availablePowerUpsForSpawning = gameMode === 'main' 
+        ? refs.spawnablePowerUpsRef.current // Use purchased power-ups in main mode
+        : refs.enabledPowerUpsRef.current; // Use toggled power-ups in test mode
+
     spawnRequests.forEach(request => {
         trySpawnPowerUp( 
             request.brickX, 
@@ -60,14 +86,20 @@ export const gameUpdate = (
             request.marker === 'SPAWN_SPECIAL', 
             currentFallingPowerUpCount, 
             newlySpawnedPowerUps, 
-            enabledPowerUps, 
-            gameMode, // Pass game mode
+            availablePowerUpsForSpawning, // Pass the correct set
+            gameMode, 
             currentTime 
         );
     });
 
     refs.powerUpsRef.current = updatePowerUps( refs, gameSpeedFactor, newlySpawnedPowerUps, collectedPowerUpTypes, deltaTime );
+    // applyPowerUpEffects handles effects when power-ups are *collected*, not when added to spawn pool
     applyPowerUpEffects(refs, callbacks, collectedPowerUpTypes, currentTime, gameSpeedFactor);
+
+    // Drawing logic
+    const currentBrickCount = countActiveBricks(refs.bricksRef.current, columns, rows);
+    const totalBricks = refs.totalBricksRef.current;
+    const currentGold = refs.goldRef.current;
 
     ctx.save();
     ctx.clearRect(0, 0, BOARD_WIDTH, BOARD_HEIGHT);
@@ -80,7 +112,7 @@ export const gameUpdate = (
     drawPaddle( ctx, refs.paddleXRef.current, refs.paddleWidthRef.current, refs.laserShotsRef.current, refs.stickyPaddleChargesRef.current );
     drawPowerUps(ctx, refs.powerUpsRef.current);
     drawLasers(ctx, refs.lasersRef.current);
-    drawScore(ctx, refs.scoreRef.current);
+    drawGameInfo(ctx, currentBrickCount, totalBricks, currentGold, isTestMode);
     drawSafetyNet(ctx, refs.safetyNetCountRef.current);
     if (gameSpeedFactor !== BASE_BALL_SPEED_FACTOR) { 
         ctx.font = "12px Arial"; ctx.fillStyle = POWER_UP_COLORS['SPEED_UP'] || '#e74c3c'; ctx.textAlign = 'right';

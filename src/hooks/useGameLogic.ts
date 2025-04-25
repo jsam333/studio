@@ -8,18 +8,21 @@ import {
     FIELD_SHRINK_INTERVAL,
     BRICK_COLUMNS, BRICK_ROWS, 
     BRICK_HEIGHT, TALL_BRICK_HEIGHT, 
-    BRICK_PADDING, TARGET_TOTAL_BRICK_GRID_HEIGHT // Import constants needed for calculation
+    BRICK_PADDING, TARGET_TOTAL_BRICK_GRID_HEIGHT,
+    ALL_TOGGLEABLE_POWER_UPS // Import for default spawnable in test mode
 } from '../constants';
-import { Ball, Brick, PowerUp, Laser, PowerUpType, GameState, GameMode, GameStateRefs as IGameStateRefs } from '../interfaces';
+import { Ball, Brick, PowerUp, Laser, PowerUpType, GameState, GameMode, GameStateRefs as IGameStateRefs } from '../interfaces'; 
 import { initializeBricks, initialBallState } from '../gameLogic';
 import { calculateShrinkDuration } from '../gameUtils';
 
+// Adjust GameStateRefs definition to ensure spawnablePowerUpsRef is covered
 export interface GameStateRefs extends IGameStateRefs {
     widenTimeoutRef?: React.MutableRefObject<NodeJS.Timeout | null>;
     collectionFieldShrinkTimerRef?: React.MutableRefObject<NodeJS.Timeout | null>;
     animationFrameIdRef?: React.MutableRefObject<number | null>; 
     lastTimeRef?: React.MutableRefObject<number>; 
     currentLevelRef: React.MutableRefObject<number>; 
+    // Other refs like totalBricksRef, goldRef, spawnablePowerUpsRef should be covered by IGameStateRefs
 }
 
 export function useGameLogic() {
@@ -27,7 +30,11 @@ export function useGameLogic() {
     const ballsRef = useRef<Ball[]>([]);
     const bricksRef = useRef<Brick[][]>([]); 
     const powerUpsRef = useRef<PowerUp[]>([]);
-    const scoreRef = useRef(0);
+    const scoreRef = useRef(0); 
+    const totalBricksRef = useRef<number>(0); 
+    const goldRef = useRef<number>(0); 
+    // Initialize spawnablePowerUpsRef - empty set for main game initially
+    const spawnablePowerUpsRef = useRef<Set<PowerUpType>>(new Set()); 
     const gameIsRunningRef = useRef(false);
     const paddleWidthRef = useRef(INITIAL_PADDLE_WIDTH);
     const widenLevelRef = useRef(0);
@@ -41,18 +48,23 @@ export function useGameLogic() {
     const collectionFieldShrinkTimerRef = useRef<NodeJS.Timeout | null>(null);
     const stickyPaddleChargesRef = useRef(0); 
     const stuckBallsRef = useRef<Ball[]>([]);
-    const enabledPowerUpsRef = useRef<Set<PowerUpType>>(new Set(['MULTI_BALL'])); 
+    // enabledPowerUpsRef is specifically for TEST MODE TOGGLES
+    const enabledPowerUpsRef = useRef<Set<PowerUpType>>(new Set(ALL_TOGGLEABLE_POWER_UPS)); 
     const isGameStartedRef = useRef(false);
     const gameModeRef = useRef<GameMode | null>(null); 
     const brickColumnsRef = useRef<number>(BRICK_COLUMNS);
     const brickRowsRef = useRef<number>(BRICK_ROWS);
     const currentLevelRef = useRef<number>(1); 
+    const animationFrameIdRef = useRef<number | null>(null);
+    const lastTimeRef = useRef<number>(0);
 
     const [gameOverState, setGameOverState] = useState<GameState>('menu');
     const gameOverStateRef = useRef(gameOverState); 
-    const [enabledPowerUps, setEnabledPowerUps] = useState<Set<PowerUpType>>(() => new Set(['MULTI_BALL']));
+    // This state mirrors enabledPowerUpsRef for the sidebar UI
+    const [enabledPowerUps, setEnabledPowerUps] = useState<Set<PowerUpType>>(() => new Set(ALL_TOGGLEABLE_POWER_UPS));
     const [showSidebar, setShowSidebar] = useState<boolean>(false);
 
+    // Sync UI state with test mode ref
     useEffect(() => {
         enabledPowerUpsRef.current = enabledPowerUps;
     }, [enabledPowerUps]);
@@ -77,7 +89,7 @@ export function useGameLogic() {
     }, []); 
 
     const schedulePaddleShrink = useCallback(() => {
-        // ... (no changes)
+        // ... (no changes needed here) ...
         if (widenTimeoutRef.current) { clearTimeout(widenTimeoutRef.current); }
         const currentWidth = paddleWidthRef.current;
         const duration = calculateShrinkDuration(currentWidth);
@@ -112,8 +124,8 @@ export function useGameLogic() {
     }, []);
 
     const scheduleFieldShrink = useCallback(() => {
-        // ... (no changes)
-        if (collectionFieldShrinkTimerRef.current) {
+        // ... (no changes needed here) ...
+         if (collectionFieldShrinkTimerRef.current) {
             clearInterval(collectionFieldShrinkTimerRef.current);
         }
         collectionFieldShrinkTimerRef.current = setInterval(() => {
@@ -135,8 +147,8 @@ export function useGameLogic() {
         }, FIELD_SHRINK_INTERVAL); 
     }, []);
 
-    // Updated resetLevel to calculate height for levels 8+
     const resetLevel = useCallback((mode: GameMode | null) => {
+        // ... (no changes needed here) ...
         const currentMode = mode ?? gameModeRef.current; 
         if (!currentMode) return; 
         
@@ -146,6 +158,7 @@ export function useGameLogic() {
 
         if (currentMode === 'main') {
             const level = currentLevelRef.current;
+            // ... (level setup logic remains the same) ...
             if (level === 1) {
                 cols = 3;
                 rows = 2;
@@ -183,10 +196,8 @@ export function useGameLogic() {
                 rows = 10; 
                 targetHeight = TALL_BRICK_HEIGHT; 
             } 
-            // Levels 10+
             else { 
-                cols = 4; // Default cols for these levels
-                // Determine rows based on level, e.g., increase rows for higher levels
+                cols = 4; 
                 if (level === 10) { 
                     cols = 20; 
                     rows = 11; 
@@ -221,21 +232,16 @@ export function useGameLogic() {
                     cols = 60; 
                     rows = 23; 
                 } else { 
-                    // Default for level 8+ (e.g., stay at 7 rows or increase further)
                     rows = 7; 
                 } 
-
-                // Calculate individual brick height to meet target total height
                 if (rows > 0) {
                     targetHeight = (TARGET_TOTAL_BRICK_GRID_HEIGHT - (rows - 1) * BRICK_PADDING) / rows;
-                    // Ensure minimum height 
                     targetHeight = Math.max(1, targetHeight); 
                 } else {
-                    targetHeight = BRICK_HEIGHT; // Fallback
+                    targetHeight = BRICK_HEIGHT; 
                 }
             }
         } else { 
-            // Test mode uses default cols, rows, and height
             cols = BRICK_COLUMNS;
             rows = BRICK_ROWS;
             targetHeight = BRICK_HEIGHT;
@@ -243,10 +249,20 @@ export function useGameLogic() {
 
         brickColumnsRef.current = cols;
         brickRowsRef.current = rows;
-        // Pass the determined targetHeight to initializeBricks
         bricksRef.current = initializeBricks(cols, rows, targetHeight);
         
-        // Reset other game elements
+        let count = 0;
+        for (let c = 0; c < bricksRef.current.length; c++) {
+            if (bricksRef.current[c]) {
+                for (let r = 0; r < bricksRef.current[c].length; r++) {
+                    if (bricksRef.current[c][r] && bricksRef.current[c][r].status === 1) {
+                        count++;
+                    }
+                }
+            }
+        }
+        totalBricksRef.current = count;
+
         powerUpsRef.current = [];
         lasersRef.current = [];
         widenLevelRef.current = 0;
@@ -266,15 +282,20 @@ export function useGameLogic() {
         if (widenTimeoutRef.current) { clearTimeout(widenTimeoutRef.current); widenTimeoutRef.current = null; }
         if (collectionFieldShrinkTimerRef.current) { clearInterval(collectionFieldShrinkTimerRef.current); collectionFieldShrinkTimerRef.current = null; }
         scoreRef.current = 0; 
+        totalBricksRef.current = 0; 
+        goldRef.current = 0; 
+        spawnablePowerUpsRef.current = new Set(); // Reset spawnable power-ups
         currentLevelRef.current = 1; 
         resetLevel(null); 
         setGameOverState('menu');
         setShowSidebar(false); 
         gameModeRef.current = null; 
+        // Reset test mode toggles to default
+        setEnabledPowerUps(new Set(ALL_TOGGLEABLE_POWER_UPS)); 
     }, [resetLevel]); 
 
     const launchStuckBalls = useCallback((isInitialLaunch = false) => {
-        // ... (no changes)
+        // ... (no changes needed here) ...
          if (gameOverStateRef.current !== 'playing') return; 
         
         if (stuckBallsRef.current.length > 0) {
@@ -328,6 +349,7 @@ export function useGameLogic() {
         }
     }, []); 
 
+    // This specifically toggles for the TEST MODE sidebar
     const handlePowerUpToggle = useCallback((type: PowerUpType) => {
         setEnabledPowerUps(prev => {
             const next = new Set(prev);
@@ -343,10 +365,18 @@ export function useGameLogic() {
     const startGame = useCallback((mode: GameMode) => {
         if (gameOverStateRef.current === 'menu') {
             scoreRef.current = 0; 
+            totalBricksRef.current = 0; 
+            goldRef.current = 0; 
+            // Reset spawnable power-ups for main game, set defaults for test
+            spawnablePowerUpsRef.current = mode === 'main' ? new Set() : new Set(ALL_TOGGLEABLE_POWER_UPS); 
             currentLevelRef.current = 1; 
             gameModeRef.current = mode; 
             resetLevel(mode); 
             setShowSidebar(mode === 'test');
+            // Ensure test mode toggles are synced if starting test mode
+            if (mode === 'test') {
+                setEnabledPowerUps(new Set(ALL_TOGGLEABLE_POWER_UPS));
+            }
             setGameOverState('playing');
         }
     }, [resetLevel]); 
@@ -356,19 +386,27 @@ export function useGameLogic() {
             currentLevelRef.current++; 
             const nextMode: GameMode = 'main'; 
             gameModeRef.current = nextMode;
+            // Spawnable power-ups persist between levels in main mode
             resetLevel(nextMode); 
             setShowSidebar(false); 
             setGameOverState('playing');
         }
     }, [resetLevel]);
 
+    // Callback for purchasing/adding a power-up to the spawnable list
+    const addSpawnablePowerUp = useCallback((type: PowerUpType) => {
+        spawnablePowerUpsRef.current.add(type);
+        // Optionally: Add feedback to the user
+    }, []);
+
+    // Ensure all necessary refs are included in the returned gameStateRefs
     const gameStateRefs: GameStateRefs = {
-        paddleXRef, ballsRef, bricksRef, powerUpsRef, scoreRef, paddleWidthRef,
-        widenLevelRef, laserShotsRef, lasersRef, safetyNetCountRef,
+        paddleXRef, ballsRef, bricksRef, powerUpsRef, scoreRef, totalBricksRef, goldRef, spawnablePowerUpsRef, // Added spawnablePowerUpsRef
+        paddleWidthRef, widenLevelRef, laserShotsRef, lasersRef, safetyNetCountRef,
         gameIsRunningRef, gameOverStateRef, gameSpeedFactorRef,
         collectionFieldHeightRef, collectionFieldWidthOffsetRef,
         stickyPaddleChargesRef, stuckBallsRef, enabledPowerUpsRef, isGameStartedRef,
-        widenTimeoutRef, collectionFieldShrinkTimerRef,
+        widenTimeoutRef, collectionFieldShrinkTimerRef, animationFrameIdRef, lastTimeRef, 
         brickColumnsRef, brickRowsRef, 
         gameModeRef, 
         currentLevelRef, 
@@ -376,18 +414,19 @@ export function useGameLogic() {
 
     return {
         gameOverState,
-        enabledPowerUps,
+        enabledPowerUps, // For test mode sidebar UI
         showSidebar,
         currentLevel: currentLevelRef.current, 
         setGameOverState, 
         updateScoreCallback,
         handleResetGame,
         launchStuckBalls,
-        handlePowerUpToggle,
+        handlePowerUpToggle, // For test mode sidebar UI
         schedulePaddleShrink,
         scheduleFieldShrink,
         startGame,
         startNextLevel, 
-        gameStateRefs,
+        addSpawnablePowerUp, // Expose the function to add spawnable power-ups
+        gameStateRefs, 
     };
 }

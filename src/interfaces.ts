@@ -80,7 +80,6 @@ export interface Laser {
     id: number;
 }
 
-// Add 'shop' to the GameState type
 export type GameState = 'menu' | 'playing' | 'won' | 'lost' | 'shop'; 
 export type GameMode = 'main' | 'test'; 
 
@@ -90,19 +89,22 @@ export interface GameStateRefsBase {
     bricksRef: React.MutableRefObject<Brick[][]>;
     powerUpsRef: React.MutableRefObject<PowerUp[]>;
     scoreRef: React.MutableRefObject<number>;
+    totalBricksRef: React.MutableRefObject<number>; 
+    goldRef: React.MutableRefObject<number>;
+    spawnablePowerUpsRef: React.MutableRefObject<Set<PowerUpType>>; // Added for spawnable power-ups
     paddleWidthRef: React.MutableRefObject<number>;
     widenLevelRef: React.MutableRefObject<number>;
     laserShotsRef: React.MutableRefObject<number>;
     lasersRef: React.MutableRefObject<Laser[]>;
     safetyNetCountRef: React.MutableRefObject<number>;
     gameIsRunningRef: React.MutableRefObject<boolean>;
-    gameOverStateRef: React.MutableRefObject<GameState>; // Type now includes 'shop'
+    gameOverStateRef: React.MutableRefObject<GameState>;
     gameSpeedFactorRef: React.MutableRefObject<number>;
     collectionFieldHeightRef: React.MutableRefObject<number>;
     collectionFieldWidthOffsetRef: React.MutableRefObject<number>;
     stickyPaddleChargesRef: React.MutableRefObject<number>;
     stuckBallsRef: React.MutableRefObject<Ball[]>;
-    enabledPowerUpsRef: React.MutableRefObject<Set<PowerUpType>>;
+    enabledPowerUpsRef: React.MutableRefObject<Set<PowerUpType>>; // This tracks ACTIVE power-ups in test mode
     isGameStartedRef: React.MutableRefObject<boolean>;
     brickColumnsRef: React.MutableRefObject<number>; 
     brickRowsRef: React.MutableRefObject<number>;    
@@ -114,12 +116,13 @@ export interface GameStateRefs extends GameStateRefsBase {
     collectionFieldShrinkTimerRef?: React.MutableRefObject<NodeJS.Timeout | null>;
     animationFrameIdRef?: React.MutableRefObject<number | null>; 
     lastTimeRef?: React.MutableRefObject<number>; 
+    currentLevelRef: React.MutableRefObject<number>; 
 }
 
 export interface GameLoopCallbacks {
     updateScoreCallback: (points: number) => void;
-    setGameOverState: React.Dispatch<React.SetStateAction<GameState>>; // Type now includes 'shop'
+    setGameOverState: React.Dispatch<React.SetStateAction<GameState>>; 
     schedulePaddleShrink: () => void;
     scheduleFieldShrink: () => void;
-    drawEndMessage: (context: CanvasRenderingContext2D, state: 'won' | 'lost', finalScore: number) => void;
+    drawEndMessage: (context: CanvasRenderingContext2D, state: 'won' | 'lost' | 'shop', finalScore: number) => void; 
 }
