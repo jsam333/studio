@@ -14,22 +14,26 @@ export const updateLasers = (
     refs: GameStateRefs,
     callbacks: GameLoopCallbacks,
     spawnRequests: PowerUpSpawnEvent[], // Changed parameter name
-    currentTime: number
+    currentTime: number,
+    deltaTime: number // Add deltaTime parameter
 ): void => { // Return type is void, it modifies refs directly
     let nextLasersArray: Laser[] = [];
     refs.lasersRef.current.forEach(laser => {
         let laserHit = false;
-        const nextLaserY = laser.y - laser.speed;
+        // Apply deltaTime to movement
+        const movement = laser.speed * deltaTime;
+        const nextLaserY = laser.y - movement;
         let brickDestroyed = false, dBrickX = 0, dBrickY = 0, dBrickWasSpecial = false;
 
+        // Collision check remains largely the same, checking the next projected position
         for (let c = 0; c < BRICK_COLUMNS && !laserHit; c++) {
             for (let r = 0; r < BRICK_ROWS && !laserHit; r++) {
                 const brick = refs.bricksRef.current[c]?.[r];
                 if (brick && brick.status === 1 &&
-                    laser.x < brick.x + BRICK_WIDTH &&
-                    laser.x + laser.width > brick.x &&
-                    nextLaserY < brick.y + BRICK_HEIGHT &&
-                    nextLaserY + laser.height > brick.y) {
+                    laser.x < brick.x + BRICK_WIDTH && // Laser right edge vs Brick left edge
+                    laser.x + laser.width > brick.x && // Laser left edge vs Brick right edge
+                    nextLaserY < brick.y + BRICK_HEIGHT && // Laser bottom edge vs Brick top edge
+                    nextLaserY + laser.height > brick.y) { // Laser top edge vs Brick bottom edge
 
                     let pts = 0;
                     if (brick.isSpecial) pts = SPECIAL_BRICK_POINTS;
@@ -56,6 +60,7 @@ export const updateLasers = (
             spawnRequests.push({ marker, brickX: dBrickX, brickY: dBrickY });
         }
 
+        // Keep the laser if it hasn't hit anything and is still on screen
         if (!laserHit && nextLaserY + laser.height > 0) {
             nextLasersArray.push({ ...laser, y: nextLaserY });
         }

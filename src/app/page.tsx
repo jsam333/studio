@@ -1,329 +1,130 @@
 'use client'
 
-import React, { useState, useRef, useEffect, useCallback } from 'react';
+import React, { useRef, useEffect, useCallback, useState } from 'react';
 import {
-    BOARD_WIDTH, BOARD_HEIGHT, PADDLE_HEIGHT, BALL_SIZE, PADDLE_Y,
-    INITIAL_PADDLE_WIDTH, PADDLE_WIDEN_INCREMENT,
-    BASE_BALL_SPEED_FACTOR, INITIAL_BALL_SPEED_Y, // Reverted to BASE_BALL_SPEED_FACTOR
-    FIELD_INITIAL_HEIGHT_OFFSET, FIELD_INITIAL_WIDTH_OFFSET,
-    FIELD_SHRINK_RATE_H, FIELD_SHRINK_RATE_W, FIELD_SHRINK_INTERVAL,
-    ALL_TOGGLEABLE_POWER_UPS, 
-    POWER_UP_COLORS, 
-    BIG_BALL_SIZE_INCREASE // Added import
+    BOARD_WIDTH, BOARD_HEIGHT 
 } from '../constants';
-import { Ball, Laser, PowerUp, Brick, PowerUpType } from '../interfaces'; 
-import { initializeBricks, initialBallState } from '../gameLogic';
-import { drawPaddle, drawBalls, drawBricks, drawScore, drawPowerUps, drawLasers, drawSafetyNet, drawCollectionFieldRect } from '../drawFunctions';
-import { calculateShrinkDuration } from '../gameUtils';
+import { GameLoopCallbacks } from '../interfaces';
+import { drawEndMessage } from '../drawFunctions'; // Assuming drawEndMessage is standalone or refactored
 import { gameUpdate } from '../gameLoop';
-import { GameStateRefs, GameLoopCallbacks } from '../interfaces';
 import { setupGameCanvas } from '../gameCanvas';
+import { PowerUpSidebar } from '../components/PowerUpSidebar';
+import { useGameLogic, GameStateRefs } from '../hooks/useGameLogic'; // Import the hook
 
-const SIDEBAR_WIDTH_PX = 192; 
+const SIDEBAR_WIDTH_PX = 192;
 const TOTAL_SIDEBAR_SPACE = SIDEBAR_WIDTH_PX;
+
+// --- Maximum allowed deltaTime factor ---
+// This prevents excessively large updates if the frame rate drops significantly,
+// mitigating potential issues like tunneling (objects passing through each other).
+// A value of 3 means the physics will simulate at most 3x the normal movement per frame,
+// even if the actual time elapsed was longer.
+const MAX_DELTA_TIME_FACTOR = 3;
+
 
 export default function Home() {
     const canvasRef = useRef<HTMLCanvasElement>(null);
-    const gameContainerRef = useRef<HTMLDivElement>(null); 
-
-    // --- Refs for mutable game state --- 
-    const paddleXRef = useRef((BOARD_WIDTH - INITIAL_PADDLE_WIDTH) / 2);
-    const ballsRef = useRef<Ball[]>([]);
-    const bricksRef = useRef<Brick[][]>(initializeBricks());
-    const powerUpsRef = useRef<PowerUp[]>([]);
-    const scoreRef = useRef(0);
-    const gameIsRunningRef = useRef(false);
-    const animationFrameIdRef = useRef<number | null>(null);
-    const paddleWidthRef = useRef(INITIAL_PADDLE_WIDTH);
-    const widenLevelRef = useRef(0);
-    const widenTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+    const gameContainerRef = useRef<HTMLDivElement>(null);
     const scaleRef = useRef(1);
-    const laserShotsRef = useRef(0);
-    const lasersRef = useRef<Laser[]>([]);
-    const safetyNetCountRef = useRef(0);
-    // Reverted to BASE_BALL_SPEED_FACTOR
-    const gameSpeedFactorRef = useRef<number>(BASE_BALL_SPEED_FACTOR);
+    const animationFrameIdRef = useRef<number | null>(null);
     const lastTimeRef = useRef<number>(0);
-    const collectionFieldHeightRef = useRef<number>(FIELD_INITIAL_HEIGHT_OFFSET); 
-    const collectionFieldWidthOffsetRef = useRef<number>(FIELD_INITIAL_WIDTH_OFFSET);
-    const collectionFieldShrinkTimerRef = useRef<NodeJS.Timeout | null>(null);
-    const stickyPaddleChargesRef = useRef(0); 
-    const stuckBallsRef = useRef<Ball[]>([]);
-    const enabledPowerUpsRef = useRef<Set<PowerUpType>>(new Set(['MULTI_BALL'])); 
-    const isGameStartedRef = useRef(false); 
 
-    // --- State --- 
-    const [score, setScore] = useState(0);
+    // --- Use the custom hook for game logic --- 
+    const {
+        // score, // REMOVED - No longer returned or needed from hook
+        gameOverState,
+        enabledPowerUps,
+        setGameOverState,
+        updateScoreCallback,
+        handleResetGame,
+        launchStuckBalls,
+        handlePowerUpToggle,
+        schedulePaddleShrink,
+        scheduleFieldShrink,
+        gameStateRefs, // Contains all the refs needed for game updates and setup
+    } = useGameLogic();
+
+    // --- Canvas size state (remains in component as it relates to rendering layout) --- 
     const [canvasWidth, setCanvasWidth] = useState(BOARD_WIDTH);
     const [canvasHeight, setCanvasHeight] = useState(BOARD_HEIGHT);
-    const [gameOverState, setGameOverState] = useState<'playing' | 'won' | 'lost'>('playing');
-    const gameOverStateRef = useRef(gameOverState);
-    const [enabledPowerUps, setEnabledPowerUps] = useState<Set<PowerUpType>>(() => new Set(['MULTI_BALL']));
 
-    useEffect(() => {
-        enabledPowerUpsRef.current = enabledPowerUps;
-    }, [enabledPowerUps]);
+    const targetFps = 60; // Target FPS
+    const targetFrameTime = 1000 / targetFps; // Ideal time between frames in ms
 
-    useEffect(() => {
-        gameOverStateRef.current = gameOverState;
-        gameIsRunningRef.current = gameOverState === 'playing';
-     }, [gameOverState]);
-
-    const fpsInterval = 1000 / 60;
-
-    const drawEndMessage = useCallback(/* ... */ (context: CanvasRenderingContext2D, state: 'won' | 'lost', finalScore: number) => {
+    // --- Draw End Message (remains or moves to drawFunctions) --- 
+    const drawEndMessageCallback = useCallback((context: CanvasRenderingContext2D, state: 'won' | 'lost', finalScore: number) => {
+        // This function implementation was provided earlier and can stay here or be moved
         const message = state === 'won' ? `You Win! Score: ${finalScore}` : 'Game Over!';
         const subMessage = 'Click to Restart';
         const logicalCenterX = BOARD_WIDTH / 2;
         const logicalCenterY = BOARD_HEIGHT / 2;
-        context.save(); context.textAlign = 'center'; context.fillStyle = 'white'; context.font = '30px Arial';
+        context.save();
+        context.textAlign = 'center';
+        context.fillStyle = 'white';
+        context.font = '30px Arial';
         context.fillText(message, logicalCenterX, logicalCenterY - 15);
-        context.font = '20px Arial'; context.fillText(subMessage, logicalCenterX, logicalCenterY + 15);
+        context.font = '20px Arial';
+        context.fillText(subMessage, logicalCenterX, logicalCenterY + 15);
         context.restore();
     }, []);
 
-    const updateScoreCallback = useCallback((points: number) => {
-        scoreRef.current += points; 
-        setScore(s => s + points); 
-    }, []);
-
-    const schedulePaddleShrink = useCallback(() => {
-        if (widenTimeoutRef.current) { clearTimeout(widenTimeoutRef.current); }
-        const currentWidth = paddleWidthRef.current;
-        const duration = calculateShrinkDuration(currentWidth);
-        widenTimeoutRef.current = setTimeout(() => {
-            if (widenLevelRef.current > 0) {
-                 const oldWidth = paddleWidthRef.current;
-                 if (oldWidth > INITIAL_PADDLE_WIDTH) {
-                     const currentPaddleXLocal = paddleXRef.current;
-                     const newWidth = Math.max(INITIAL_PADDLE_WIDTH, oldWidth - PADDLE_WIDEN_INCREMENT);
-                     const widthDecrease = oldWidth - newWidth;
-                     let newPaddleX = currentPaddleXLocal + widthDecrease / 2;
-                     newPaddleX = Math.max(0, newPaddleX); newPaddleX = Math.min(BOARD_WIDTH - newWidth, newPaddleX);
-                     paddleWidthRef.current = newWidth;
-                     paddleXRef.current = newPaddleX;
-                 }
-                 widenLevelRef.current--;
-                 if (widenLevelRef.current > 0 && paddleWidthRef.current > INITIAL_PADDLE_WIDTH) {
-                    schedulePaddleShrink();
-                 } else {
-                    if (paddleWidthRef.current < INITIAL_PADDLE_WIDTH) {
-                        paddleWidthRef.current = INITIAL_PADDLE_WIDTH;
-                        let currentPaddleXLocal = paddleXRef.current;
-                        let newPaddleX = currentPaddleXLocal;
-                        newPaddleX = Math.max(0, newPaddleX); newPaddleX = Math.min(BOARD_WIDTH - INITIAL_PADDLE_WIDTH, newPaddleX);
-                        paddleXRef.current = newPaddleX;
-                    }
-                    widenLevelRef.current = 0;
-                 }
-            }
-        }, duration);
-    }, []);
-
-    const scheduleFieldShrink = useCallback(() => {
-        if (collectionFieldShrinkTimerRef.current) {
-            clearInterval(collectionFieldShrinkTimerRef.current);
-        }
-        collectionFieldShrinkTimerRef.current = setInterval(() => {
-            let heightChanged = false;
-            let widthChanged = false;
-
-            if (collectionFieldHeightRef.current > 0) {
-                collectionFieldHeightRef.current = Math.max(0, collectionFieldHeightRef.current - FIELD_SHRINK_RATE_H);
-                heightChanged = true;
-            }
-            if (collectionFieldWidthOffsetRef.current > 0) {
-                collectionFieldWidthOffsetRef.current = Math.max(0, collectionFieldWidthOffsetRef.current - FIELD_SHRINK_RATE_W);
-                widthChanged = true;
-            }
-            if (!heightChanged && !widthChanged && collectionFieldShrinkTimerRef.current) {
-                 clearInterval(collectionFieldShrinkTimerRef.current);
-                 collectionFieldShrinkTimerRef.current = null;
-            }
-        }, FIELD_SHRINK_INTERVAL); 
-    }, []); 
-
-    const setupInitialBall = useCallback(() => {
-        ballsRef.current = [];
-        stuckBallsRef.current = [{ 
-            ...initialBallState,
-            id: Date.now() 
-        }];
-        paddleWidthRef.current = INITIAL_PADDLE_WIDTH;
-        paddleXRef.current = (BOARD_WIDTH - INITIAL_PADDLE_WIDTH) / 2;
-    }, []);
-
-    const handleResetGame = useCallback(() => {
-        if (animationFrameIdRef.current) { cancelAnimationFrame(animationFrameIdRef.current); animationFrameIdRef.current = null; }
-        gameIsRunningRef.current = false; 
-        isGameStartedRef.current = false; 
-        if (widenTimeoutRef.current) { clearTimeout(widenTimeoutRef.current); widenTimeoutRef.current = null; }
-        if (collectionFieldShrinkTimerRef.current) { clearInterval(collectionFieldShrinkTimerRef.current); collectionFieldShrinkTimerRef.current = null; }
-
-        bricksRef.current = initializeBricks();
-        powerUpsRef.current = [];
-        lasersRef.current = [];
-        scoreRef.current = 0;
-        widenLevelRef.current = 0;
-        laserShotsRef.current = 0;
-        safetyNetCountRef.current = 0;
-        // Reverted to BASE_BALL_SPEED_FACTOR
-        gameSpeedFactorRef.current = BASE_BALL_SPEED_FACTOR;
-        collectionFieldHeightRef.current = FIELD_INITIAL_HEIGHT_OFFSET;
-        collectionFieldWidthOffsetRef.current = FIELD_INITIAL_WIDTH_OFFSET;
-        stickyPaddleChargesRef.current = 0; 
-        lastTimeRef.current = 0;
-
-        setupInitialBall(); 
-
-        setScore(0);
-        setGameOverState('playing'); 
-        // Restart the animation loop immediately upon reset if state is 'playing'
-         if (!animationFrameIdRef.current) {
-              lastTimeRef.current = performance.now();
-              animationFrameIdRef.current = requestAnimationFrame(gameLoopRef.current); // Use ref to gameLoop
-         }
-
-    }, [setupInitialBall]); 
-
-    const launchStuckBalls = useCallback((isInitialLaunch = false) => {
-        if (stuckBallsRef.current.length > 0) {
-            const currentPaddleX = paddleXRef.current;
-            const currentPaddleWidth = paddleWidthRef.current;
-            const gameSpeed = gameSpeedFactorRef.current;
-            const launchTime = Date.now();
-
-            const launchedBalls = stuckBallsRef.current.map(ball => {
-                const absoluteX = currentPaddleX + (ball.stuckOffset ?? currentPaddleWidth / 2);
-                const currentBallSize = ball.isBig ? BALL_SIZE + BIG_BALL_SIZE_INCREASE : BALL_SIZE;
-
-                // Timer resume logic
-                 let resumedBlackEndTime = undefined;
-                 if (ball.isBlack && ball.blackPausedDuration) { resumedBlackEndTime = launchTime + ball.blackPausedDuration; }
-                 let resumedBlueEndTime = undefined;
-                 if (ball.isBlue && ball.bluePausedDuration) { resumedBlueEndTime = launchTime + ball.bluePausedDuration; }
-                 let resumedBigEndTime = undefined;
-                 if (ball.isBig && ball.bigPausedDuration) { resumedBigEndTime = launchTime + ball.bigPausedDuration; }
-                 let resumedSplittingEndTime = undefined;
-                 if (ball.isSplitting && ball.splittingPausedDuration) { resumedSplittingEndTime = launchTime + ball.splittingPausedDuration; }
-
-                 // --- Ball Launch Speed Logic ---
-                let launchSpeedX = 0;
-                // *** FIX: Ensure launchSpeedY is negative for upward movement ***
-                let launchSpeedY = -Math.abs(INITIAL_BALL_SPEED_Y * gameSpeed);
-
-                if (isInitialLaunch) {
-                    // Initial launch (left-click) still has a slight angle
-                    launchSpeedX = 3 * gameSpeed;
-                    isGameStartedRef.current = true;
-                } else {
-                    // Sticky launch (right-click) goes straight up
-                    launchSpeedX = 0;
-                }
-                // Ensure vertical speed has a minimum magnitude if needed (already ensured negative)
-                // launchSpeedY = Math.sign(launchSpeedY) * Math.max(Math.abs(launchSpeedY), 1);
-
-                return {
-                    ...ball,
-                    x: absoluteX,
-                    // *** FIX: Use calculated currentBallSize for correct Y positioning ***
-                    y: PADDLE_Y - currentBallSize - 1, // Position slightly above paddle
-                    speedY: launchSpeedY,
-                    speedX: launchSpeedX,
-                    stuckOffset: undefined, // No longer stuck
-                    blackEndTime: resumedBlackEndTime ?? ball.blackEndTime,
-                    blueEndTime: resumedBlueEndTime ?? ball.blueEndTime,
-                    bigEndTime: resumedBigEndTime ?? ball.bigEndTime,
-                    splittingEndTime: resumedSplittingEndTime ?? ball.splittingEndTime,
-                    // Ensure paused durations are cleared
-                    blackPausedDuration: undefined,
-                    bluePausedDuration: undefined,
-                    bigPausedDuration: undefined,
-                    splittingPausedDuration: undefined,
-                };
-            });
-            // *** Ensure refs are updated correctly ***
-            ballsRef.current.push(...launchedBalls); // Add ALL launched balls to active balls
-            stuckBallsRef.current = []; // Clear ALL stuck balls
-        }
-    }, []); // Keep dependencies empty as refs don't need to be listed
-
-    const handlePowerUpToggle = useCallback((type: PowerUpType) => {
-        setEnabledPowerUps(prev => {
-            const next = new Set(prev);
-            if (next.has(type)) {
-                next.delete(type);
-            } else {
-                next.add(type);
-            }
-            return next;
-        });
-    }, []);
-
-    // Create a ref for the gameLoop function to avoid dependency issues in handleResetGame
+    // --- Game Loop --- 
+    // Ref for the gameLoop function itself to ensure the latest version is always called
     const gameLoopRef = useRef<(timestamp: number) => void>();
 
     useEffect(() => {
-        // Define gameLoop inside useEffect so it captures the latest state/refs
+        // Define gameLoop inside useEffect so it captures the latest state/refs from the hook
         const gameLoop = (timestamp: number) => {
-             // Check refs directly within the loop
-             if (!gameIsRunningRef.current) return; 
+            // Use the ref from useGameLogic directly
+             if (!gameStateRefs.gameIsRunningRef.current) return; 
+
              if (!lastTimeRef.current) lastTimeRef.current = timestamp;
              const elapsed = timestamp - lastTimeRef.current;
-             if (elapsed > fpsInterval) {
-                 lastTimeRef.current = timestamp - (elapsed % fpsInterval);
-                 const canvas = canvasRef.current;
-                 const ctx = canvas?.getContext('2d');
-                 // Update refs used by gameUpdate just before calling it
-                  const currentGameStateRefs: GameStateRefs = {
-                        paddleXRef, ballsRef, bricksRef, powerUpsRef, scoreRef, paddleWidthRef,
-                        widenLevelRef, laserShotsRef, lasersRef, safetyNetCountRef,
-                        gameIsRunningRef, gameOverStateRef, gameSpeedFactorRef,
-                        collectionFieldHeightRef, collectionFieldWidthOffsetRef,
-                        stickyPaddleChargesRef,
-                        stuckBallsRef,
-                        enabledPowerUpsRef, 
-                        isGameStartedRef,
-                    };
-                 if (ctx) {
-                     gameUpdate(ctx, currentGameStateRefs, gameLoopCallbacksRef.current); // Use ref for callbacks
-                 }
+             
+             // Don't skip frames, update lastTimeRef unconditionally
+             lastTimeRef.current = timestamp;
+
+             // Calculate raw deltaTime factor
+             const rawDeltaTime = elapsed / targetFrameTime;
+             // Cap the deltaTime to prevent excessive updates on frame drops
+             const deltaTime = Math.min(rawDeltaTime, MAX_DELTA_TIME_FACTOR);
+
+             const canvas = canvasRef.current;
+             const ctx = canvas?.getContext('2d');
+                 
+             // Pass the up-to-date refs, callbacks, and the (potentially capped) deltaTime
+             if (ctx && gameLoopCallbacksRef.current) {
+                 // Pass the refs object from useGameLogic and the capped deltaTime factor
+                 gameUpdate(ctx, gameStateRefs, gameLoopCallbacksRef.current, deltaTime); // Pass capped deltaTime
              }
+
+
             // Continue the loop if the game is still running
-            if (gameIsRunningRef.current) { 
-                animationFrameIdRef.current = requestAnimationFrame(gameLoopRef.current!); // Use ref
+            if (gameStateRefs.gameIsRunningRef.current) { 
+                animationFrameIdRef.current = requestAnimationFrame(gameLoopRef.current!); // Use ref to the loop function
             }
         };
-        gameLoopRef.current = gameLoop; // Store the latest gameLoop function in the ref
-    }); // No dependency array - captures latest state on every render
+        // Store the latest gameLoop function in the ref
+        gameLoopRef.current = gameLoop; 
+    }); // No dependency array needed here if it relies only on refs and callbacks stored in refs
 
-     // Ref for callbacks to avoid dependency issues
+    // --- Game Loop Callbacks --- 
+     // Ref for callbacks to avoid redefining gameLoop unnecessarily
      const gameLoopCallbacksRef = useRef<GameLoopCallbacks>();
      useEffect(() => {
+         // Update the callbacks ref with the latest functions from the hook
          gameLoopCallbacksRef.current = {
              updateScoreCallback,
-             setGameOverState,
-             schedulePaddleShrink,
-             scheduleFieldShrink,
-             drawEndMessage,
+             setGameOverState, // From useGameLogic
+             schedulePaddleShrink, // From useGameLogic
+             scheduleFieldShrink, // From useGameLogic
+             drawEndMessage: drawEndMessageCallback, // Use the local/imported draw function
          };
-     });
+     }, [updateScoreCallback, setGameOverState, schedulePaddleShrink, scheduleFieldShrink, drawEndMessageCallback]);
 
+    // --- Setup Canvas and Event Listeners --- 
     useEffect(() => {
-        setupInitialBall();
-    }, [setupInitialBall]); 
-
-    useEffect(() => {
-         const currentGameStateRefs: GameStateRefs = {
-            paddleXRef, ballsRef, bricksRef, powerUpsRef, scoreRef, paddleWidthRef,
-            widenLevelRef, laserShotsRef, lasersRef, safetyNetCountRef,
-            gameIsRunningRef, gameOverStateRef, gameSpeedFactorRef,
-            collectionFieldHeightRef, collectionFieldWidthOffsetRef,
-            stickyPaddleChargesRef,
-            stuckBallsRef,
-            enabledPowerUpsRef, 
-            isGameStartedRef,
-        };
+        // Note: handleResetGame and launchStuckBalls are now stable references from useGameLogic
 
         const cleanupCanvas = setupGameCanvas({
             gameContainerRef, 
@@ -331,18 +132,19 @@ export default function Home() {
             gameLoop: gameLoopRef.current!, // Pass the function from ref
             scaleRef, 
             animationFrameIdRef, 
-            handleResetGame, 
-            gameStateRefs: currentGameStateRefs, 
+            handleResetGame, // From useGameLogic
+            gameStateRefs, // Pass the refs object from useGameLogic
             gameLoopCallbacks: gameLoopCallbacksRef.current!, // Pass callbacks from ref
             lastTimeRef: lastTimeRef,
             totalSidebarSpace: TOTAL_SIDEBAR_SPACE,
             sidebarWidthPx: SIDEBAR_WIDTH_PX,
-            launchStuckBalls, 
+            launchStuckBalls: () => launchStuckBalls(true), // Initial launch on click
         });
 
         const handleContextMenu = (event: MouseEvent) => {
             event.preventDefault(); 
-            if (gameIsRunningRef.current && isGameStartedRef.current) { 
+            // Use refs from useGameLogic
+            if (gameStateRefs.gameIsRunningRef.current && gameStateRefs.isGameStartedRef.current) { 
                 launchStuckBalls(false); // Launch sticky balls straight up
             }
         };
@@ -352,15 +154,22 @@ export default function Home() {
             containerElement.addEventListener('contextmenu', handleContextMenu);
         }
 
-        // Start animation loop immediately if state is 'playing'
+        // Start animation loop if game state is 'playing'
         if (gameOverState === 'playing' && !animationFrameIdRef.current) {
            lastTimeRef.current = performance.now();
-           animationFrameIdRef.current = requestAnimationFrame(gameLoopRef.current!); // Use ref
+           // Ensure gameLoopRef.current is defined before requesting frame
+           if (gameLoopRef.current) {
+             animationFrameIdRef.current = requestAnimationFrame(gameLoopRef.current); 
+           }
         }
 
+        // Cleanup field shrink timer (moved responsibility partially to useGameLogic, but cleanup needs coordination)
         const fieldTimerCleanup = () => {
-             if (collectionFieldShrinkTimerRef.current) {
-                clearInterval(collectionFieldShrinkTimerRef.current);
+             const timerRef = gameStateRefs.collectionFieldShrinkTimerRef?.current; 
+             if (timerRef) {
+                clearInterval(timerRef);
+                // Optionally set the ref in useGameLogic to null here if needed, though hook manages it
+                // gameStateRefs.collectionFieldShrinkTimerRef.current = null;
              }
         };
 
@@ -370,51 +179,40 @@ export default function Home() {
             if (containerElement) {
                 containerElement.removeEventListener('contextmenu', handleContextMenu); 
             }
+            // Cancel animation frame on unmount or state change
             if (animationFrameIdRef.current) {
                  cancelAnimationFrame(animationFrameIdRef.current);
                  animationFrameIdRef.current = null;
             }
+            // Cleanup widen paddle timer on unmount
+            const widenTimerRef = gameStateRefs.widenTimeoutRef?.current;
+            if (widenTimerRef) {
+                clearTimeout(widenTimerRef);
+                // Optionally set the ref in useGameLogic to null here if needed
+                // gameStateRefs.widenTimeoutRef.current = null;
+            }
         };
-    // Explicitly list dependencies needed for setting up canvas and listeners
-    }, [gameOverState, handleResetGame, launchStuckBalls, setupInitialBall]); 
-
+    // Dependencies include states and callbacks that influence the setup or require cleanup coordination.
+    }, [gameOverState, handleResetGame, launchStuckBalls, gameStateRefs]); // Added gameStateRefs
 
     return (
         <div className="flex items-center justify-center h-screen bg-gray-900 p-4">
             <div 
                 ref={gameContainerRef} 
                 className="flex flex-row items-start border border-white" 
+                style={{ width: canvasWidth + TOTAL_SIDEBAR_SPACE, height: canvasHeight }} // Example dynamic sizing
             >
                 <canvas 
                     ref={canvasRef} 
-                    width={canvasWidth} 
+                    width={canvasWidth} // Use state for canvas dimensions
                     height={canvasHeight} 
                     className="block flex-shrink-0" 
+                    // Style canvas directly if needed, e.g., style={{ border: '1px solid white' }} 
                 />
-                <div 
-                    data-role="powerup-sidebar" 
-                    className="h-full p-4 border-l border-gray-700 bg-gray-800 text-white overflow-y-auto flex flex-col space-y-2 flex-shrink-0" 
-                >
-                    <h3 className="text-lg font-semibold mb-2 text-center sticky top-0 bg-gray-800 py-1">Enabled Power-ups</h3>
-                    {ALL_TOGGLEABLE_POWER_UPS.map(type => {
-                        const isEnabled = enabledPowerUps.has(type);
-                        const bgColor = isEnabled ? (POWER_UP_COLORS[type] || '#cccccc') : '#4a5568'; 
-                        const textColor = isEnabled && (type === 'BLACK_BALL' || type === 'ALL_IN_ONE') ? '#ffffff' : '#000000'; 
-                        return (
-                            <button
-                                key={type}
-                                onClick={() => handlePowerUpToggle(type)}
-                                className={`px-3 py-1 rounded text-sm font-medium transition-colors duration-150 w-full text-left focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-gray-800 focus:ring-white hover:opacity-80`}
-                                style={{
-                                    backgroundColor: bgColor,
-                                    color: textColor,
-                                }}
-                            >
-                                {type.replace(/_/g, ' ')} 
-                            </button>
-                        );
-                    })}
-                </div>
+                <PowerUpSidebar 
+                    enabledPowerUps={enabledPowerUps} // From useGameLogic
+                    onTogglePowerUp={handlePowerUpToggle} // From useGameLogic
+                />
             </div>
         </div>
     );

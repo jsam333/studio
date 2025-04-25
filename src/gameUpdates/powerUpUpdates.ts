@@ -2,20 +2,23 @@
 // src/gameUpdates/powerUpUpdates.ts
 import { PowerUp, PowerUpType } from '../interfaces';
 import { GameStateRefs } from '../interfaces'; // Corrected import path/type if needed
-import { BASE_POWER_UP_SPEED, BOARD_HEIGHT, PADDLE_HEIGHT, POWER_UP_SIZE } from '../constants'; // Reverted to BASE_POWER_UP_SPEED
+import { BASE_POWER_UP_SPEED, BOARD_HEIGHT, PADDLE_HEIGHT, POWER_UP_SIZE, PADDLE_Y } from '../constants'; // Reverted to BASE_POWER_UP_SPEED, Added PADDLE_Y
 
 export const updatePowerUps = (
     refs: GameStateRefs,
     gameSpeedFactor: number,
     newlySpawnedPowerUps: PowerUp[],
-    collectedPowerUpTypes: PowerUpType[] // Pass this array to add collected types
+    collectedPowerUpTypes: PowerUpType[], // Pass this array to add collected types
+    deltaTime: number // Add deltaTime parameter
 ): PowerUp[] => {
     const nextPowerUpsArray: PowerUp[] = [];
     // Reverted to BASE_POWER_UP_SPEED
     const currentPowerUpSpeed = BASE_POWER_UP_SPEED * gameSpeedFactor;
     const currentFieldHeight = refs.collectionFieldHeightRef.current;
     const currentFieldWidthOffset = refs.collectionFieldWidthOffsetRef.current;
-    const paddleTopY = BOARD_HEIGHT - PADDLE_HEIGHT;
+    // Use PADDLE_Y constant instead of calculating from BOARD_HEIGHT
+    // const paddleTopY = BOARD_HEIGHT - PADDLE_HEIGHT; // Less reliable if PADDLE_Y is defined
+    const paddleTopY = PADDLE_Y;
     const fieldTopY = paddleTopY - currentFieldHeight;
     const currentPaddleWidth = refs.paddleWidthRef.current;
     const currentPaddleX = refs.paddleXRef.current;
@@ -23,40 +26,53 @@ export const updatePowerUps = (
     const fieldRightX = currentPaddleX + currentPaddleWidth + currentFieldWidthOffset;
 
     refs.powerUpsRef.current.forEach(pu => {
-        const nextY = pu.y + currentPowerUpSpeed;
+        // Apply deltaTime to movement
+        const movement = currentPowerUpSpeed * deltaTime;
+        const nextY = pu.y + movement;
         let collected = false;
         let keep = true;
 
         if (pu.status === 'falling') {
-            // Check collision with paddle
-            if (nextY + POWER_UP_SIZE > paddleTopY && nextY < paddleTopY + currentPowerUpSpeed /* Check if crossed paddle top line */) {
-                if (pu.x + POWER_UP_SIZE > currentPaddleX && pu.x < currentPaddleX + currentPaddleWidth) {
+            const puBottom = nextY + POWER_UP_SIZE;
+            const puRight = pu.x + POWER_UP_SIZE;
+
+            // Check collision with paddle area (Simplified AABB check)
+            // Check if vertical range overlaps paddle's vertical range and horizontal range overlaps paddle's horizontal range
+            if (puBottom >= paddleTopY && // Bottom edge is at or below paddle top
+                nextY < paddleTopY + PADDLE_HEIGHT && // Top edge is above paddle bottom (using nextY, simplified)
+                puRight > currentPaddleX && // Right edge is past paddle left
+                pu.x < currentPaddleX + currentPaddleWidth) // Left edge is before paddle right
+            {
+                collected = true;
+            }
+
+            // Check collision with collection field (if active and not already collected)
+            if (!collected && (currentFieldHeight > 0 || currentFieldWidthOffset > 0)) {
+                if (puRight > fieldLeftX && // Right edge past field left
+                    pu.x < fieldRightX && // Left edge before field right
+                    puBottom > fieldTopY && // Bottom edge below field top
+                    nextY < paddleTopY) // Top edge above paddle top (ensures it's in the field area)
+                {
                     collected = true;
                 }
             }
 
-            // Check collision with collection field (if active)
-            if (!collected && (currentFieldHeight > 0 || currentFieldWidthOffset > 0)) {
-                const puBottom = nextY + POWER_UP_SIZE;
-                const puRight = pu.x + POWER_UP_SIZE;
-                if (puRight > fieldLeftX && pu.x < fieldRightX && puBottom > fieldTopY && nextY < paddleTopY) {
-                    collected = true;
-                }
-            }
 
             if (collected) {
                 keep = false;
                 collectedPowerUpTypes.push(pu.type);
-            } else if (nextY >= BOARD_HEIGHT) {
+            } else if (nextY >= BOARD_HEIGHT) { // Check against BOARD_HEIGHT
                 // Fell off screen
                 keep = false;
             }
         }
 
         if (keep) {
+            // Only update position if not collected or fallen off
             nextPowerUpsArray.push({ ...pu, y: nextY });
         }
     });
 
+    // Combine existing (kept) power-ups with newly spawned ones
     return nextPowerUpsArray.concat(newlySpawnedPowerUps);
 };

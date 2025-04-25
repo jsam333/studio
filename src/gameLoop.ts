@@ -17,6 +17,7 @@ export const gameUpdate = (
     ctx: CanvasRenderingContext2D,
     refs: GameStateRefs,
     callbacks: GameLoopCallbacks,
+    deltaTime: number // Add deltaTime parameter
 ) => {
     // --- Check Game Over State FIRST ---
     // This check ensures that if the game ended on a *previous* frame, 
@@ -34,7 +35,8 @@ export const gameUpdate = (
     const previousBallCount = refs.ballsRef.current.length + refs.stuckBallsRef.current.length; // Store ball count *before* updates
 
     // --- Update Ball Positions (Stuck & Active) ---
-    updateBalls(refs, callbacks, spawnRequests, currentTime, gameSpeedFactor);
+    // Pass deltaTime to updateBalls
+    updateBalls(refs, callbacks, spawnRequests, currentTime, gameSpeedFactor, deltaTime);
 
     // --- Pre-Start State Check ---
     if (!refs.isGameStartedRef.current) {
@@ -55,7 +57,8 @@ export const gameUpdate = (
     let collectedPowerUpTypes: PowerUpType[] = []; 
     
     // --- Updates ---
-    updateLasers(refs, callbacks, spawnRequests, currentTime); 
+    // Pass deltaTime to updateLasers
+    updateLasers(refs, callbacks, spawnRequests, currentTime, deltaTime); 
 
     // Process spawn requests 
     let newlySpawnedPowerUps: PowerUp[] = [];
@@ -66,7 +69,8 @@ export const gameUpdate = (
     });
 
     // Update power-ups
-    refs.powerUpsRef.current = updatePowerUps( refs, gameSpeedFactor, newlySpawnedPowerUps, collectedPowerUpTypes );
+    // Pass deltaTime to updatePowerUps
+    refs.powerUpsRef.current = updatePowerUps( refs, gameSpeedFactor, newlySpawnedPowerUps, collectedPowerUpTypes, deltaTime );
 
     // Apply effects
     applyPowerUpEffects(refs, callbacks, collectedPowerUpTypes, currentTime, gameSpeedFactor);
