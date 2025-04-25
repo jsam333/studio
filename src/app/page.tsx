@@ -22,11 +22,12 @@ export default function Home() {
     const animationFrameIdRef = useRef<number | null>(null);
     const lastTimeRef = useRef<number>(0);
 
-    // Get startNextLevel from the hook
+    // Get currentLevel and startNextLevel from the hook
     const {
         gameOverState,
         enabledPowerUps,
         showSidebar, 
+        currentLevel, // Get current level number
         setGameOverState,
         updateScoreCallback,
         handleResetGame,
@@ -35,7 +36,7 @@ export default function Home() {
         schedulePaddleShrink,
         scheduleFieldShrink,
         startGame, 
-        startNextLevel, // Get the new function
+        startNextLevel, 
         gameStateRefs, 
     } = useGameLogic();
 
@@ -194,12 +195,12 @@ export default function Home() {
         return (
             <div className="flex flex-col items-center justify-center h-screen bg-gray-800 text-white">
                 <h1 className="text-6xl font-bold mb-12">shop</h1> 
-                {/* Add the button to start Level 2 */}
+                {/* Use currentLevel to display the next level number */}
                  <Button 
-                    onClick={startNextLevel} // Call the new function from the hook
+                    onClick={startNextLevel} 
                     className="mb-4 px-6 py-3 text-lg bg-purple-600 hover:bg-purple-700"
                 >
-                    Start Level 2
+                    Start Level {currentLevel + 1}
                 </Button>
                 <Button 
                     onClick={handleResetGame} 

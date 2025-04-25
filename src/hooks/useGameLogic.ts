@@ -6,7 +6,8 @@ import {
     BALL_SIZE, BIG_BALL_SIZE_INCREASE, PADDLE_Y, INITIAL_BALL_SPEED_Y,
     PADDLE_WIDEN_INCREMENT, FIELD_SHRINK_RATE_H, FIELD_SHRINK_RATE_W,
     FIELD_SHRINK_INTERVAL,
-    BRICK_COLUMNS, BRICK_ROWS 
+    BRICK_COLUMNS, BRICK_ROWS, 
+    BRICK_HEIGHT, TALL_BRICK_HEIGHT // Import height constants
 } from '../constants';
 import { Ball, Brick, PowerUp, Laser, PowerUpType, GameState, GameMode, GameStateRefs as IGameStateRefs } from '../interfaces';
 import { initializeBricks, initialBallState } from '../gameLogic';
@@ -17,6 +18,7 @@ export interface GameStateRefs extends IGameStateRefs {
     collectionFieldShrinkTimerRef?: React.MutableRefObject<NodeJS.Timeout | null>;
     animationFrameIdRef?: React.MutableRefObject<number | null>; 
     lastTimeRef?: React.MutableRefObject<number>; 
+    currentLevelRef: React.MutableRefObject<number>; 
 }
 
 export function useGameLogic() {
@@ -43,6 +45,7 @@ export function useGameLogic() {
     const gameModeRef = useRef<GameMode | null>(null); 
     const brickColumnsRef = useRef<number>(BRICK_COLUMNS);
     const brickRowsRef = useRef<number>(BRICK_ROWS);
+    const currentLevelRef = useRef<number>(1); 
 
     const [gameOverState, setGameOverState] = useState<GameState>('menu');
     const gameOverStateRef = useRef(gameOverState); 
@@ -131,18 +134,48 @@ export function useGameLogic() {
         }, FIELD_SHRINK_INTERVAL); 
     }, []);
 
+    // Updated resetLevel to pass correct height to initializeBricks
     const resetLevel = useCallback((mode: GameMode | null) => {
         const currentMode = mode ?? gameModeRef.current; 
         if (!currentMode) return; 
-        const cols = currentMode === 'main' ? 4 : BRICK_COLUMNS;
-        const rows = currentMode === 'main' ? 2 : BRICK_ROWS;
+        
+        let cols = BRICK_COLUMNS; 
+        let rows = BRICK_ROWS;    
+        let targetHeight = BRICK_HEIGHT; // Default height
+
+        if (currentMode === 'main') {
+            const level = currentLevelRef.current;
+            if (level === 1) {
+                cols = 3;
+                rows = 2;
+                targetHeight = TALL_BRICK_HEIGHT; // Level 1 uses tall bricks
+            } else if (level === 2) {
+                cols = 4;
+                rows = 3;
+                targetHeight = TALL_BRICK_HEIGHT; // Level 2 uses tall bricks
+            } else if (level === 3) {
+                cols = 5;
+                rows = 4;
+                targetHeight = TALL_BRICK_HEIGHT; // Level 3 uses tall bricks
+            } else {
+                // Default for levels 4+
+                cols = 4; 
+                rows = 2; 
+                targetHeight = BRICK_HEIGHT; // Levels 4+ use default height
+            }
+        } else { 
+            // Test mode uses default height
+            targetHeight = BRICK_HEIGHT;
+        }
+
         brickColumnsRef.current = cols;
         brickRowsRef.current = rows;
-        bricksRef.current = initializeBricks(cols, rows);
+        // Pass the determined targetHeight to initializeBricks
+        bricksRef.current = initializeBricks(cols, rows, targetHeight);
+        
+        // Reset other game elements
         powerUpsRef.current = [];
         lasersRef.current = [];
-        // Keep score between levels? For now, reset it.
-        // scoreRef.current = 0; 
         widenLevelRef.current = 0;
         laserShotsRef.current = 0;
         safetyNetCountRef.current = 0;
@@ -159,9 +192,9 @@ export function useGameLogic() {
         isGameStartedRef.current = false; 
         if (widenTimeoutRef.current) { clearTimeout(widenTimeoutRef.current); widenTimeoutRef.current = null; }
         if (collectionFieldShrinkTimerRef.current) { clearInterval(collectionFieldShrinkTimerRef.current); collectionFieldShrinkTimerRef.current = null; }
-        // Reset score when going back to menu
         scoreRef.current = 0; 
-        resetLevel(null); // Reset using stored mode, but doesn't matter much as we go to menu
+        currentLevelRef.current = 1; 
+        resetLevel(null); 
         setGameOverState('menu');
         setShowSidebar(false); 
         gameModeRef.current = null; 
@@ -234,10 +267,10 @@ export function useGameLogic() {
         });
     }, []); 
 
-    // Function to start the initial game from the menu
     const startGame = useCallback((mode: GameMode) => {
         if (gameOverStateRef.current === 'menu') {
-            scoreRef.current = 0; // Reset score when starting from menu
+            scoreRef.current = 0; 
+            currentLevelRef.current = 1; 
             gameModeRef.current = mode; 
             resetLevel(mode); 
             setShowSidebar(mode === 'test');
@@ -245,15 +278,13 @@ export function useGameLogic() {
         }
     }, [resetLevel]); 
 
-    // New function to start the next level (e.g., from the shop)
     const startNextLevel = useCallback(() => {
-        // Currently, just restarts level 1 (main mode)
-        // Score is NOT reset here, allowing accumulation
         if (gameOverStateRef.current === 'shop') {
-            const nextMode: GameMode = 'main'; // Or determine next level logic here
+            currentLevelRef.current++; 
+            const nextMode: GameMode = 'main'; 
             gameModeRef.current = nextMode;
             resetLevel(nextMode); 
-            setShowSidebar(false); // Assuming next levels don't have sidebar by default
+            setShowSidebar(false); 
             setGameOverState('playing');
         }
     }, [resetLevel]);
@@ -267,12 +298,14 @@ export function useGameLogic() {
         widenTimeoutRef, collectionFieldShrinkTimerRef,
         brickColumnsRef, brickRowsRef, 
         gameModeRef, 
+        currentLevelRef, 
     };
 
     return {
         gameOverState,
         enabledPowerUps,
         showSidebar,
+        currentLevel: currentLevelRef.current, 
         setGameOverState, 
         updateScoreCallback,
         handleResetGame,
@@ -281,7 +314,7 @@ export function useGameLogic() {
         schedulePaddleShrink,
         scheduleFieldShrink,
         startGame,
-        startNextLevel, // Expose the new function
+        startNextLevel, 
         gameStateRefs,
     };
 }

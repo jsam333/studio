@@ -1,25 +1,22 @@
 import { Brick, CollisionResult, Ball, SpawnMarker, PowerUpSpawnEvent } from './interfaces';
 import {
     BOARD_WIDTH, BOARD_HEIGHT, BALL_SIZE, BIG_BALL_SIZE_INCREASE, PADDLE_Y, 
-    BRICK_HEIGHT, LEVEL1_BRICK_HEIGHT, // Use both height constants
+    // Removed BRICK_HEIGHT, LEVEL1_BRICK_HEIGHT constants from import as height is passed in
     BRICK_PADDING, BRICK_OFFSET_LEFT, BRICK_OFFSET_TOP,
     NORMAL_BRICK_STRENGTH, REINFORCED_BRICK_STRENGTH, UPGRADED_BRICK_STRENGTH, BUILDER_BRICK_STRENGTH,
     REINFORCED_BRICK_POINTS, NORMAL_BRICK_POINTS, SPECIAL_BRICK_POINTS, UPGRADED_BRICK_POINTS, BUILDER_BRICK_POINTS,
     MAX_BRICK_UPGRADE_LEVEL, BOMB_BRICK_POINTS, BOMB_DAMAGE_POINTS, INITIAL_PADDLE_WIDTH
 } from './constants';
 
-// Updated initializeBricks to calculate width dynamically and use conditional height
-export const initializeBricks = (columns: number, rows: number): Brick[][] => {
+// Updated initializeBricks to accept target brick height
+export const initializeBricks = (columns: number, rows: number, brickHeight: number): Brick[][] => {
     const newBricks: Brick[][] = [];
     
-    // Calculate available width and dynamic brick width
     const availableWidth = BOARD_WIDTH - 2 * BRICK_OFFSET_LEFT;
     const totalPaddingWidth = (columns - 1) * BRICK_PADDING;
     const calculatedBrickWidth = (availableWidth - totalPaddingWidth) / columns;
-    
-    // Determine brick height based on the number of columns (simple check for level 1)
-    const isLevel1 = columns === 4; 
-    const calculatedBrickHeight = isLevel1 ? LEVEL1_BRICK_HEIGHT : BRICK_HEIGHT;
+    // Use the passed brickHeight parameter
+    const calculatedBrickHeight = brickHeight; 
 
     for (let c = 0; c < columns; c++) {
       newBricks[c] = [];
@@ -66,7 +63,6 @@ export const initialBallState: Ball = {
   isHoming: false,
 };
 
-// Update damageBrick to use brick dimensions and pass width to spawn event
 const damageBrick = (brick: Brick, bricks: Brick[][], columns: number, rows: number, spawnEvents: PowerUpSpawnEvent[]): number => {
     let points = 0;
     let destroyed = false;
@@ -88,7 +84,6 @@ const damageBrick = (brick: Brick, bricks: Brick[][], columns: number, rows: num
     return points;
 };
 
-// Update handleBombExplosion to use brick dimensions
 const handleBombExplosion = (
     bombC: number, bombR: number,
     bricks: Brick[][],
@@ -116,7 +111,6 @@ const handleBombExplosion = (
     return explosionPoints;
 };
 
-// Update checkBrickCollision to use brick dimensions
 export const checkBrickCollision = (
     ball: Ball,
     bricks: Brick[][],
