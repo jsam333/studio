@@ -93,10 +93,9 @@ export const applyPowerUpEffects = (
             }
             case 'SPEED_UP': {
                 const previousFactor = refs.gameSpeedFactorRef.current;
-                // Reverted to use SPEED_UP_INCREMENT constant
-                refs.gameSpeedFactorRef.current += SPEED_UP_INCREMENT;
-                const newFactor = refs.gameSpeedFactorRef.current;
-                const actualIncreaseFactor = newFactor / previousFactor;
+                const newFactor = previousFactor * 1.02; // Apply 2% increase
+                refs.gameSpeedFactorRef.current = newFactor;
+                const actualIncreaseFactor = 1.02; // The increase factor is exactly 2%
                 refs.ballsRef.current.forEach(ball => {
                     ball.speedX *= actualIncreaseFactor;
                     ball.speedY *= actualIncreaseFactor;
