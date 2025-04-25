@@ -67,11 +67,17 @@ export const setupGameCanvas = ({
         gameContainer.style.width = `${scaledCanvasWidth + scaledSidebarWidth}px`;
         gameContainer.style.height = `${scaledCanvasHeight}px`;
 
+        // Set the actual canvas drawing buffer size for sharpness
+        canvas.width = scaledCanvasWidth;
+        canvas.height = scaledCanvasHeight;
+
+        // Set the display size of the canvas element (optional, but good practice)
         canvas.style.width = `${scaledCanvasWidth}px`;
         canvas.style.height = `${scaledCanvasHeight}px`;
-        canvas.width = BOARD_WIDTH;
-        canvas.height = BOARD_HEIGHT;
+        
+        // Reset transform and apply scale for drawing operations
         ctx.setTransform(1, 0, 0, 1, 0, 0); 
+        ctx.scale(scale, scale); 
 
         if (sidebarElement) {
             sidebarElement.style.width = `${scaledSidebarWidth}px`;
@@ -80,6 +86,7 @@ export const setupGameCanvas = ({
         
         const currentState = gameStateRefs.gameOverStateRef.current;
         if (currentState === 'won' || currentState === 'lost') {
+             // Clear with scaled dimensions, but drawing uses logical coordinates due to ctx.scale
              ctx.clearRect(0, 0, BOARD_WIDTH, BOARD_HEIGHT); 
              if (gameLoopCallbacks?.drawEndMessage) {
                  gameLoopCallbacks.drawEndMessage(ctx, currentState, gameStateRefs.scoreRef.current);
@@ -91,6 +98,9 @@ export const setupGameCanvas = ({
     const updatePaddlePosition = (clientX: number) => {
         if (gameStateRefs.gameOverStateRef.current !== 'playing' || !canvas) return;
         const rect = canvas.getBoundingClientRect();
+        // clientX is relative to the viewport. rect.left is the canvas's left edge relative to the viewport.
+        // (clientX - rect.left) gives the click position relative to the canvas's display area.
+        // Dividing by currentScale converts the display coordinate back to the logical coordinate system (0 to BOARD_WIDTH).
         const currentScale = scaleRef.current; 
         const logicalMouseX = (clientX - rect.left) / currentScale; 
         let newPaddleX = logicalMouseX - gameStateRefs.paddleWidthRef.current / 2;
@@ -215,6 +225,9 @@ export const setupGameCanvas = ({
              gameContainer.style.height = '';
         }
         if (canvas) {
+            // Reset canvas size on cleanup if needed, though often not necessary
+            // canvas.width = BOARD_WIDTH; 
+            // canvas.height = BOARD_HEIGHT;
             canvas.style.width = '';
             canvas.style.height = '';
         }
