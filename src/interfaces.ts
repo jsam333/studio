@@ -3,6 +3,8 @@ import React from 'react'; // Required for MutableRefObject
 export interface Brick {
   x: number;
   y: number;
+  width: number; // Added width
+  height: number; // Added height
   status: number;     // 1 = active, 0 = destroyed
   strength: number;   // Conceptual base strength (usually 1)
   isSpecial: boolean;
@@ -10,12 +12,12 @@ export interface Brick {
   isBomb?: boolean; // Added: To mark bomb bricks
 }
 
-export type PowerUpType = 
-    'MULTI_BALL' | 'WIDEN_PADDLE' | 'LASER_PADDLE' | 'REGEN_BRICK' | 
-    'SAFETY_NET' | 'REINFORCE_BRICK' | 'MAKE_SPECIAL' | 'BLACK_BALL' | 
-    'ALL_IN_ONE' | 'PIERCE_BALL' | 'UPGRADE_BRICK' | 'BUILDER_BALL' | 
-    'BIG_BALL' | 'SPLITTING_BALL' | 'SPEED_UP' | 'COLLECTION_FIELD' | 
-    'HOMING_BALL' | 'BOMB_BRICK' | 'STICKY_PADDLE' | 'NONE'; 
+export type PowerUpType =
+    'MULTI_BALL' | 'WIDEN_PADDLE' | 'LASER_PADDLE' | 'REGEN_BRICK' |
+    'SAFETY_NET' | 'REINFORCE_BRICK' | 'MAKE_SPECIAL' | 'BLACK_BALL' |
+    'ALL_IN_ONE' | 'PIERCE_BALL' | 'UPGRADE_BRICK' | 'BUILDER_BALL' |
+    'BIG_BALL' | 'SPLITTING_BALL' | 'SPEED_UP' | 'COLLECTION_FIELD' |
+    'HOMING_BALL' | 'BOMB_BRICK' | 'STICKY_PADDLE' | 'NONE';
 
 export interface PowerUp {
   x: number;
@@ -34,18 +36,18 @@ export interface Ball {
   id: number;
   isBlack?: boolean;
   blackEndTime?: number;
-  blackPausedDuration?: number; 
-  pierceHitsRemaining?: number; 
-  isBlue?: boolean;      
-  blueEndTime?: number; 
-  bluePausedDuration?: number; 
-  isBig?: boolean;      
-  bigEndTime?: number; 
-  bigPausedDuration?: number; 
-  isSplitting?: boolean;  
-  splittingEndTime?: number; 
-  splittingPausedDuration?: number; 
-  isHoming?: boolean;     
+  blackPausedDuration?: number;
+  pierceHitsRemaining?: number;
+  isBlue?: boolean;
+  blueEndTime?: number;
+  bluePausedDuration?: number;
+  isBig?: boolean;
+  bigEndTime?: number;
+  bigPausedDuration?: number;
+  isSplitting?: boolean;
+  splittingEndTime?: number;
+  splittingPausedDuration?: number;
+  isHoming?: boolean;
   stuckOffset?: number; // Used for sticky paddle AND initial game start
 }
 
@@ -55,17 +57,18 @@ export interface PowerUpSpawnEvent {
     marker: SpawnMarker;
     brickX: number;
     brickY: number;
+    brickWidth: number; // Added brickWidth
 }
 
 export interface CollisionResult {
   collision: boolean;
   newSpeedX: number;
   newSpeedY: number;
-  spawnEvents: PowerUpSpawnEvent[]; 
+  spawnEvents: PowerUpSpawnEvent[];
   pointsAwarded: number;
-  pierceOccurred: boolean;       
-  builderHitOccurred: boolean; 
-  brickHit: boolean; 
+  pierceOccurred: boolean;
+  builderHitOccurred: boolean;
+  brickHit: boolean;
 }
 
 export interface Laser {
@@ -77,7 +80,12 @@ export interface Laser {
     id: number;
 }
 
-export interface GameStateRefs {
+// Define the possible game states
+export type GameState = 'menu' | 'playing' | 'won' | 'lost';
+
+// This interface is defined in useGameLogic and extended there
+// Adding dimension refs here for clarity of what's expected
+export interface GameStateRefsBase {
     paddleXRef: React.MutableRefObject<number>;
     ballsRef: React.MutableRefObject<Ball[]>;
     bricksRef: React.MutableRefObject<Brick[][]>;
@@ -89,19 +97,30 @@ export interface GameStateRefs {
     lasersRef: React.MutableRefObject<Laser[]>;
     safetyNetCountRef: React.MutableRefObject<number>;
     gameIsRunningRef: React.MutableRefObject<boolean>;
-    gameOverStateRef: React.MutableRefObject<'playing' | 'won' | 'lost'>;
+    gameOverStateRef: React.MutableRefObject<GameState>;
     gameSpeedFactorRef: React.MutableRefObject<number>;
     collectionFieldHeightRef: React.MutableRefObject<number>;
     collectionFieldWidthOffsetRef: React.MutableRefObject<number>;
-    stickyPaddleChargesRef: React.MutableRefObject<number>; 
-    stuckBallsRef: React.MutableRefObject<Ball[]>; 
+    stickyPaddleChargesRef: React.MutableRefObject<number>;
+    stuckBallsRef: React.MutableRefObject<Ball[]>;
     enabledPowerUpsRef: React.MutableRefObject<Set<PowerUpType>>;
-    isGameStartedRef: React.MutableRefObject<boolean>; // Added flag
+    isGameStartedRef: React.MutableRefObject<boolean>;
+    brickColumnsRef: React.MutableRefObject<number>; // Added dimension ref
+    brickRowsRef: React.MutableRefObject<number>;    // Added dimension ref
+}
+
+// Actual type used will extend this base in useGameLogic.ts
+export interface GameStateRefs extends GameStateRefsBase {
+    // Additional refs like timers can be added by the hook
+    widenTimeoutRef?: React.MutableRefObject<NodeJS.Timeout | null>;
+    collectionFieldShrinkTimerRef?: React.MutableRefObject<NodeJS.Timeout | null>;
+    animationFrameIdRef?: React.MutableRefObject<number | null>; 
+    lastTimeRef?: React.MutableRefObject<number>; 
 }
 
 export interface GameLoopCallbacks {
     updateScoreCallback: (points: number) => void;
-    setGameOverState: React.Dispatch<React.SetStateAction<'playing' | 'won' | 'lost'>>;
+    setGameOverState: React.Dispatch<React.SetStateAction<GameState>>;
     schedulePaddleShrink: () => void;
     scheduleFieldShrink: () => void;
     drawEndMessage: (context: CanvasRenderingContext2D, state: 'won' | 'lost', finalScore: number) => void;

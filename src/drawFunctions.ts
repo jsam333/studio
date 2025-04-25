@@ -1,6 +1,6 @@
 import { Brick, PowerUp, Ball, Laser, PowerUpType, GameStateRefs } from './interfaces';
 import {
-    BOARD_WIDTH, BOARD_HEIGHT, PADDLE_HEIGHT, BALL_SIZE, BRICK_WIDTH, BRICK_HEIGHT, PADDLE_Y,
+    BOARD_WIDTH, BOARD_HEIGHT, PADDLE_HEIGHT, BALL_SIZE, /*Removed BRICK_WIDTH, BRICK_HEIGHT */ PADDLE_Y,
     BRICK_PADDING, BRICK_OFFSET_LEFT, BRICK_OFFSET_TOP, POWER_UP_SIZE,
     INITIAL_PADDLE_WIDTH, LASER_WIDTH, SAFETY_NET_HEIGHT,
     LASER_STRIPE_WIDTH_PER_SHOT,
@@ -13,41 +13,35 @@ import {
     BOMB_BRICK_COLOR
 } from './constants';
 
-// Draw Paddle - Updated for sticky charges
+// Draw Paddle
 export const drawPaddle = (
     ctx: CanvasRenderingContext2D,
     paddleX: number,
     currentWidth: number = INITIAL_PADDLE_WIDTH,
     laserShots: number = 0,
-    stickyCharges: number = 0 // Changed parameter to stickyCharges
+    stickyCharges: number = 0 
 ) => {
-  // Base paddle color
   ctx.fillStyle = "#ffffff";
   ctx.beginPath();
   ctx.rect(paddleX, PADDLE_Y, currentWidth, PADDLE_HEIGHT);
   ctx.fill();
   ctx.closePath();
 
-  // Sticky Paddle Indicator (Golden Overlay & Charge Count)
   if (stickyCharges > 0) {
-      // Overlay
-      ctx.fillStyle = POWER_UP_COLORS['STICKY_PADDLE'] + '99'; // GoldenRod with alpha
+      ctx.fillStyle = POWER_UP_COLORS['STICKY_PADDLE'] + '99'; 
       ctx.beginPath();
       ctx.rect(paddleX, PADDLE_Y, currentWidth, PADDLE_HEIGHT);
       ctx.fill();
       ctx.closePath();
-
-      // Charge Count Text
       ctx.save();
       ctx.font = "bold 12px Arial";
-      ctx.fillStyle = "#000000"; // Black text for visibility on gold
+      ctx.fillStyle = "#000000"; 
       ctx.textAlign = "center";
       ctx.textBaseline = "middle";
-      ctx.fillText(`${stickyCharges}`, paddleX + currentWidth / 2, PADDLE_Y + PADDLE_HEIGHT / 2 + 1); // Center text
+      ctx.fillText(`${stickyCharges}`, paddleX + currentWidth / 2, PADDLE_Y + PADDLE_HEIGHT / 2 + 1);
       ctx.restore();
   }
 
-  // Laser Stripe Indicator
   if (laserShots > 0) {
       const stripeTotalWidth = laserShots * LASER_STRIPE_WIDTH_PER_SHOT;
       const clampedStripeWidth = Math.min(stripeTotalWidth, currentWidth - 2);
@@ -63,7 +57,7 @@ export const drawPaddle = (
   }
 };
 
-// Draw Collection Field (Expanding Rectangular) - Unchanged
+// Draw Collection Field
 export const drawCollectionFieldRect = (
     ctx: CanvasRenderingContext2D,
     paddleX: number,
@@ -109,7 +103,7 @@ export const drawCollectionFieldRect = (
 };
 
 
-// Draw Balls - Unchanged (logic handles active vs stuck)
+// Draw Balls
 export const drawBalls = (ctx: CanvasRenderingContext2D, allBalls: Ball[]) => {
   allBalls.forEach(ball => {
     ctx.save();
@@ -118,7 +112,7 @@ export const drawBalls = (ctx: CanvasRenderingContext2D, allBalls: Ball[]) => {
     ctx.arc(ball.x, ball.y, currentRadius, 0, Math.PI * 2);
 
     if (ball.stuckOffset !== undefined) {
-        ctx.fillStyle = "#cccccc"; // Indicate stuck ball visually
+        ctx.fillStyle = "#cccccc"; 
     } else if (ball.isHoming) {
         ctx.fillStyle = POWER_UP_COLORS['HOMING_BALL'] || '#f1c40f';
     } else if (ball.isSplitting) {
@@ -147,16 +141,17 @@ export const drawBalls = (ctx: CanvasRenderingContext2D, allBalls: Ball[]) => {
   });
 };
 
-// Draw Bricks - Unchanged
-export const drawBricks = (ctx: CanvasRenderingContext2D, bricks: Brick[][]) => {
+// Draw Bricks - Updated to use brick.width and brick.height
+export const drawBricks = (ctx: CanvasRenderingContext2D, bricks: Brick[][], columns: number, rows: number) => {
   if (!bricks) return;
-  for (let c = 0; c < bricks.length; c++) {
+  for (let c = 0; c < columns; c++) {
     if (!bricks[c]) continue;
-    for (let r = 0; r < bricks[c].length; r++) {
+    for (let r = 0; r < rows; r++) {
         const brick = bricks[c][r];
-        if (brick.status === 1) {
+        if (brick && brick.status === 1) { 
             ctx.beginPath();
-            ctx.rect(brick.x, brick.y, BRICK_WIDTH, BRICK_HEIGHT);
+            // Use brick.width and brick.height from the object
+            ctx.rect(brick.x, brick.y, brick.width, brick.height);
             if (brick.isBomb) {
                 ctx.fillStyle = BOMB_BRICK_COLOR;
             } else if (brick.isSpecial) {
@@ -173,10 +168,11 @@ export const drawBricks = (ctx: CanvasRenderingContext2D, bricks: Brick[][]) => 
             ctx.fill();
             ctx.closePath();
 
+            // Use brick.width for bomb indicator size
             if (brick.isBomb) {
                 ctx.fillStyle = '#000000';
                 ctx.beginPath();
-                ctx.arc(brick.x + BRICK_WIDTH / 2, brick.y + BRICK_HEIGHT / 2, BRICK_WIDTH / 4, 0, Math.PI * 2);
+                ctx.arc(brick.x + brick.width / 2, brick.y + brick.height / 2, brick.width / 4, 0, Math.PI * 2);
                 ctx.fill();
                 ctx.closePath();
             }
@@ -185,13 +181,13 @@ export const drawBricks = (ctx: CanvasRenderingContext2D, bricks: Brick[][]) => 
   }
 };
 
-// Draw Score - Unchanged
+// Draw Score
 export const drawScore = (ctx: CanvasRenderingContext2D, score: number) => {
   ctx.font = "16px Arial"; ctx.fillStyle = "#ffffff"; ctx.textAlign = 'left'; ctx.fillText("Score: " + score, 8, 20);
 };
 
 
-// Draw PowerUps - Unchanged
+// Draw PowerUps
 export const drawPowerUps = (ctx: CanvasRenderingContext2D, powerUps: PowerUp[]) => {
   const currentTime = Date.now();
   powerUps.forEach(powerUp => {
@@ -215,23 +211,20 @@ export const drawPowerUps = (ctx: CanvasRenderingContext2D, powerUps: PowerUp[])
 };
 
 
-// Draw Lasers - Unchanged
+// Draw Lasers
 export const drawLasers = (ctx: CanvasRenderingContext2D, lasers: Laser[]) => {
     lasers.forEach(laser => { ctx.beginPath(); ctx.rect(laser.x, laser.y, laser.width, laser.height); ctx.fillStyle = "#e74c3c"; ctx.fill(); ctx.closePath(); });
 };
 
 
-// Draw Safety Net - Stacking from Bottom
+// Draw Safety Net
 export const drawSafetyNet = (ctx: CanvasRenderingContext2D, count: number) => {
     if (count > 0) {
       ctx.save();
-      // Use the SAFETY_NET color from constants, add alpha
-      ctx.fillStyle = POWER_UP_COLORS['SAFETY_NET'] + 'CC'; // CC for ~80% opacity
+      ctx.fillStyle = POWER_UP_COLORS['SAFETY_NET'] + 'CC'; 
       for (let i = 0; i < count; i++) {
          ctx.beginPath();
-         // Corrected yPosition calculation to draw stacking from the bottom of the board
          const yPosition = BOARD_HEIGHT - (i + 1) * SAFETY_NET_HEIGHT;
-         // Ensure lines don't draw off-screen if too many nets are collected (optional safety)
          if (yPosition < 0) continue;
          ctx.rect(0, yPosition, BOARD_WIDTH, SAFETY_NET_HEIGHT);
          ctx.fill();

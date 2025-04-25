@@ -2,10 +2,13 @@
 import { GameStateRefs, GameLoopCallbacks } from '../interfaces';
 
 // This function now returns the determined game state
+// And accepts grid dimensions
 export const checkGameStatus = (
     refs: GameStateRefs,
     callbacks: GameLoopCallbacks,
-    previousBallCount: number
+    previousBallCount: number,
+    columns: number, // Add grid dimensions
+    rows: number     // Add grid dimensions
 ): 'playing' | 'won' | 'lost' => {
     let currentGameOverState: 'playing' | 'won' | 'lost' = 'playing';
 
@@ -14,21 +17,28 @@ export const checkGameStatus = (
         currentGameOverState = 'lost';
     }
 
-    // Check for win condition
-    const remainingBricks = refs.bricksRef.current.flat().filter(brick => brick?.status === 1).length;
+    // Check for win condition using provided dimensions
+    let remainingBricks = 0;
+    for (let c = 0; c < columns; c++) {
+        if (!refs.bricksRef.current[c]) continue;
+        for (let r = 0; r < rows; r++) {
+            if (refs.bricksRef.current[c]?.[r]?.status === 1) {
+                remainingBricks++;
+            }
+        }
+    }
+    
     if (remainingBricks === 0 && refs.scoreRef.current > 0 && currentGameOverState === 'playing') {
         currentGameOverState = 'won';
     }
 
     // Handle Game End state update if necessary
     if (currentGameOverState !== 'playing') {
-        // Only update state if it has changed
         if (refs.gameOverStateRef.current !== currentGameOverState) {
              callbacks.setGameOverState(currentGameOverState);
         }
-        refs.gameIsRunningRef.current = false; // Stop game logic updates
+        refs.gameIsRunningRef.current = false; 
     }
 
-    // Return the determined state
     return currentGameOverState;
 };

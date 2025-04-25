@@ -1,9 +1,9 @@
 // src/gameCanvas.ts
 import React from 'react';
-import { GameStateRefs, GameLoopCallbacks } from './interfaces';
+import { GameStateRefs, GameLoopCallbacks, GameState } from './interfaces'; // Import GameState
 import {
     BOARD_WIDTH, BOARD_HEIGHT, INITIAL_PADDLE_WIDTH, LASER_WIDTH, LASER_HEIGHT, LASER_SPEED, PADDLE_Y,
-    BALL_SIZE, BIG_BALL_SIZE_INCREASE // Added ball size constants needed for paddle update
+    BALL_SIZE, BIG_BALL_SIZE_INCREASE
 } from './constants';
 import { Laser } from './interfaces';
 
@@ -78,16 +78,21 @@ export const setupGameCanvas = ({
             sidebarElement.style.height = `${scaledCanvasHeight}px`;
         }
         
-        // If game is over, draw the end message immediately
-        if (gameStateRefs.gameOverStateRef.current !== 'playing') {
+        // Redraw end message if game is over
+        const currentState = gameStateRefs.gameOverStateRef.current;
+        if (currentState === 'won' || currentState === 'lost') {
              ctx.clearRect(0, 0, BOARD_WIDTH, BOARD_HEIGHT); 
-             gameLoopCallbacks.drawEndMessage(ctx, gameStateRefs.gameOverStateRef.current, gameStateRefs.scoreRef.current);
+             // Ensure drawEndMessage exists in callbacks before calling
+             if (gameLoopCallbacks?.drawEndMessage) {
+                 gameLoopCallbacks.drawEndMessage(ctx, currentState, gameStateRefs.scoreRef.current);
+             }
         }
-        // Initial state drawing is handled by the game loop now
+        // Initial state drawing is handled by the game loop
     };
 
     // --- Paddle Position Update Logic (Shared) ---
     const updatePaddlePosition = (clientX: number) => {
+        // Only update if playing
         if (gameStateRefs.gameOverStateRef.current !== 'playing' || !canvas) return;
         const rect = canvas.getBoundingClientRect();
         const currentScale = scaleRef.current; 
@@ -100,27 +105,29 @@ export const setupGameCanvas = ({
         gameStateRefs.paddleXRef.current = newPaddleX;
         
         // If game not started, the stuck ball position is updated in gameUpdate
-        // No need to manually update it here anymore
     };
 
     // --- Mouse Move Handler ---
     const handleMouseMove = (event: MouseEvent) => {
+        // Check state inside updatePaddlePosition
         updatePaddlePosition(event.clientX);
     };
 
     // --- Touch Handlers ---
     const handleTouchStart = (event: TouchEvent) => {
         event.preventDefault();
-        if (gameStateRefs.gameOverStateRef.current !== 'playing') {
-            handleResetGame();
-        } else {
+        const currentState = gameStateRefs.gameOverStateRef.current;
+
+        if (currentState === 'won' || currentState === 'lost') {
+            handleResetGame(); // Reset if game over
+        } else if (currentState === 'playing') { // Only handle game actions if playing
             if (event.touches.length > 0) {
                 if (!gameStateRefs.isGameStartedRef.current) {
-                    launchStuckBalls(true); // Initial launch
-                    // Game loop starts automatically now on page load if state is 'playing'
+                    launchStuckBalls(true); // Initial launch only if playing and not started
                 } else {
-                    updatePaddlePosition(event.touches[0].clientX);
-                    if (gameStateRefs.laserShotsRef.current > 0 && gameStateRefs.gameIsRunningRef.current) {
+                    updatePaddlePosition(event.touches[0].clientX); // Move paddle
+                    // Fire laser only if playing and started
+                    if (gameStateRefs.laserShotsRef.current > 0) {
                          gameStateRefs.laserShotsRef.current--;
                          const newLaser: Laser = { 
                             x: gameStateRefs.paddleXRef.current + gameStateRefs.paddleWidthRef.current / 2 - LASER_WIDTH / 2,
@@ -132,33 +139,38 @@ export const setupGameCanvas = ({
                 }
             }
         }
+        // Do nothing if state is 'menu'
     };
 
     const handleTouchMove = (event: TouchEvent) => {
         event.preventDefault(); 
+        // Only update if playing
         if (gameStateRefs.gameOverStateRef.current === 'playing' && event.touches.length > 0) {
             updatePaddlePosition(event.touches[0].clientX);
         }
     };
 
-     // --- Click Handler (Initial Launch / Laser Fire) ---
+     // --- Click Handler (Initial Launch / Laser Fire / Reset) ---
     const handleClick = (event: MouseEvent) => {
-         if (event.button !== 0) return;
+         if (event.button !== 0) return; // Only main click
 
-        if (gameStateRefs.gameOverStateRef.current !== 'playing') {
-            handleResetGame();
-        } else {
+         const currentState = gameStateRefs.gameOverStateRef.current;
+
+         if (currentState === 'won' || currentState === 'lost') {
+            handleResetGame(); // Reset if game over
+         } else if (currentState === 'playing') { // Only handle game actions if playing
              if (!canvas) return; 
              const rect = canvas.getBoundingClientRect(); 
              const clickX = event.clientX;
              const clickY = event.clientY;
              
+             // Check if click is within the canvas bounds
              if (clickX >= rect.left && clickX <= rect.right && clickY >= rect.top && clickY <= rect.bottom) {
                 if (!gameStateRefs.isGameStartedRef.current) {
-                    launchStuckBalls(true); // Initial launch
-                    // Game loop starts automatically now
+                    launchStuckBalls(true); // Initial launch only if playing and not started
                 } else {
-                    if (gameStateRefs.laserShotsRef.current > 0 && gameStateRefs.gameIsRunningRef.current) {
+                    // Fire laser only if playing and started
+                    if (gameStateRefs.laserShotsRef.current > 0) {
                         gameStateRefs.laserShotsRef.current--;
                         const newLaser: Laser = { 
                             x: gameStateRefs.paddleXRef.current + gameStateRefs.paddleWidthRef.current / 2 - LASER_WIDTH / 2,
@@ -169,26 +181,21 @@ export const setupGameCanvas = ({
                     }
                  }
              } 
-        }
+         }
+         // Do nothing if state is 'menu'
     };
 
     // --- Setup Event Listeners ---
     handleResize(); // Initial setup
     window.addEventListener('resize', handleResize);
     window.addEventListener('mousemove', handleMouseMove); 
+    // Attach touch/click listeners to the canvas itself might be slightly better 
+    // than window for click, especially to check bounds easily.
     canvas.addEventListener('touchstart', handleTouchStart, { passive: false }); 
     canvas.addEventListener('touchmove', handleTouchMove, { passive: false });  
-    window.addEventListener('click', handleClick); 
+    canvas.addEventListener('click', handleClick); // Changed from window to canvas
 
-    // Start game loop immediately if game state is 'playing'
-    // This will draw the initial stuck ball state
-    if (gameStateRefs.gameOverStateRef.current === 'playing') {
-        lastTimeRef.current = performance.now();
-        if (animationFrameIdRef.current === null) {
-             animationFrameIdRef.current = requestAnimationFrame(gameLoop);
-        }
-    } 
-    // No need for the specific pre-start drawing logic here anymore
+    // Start game loop is now handled by the main component based on state changes
 
     // --- Cleanup Function ---
     return () => {
@@ -197,8 +204,9 @@ export const setupGameCanvas = ({
         if (canvas) { 
             canvas.removeEventListener('touchstart', handleTouchStart);
             canvas.removeEventListener('touchmove', handleTouchMove);
+            canvas.removeEventListener('click', handleClick); // Remove listener from canvas
         }
-        window.removeEventListener('click', handleClick);
+        // window.removeEventListener('click', handleClick); // Remove if it was on window before
         if (animationFrameIdRef.current) {
             cancelAnimationFrame(animationFrameIdRef.current);
             animationFrameIdRef.current = null;

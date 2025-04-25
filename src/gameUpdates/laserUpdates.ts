@@ -1,39 +1,39 @@
 // src/gameUpdates/laserUpdates.ts
-import { Laser, Brick, PowerUp, SpawnMarker, PowerUpType, PowerUpSpawnEvent } from '../interfaces'; // Added PowerUpSpawnEvent
+import { Laser, Brick, PowerUp, SpawnMarker, PowerUpType, PowerUpSpawnEvent } from '../interfaces'; 
 import { GameStateRefs } from '../interfaces'; 
 import { GameLoopCallbacks } from '../interfaces';
 import {
-    BRICK_COLUMNS, BRICK_ROWS, BRICK_WIDTH, BRICK_HEIGHT,
+    // Removed BRICK_WIDTH, BRICK_HEIGHT as they are now on the brick object
     SPECIAL_BRICK_POINTS, BUILDER_BRICK_POINTS, UPGRADED_BRICK_POINTS,
     REINFORCED_BRICK_POINTS, NORMAL_BRICK_POINTS
-    // Removed SPAWNABLE_POWER_UP_TYPES, POWER_UP_SPAWN_THRESHOLD, POWER_UP_CHANCE_REDUCTION_PER_EXTRA
 } from '../constants';
-// Removed createPowerUp import
 
 export const updateLasers = (
     refs: GameStateRefs,
     callbacks: GameLoopCallbacks,
-    spawnRequests: PowerUpSpawnEvent[], // Changed parameter name
+    spawnRequests: PowerUpSpawnEvent[], 
     currentTime: number,
-    deltaTime: number // Add deltaTime parameter
-): void => { // Return type is void, it modifies refs directly
+    deltaTime: number, 
+    columns: number, 
+    rows: number     
+): void => { 
     let nextLasersArray: Laser[] = [];
     refs.lasersRef.current.forEach(laser => {
         let laserHit = false;
-        // Apply deltaTime to movement
         const movement = laser.speed * deltaTime;
         const nextLaserY = laser.y - movement;
-        let brickDestroyed = false, dBrickX = 0, dBrickY = 0, dBrickWasSpecial = false;
+        let brickDestroyed = false, dBrickX = 0, dBrickY = 0, dBrickWidth = 0, dBrickWasSpecial = false; // Added dBrickWidth
 
-        // Collision check remains largely the same, checking the next projected position
-        for (let c = 0; c < BRICK_COLUMNS && !laserHit; c++) {
-            for (let r = 0; r < BRICK_ROWS && !laserHit; r++) {
+        for (let c = 0; c < columns && !laserHit; c++) {
+             if (!refs.bricksRef.current[c]) continue; 
+            for (let r = 0; r < rows && !laserHit; r++) {
                 const brick = refs.bricksRef.current[c]?.[r];
+                // Use brick.width and brick.height for collision check
                 if (brick && brick.status === 1 &&
-                    laser.x < brick.x + BRICK_WIDTH && // Laser right edge vs Brick left edge
-                    laser.x + laser.width > brick.x && // Laser left edge vs Brick right edge
-                    nextLaserY < brick.y + BRICK_HEIGHT && // Laser bottom edge vs Brick top edge
-                    nextLaserY + laser.height > brick.y) { // Laser top edge vs Brick bottom edge
+                    laser.x < brick.x + brick.width && 
+                    laser.x + laser.width > brick.x && 
+                    nextLaserY < brick.y + brick.height && 
+                    nextLaserY + laser.height > brick.y) { 
 
                     let pts = 0;
                     if (brick.isSpecial) pts = SPECIAL_BRICK_POINTS;
@@ -49,21 +49,21 @@ export const updateLasers = (
                     brickDestroyed = true;
                     dBrickX = brick.x;
                     dBrickY = brick.y;
+                    dBrickWidth = brick.width; // Store width of destroyed brick
                     dBrickWasSpecial = brick.isSpecial;
                 }
             }
         }
 
         if (brickDestroyed) {
-            // Add a spawn request event instead of directly creating the power-up
             const marker: SpawnMarker = dBrickWasSpecial ? 'SPAWN_SPECIAL' : 'PENDING';
-            spawnRequests.push({ marker, brickX: dBrickX, brickY: dBrickY });
+            // Pass the stored brickWidth
+            spawnRequests.push({ marker, brickX: dBrickX, brickY: dBrickY, brickWidth: dBrickWidth }); 
         }
 
-        // Keep the laser if it hasn't hit anything and is still on screen
         if (!laserHit && nextLaserY + laser.height > 0) {
             nextLasersArray.push({ ...laser, y: nextLaserY });
         }
     });
-    refs.lasersRef.current = nextLasersArray; // Update the lasers ref directly
+    refs.lasersRef.current = nextLasersArray; 
 };
