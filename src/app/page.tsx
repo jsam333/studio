@@ -15,6 +15,7 @@ import { Button } from '../components/ui/button';
 const SIDEBAR_WIDTH_PX = 192;
 const MAX_DELTA_TIME_FACTOR = 3;
 const SHOP_ITEMS_COUNT = 5;
+const POWERUP_COST = 10; // Define the cost for each power-up
 
 // Helper function to shuffle an array (Fisher-Yates)
 function shuffleArray<T>(array: T[]): T[] {
@@ -50,17 +51,18 @@ export default function Home() {
         startGame, 
         startNextLevel, 
         addSpawnablePowerUp, 
-        gameStateRefs, // Contains spawnablePowerUpsRef
+        gameStateRefs, // Contains goldRef and spawnablePowerUpsRef
     } = useGameLogic();
 
     const [shopItems, setShopItems] = useState<PowerUpType[]>([]); 
-    // State to track items purchased *in this specific shop session* for immediate feedback
     const [purchasedInSession, setPurchasedInSession] = useState<Set<PowerUpType>>(new Set());
+    // State to trigger re-render when gold changes, ensuring buttons update correctly
+    const [goldDisplay, setGoldDisplay] = useState(gameStateRefs.goldRef.current);
 
     const targetFps = 60; 
     const targetFrameTime = 1000 / targetFps; 
 
-    // Draw end message callback (only for won/lost on canvas)
+    // Draw end message callback
     const drawEndMessageCallback = useCallback((context: CanvasRenderingContext2D, state: 'won' | 'lost' | 'shop', finalScore: number) => {
         if (state === 'shop') return; 
         const message = state === 'won' ? `You Win! Score: ${finalScore}` : 'Game Over!';
@@ -129,15 +131,16 @@ export default function Home() {
          };
      }, [updateScoreCallback, setGameOverState, schedulePaddleShrink, scheduleFieldShrink, drawEndMessageCallback]);
 
-    // Effect to generate shop items and reset purchased items when entering shop state
+    // Effect to generate shop items and reset/sync state when entering shop
     useEffect(() => {
         if (gameOverState === 'shop') {
             const eligiblePowerUps = ALL_TOGGLEABLE_POWER_UPS.filter(p => p !== 'ALL_IN_ONE');
             const shuffled = shuffleArray(eligiblePowerUps);
             setShopItems(shuffled.slice(0, SHOP_ITEMS_COUNT));
             setPurchasedInSession(new Set()); // Reset purchased items for the new shop session
+            setGoldDisplay(gameStateRefs.goldRef.current); // Sync gold display state
         }
-    }, [gameOverState]);
+    }, [gameOverState, gameStateRefs.goldRef]); // Add goldRef to dependencies
 
     // Canvas setup and game state effect
     useEffect(() => {
@@ -246,46 +249,65 @@ export default function Home() {
             // Prevent purchase if already owned globally or purchased in this session
             if (gameStateRefs.spawnablePowerUpsRef.current.has(item) || purchasedInSession.has(item)) return; 
 
-            // TODO: Implement cost checking
-            // const cost = 10; 
-            // if (gameStateRefs.goldRef.current < cost) return; 
-            // gameStateRefs.goldRef.current -= cost;
+            // Check cost
+            const cost = POWERUP_COST; 
+            if (gameStateRefs.goldRef.current < cost) {
+                console.log("Not enough gold!"); // Optional: Add user feedback
+                return; // Not enough gold
+            }
+            
+            // Deduct gold
+            gameStateRefs.goldRef.current -= cost;
+            setGoldDisplay(gameStateRefs.goldRef.current); // Update display state
 
+            // Add to spawnable list
             addSpawnablePowerUp(item);
+            // Update purchased items state for UI feedback (disable button)
             setPurchasedInSession(prev => new Set(prev).add(item));
-            console.log(`Purchased and added to spawn pool: ${item}`); 
+
+            console.log(`Purchased ${item} for ${cost} gold. Remaining: ${gameStateRefs.goldRef.current}`); 
         };
 
         return (
             <div className="flex flex-col items-center justify-center h-screen bg-gray-800 text-white">
                 <h1 className="text-4xl font-bold mb-6">Level Complete!</h1>
+                {/* Use goldDisplay state for rendering */}
                 <p className="text-3xl mb-10" style={{ color: GOLD_COLOR || '#FFD700' }}>
-                    Gold: {gameStateRefs.goldRef.current}
+                    Gold: {goldDisplay}
                 </p>
                 
                 <h2 className="text-2xl font-semibold mb-4">Power-up Shop</h2>
                 <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-4 mb-10 w-full max-w-4xl px-4">
                     {shopItems.length > 0 ? (
                         shopItems.map(item => {
-                            // Check if already owned globally (from previous shops)
                             const isGloballyOwned = gameStateRefs.spawnablePowerUpsRef.current.has(item);
-                            // Check if purchased in this specific session
                             const isPurchasedThisSession = purchasedInSession.has(item);
-                            // Disable if owned globally OR purchased in this session
-                            const isDisabled = isGloballyOwned || isPurchasedThisSession;
+                            // Check if affordable
+                            const canAfford = goldDisplay >= POWERUP_COST;
+                            // Disable if owned globally OR purchased this session OR cannot afford
+                            const isDisabled = isGloballyOwned || isPurchasedThisSession || !canAfford;
+                            // Determine button text/styling based on state
+                            let buttonText = `Cost: ${POWERUP_COST}`;
+                            let buttonStyle = 'bg-blue-600 hover:bg-blue-700';
+                            if (isGloballyOwned) {
+                                buttonText = '(Owned)';
+                                buttonStyle = 'bg-gray-500 opacity-70';
+                            } else if (isPurchasedThisSession) {
+                                buttonText = '(Added)';
+                                buttonStyle = 'bg-gray-500 opacity-70';
+                            } else if (!canAfford) {
+                                buttonStyle = 'bg-red-800 opacity-50'; // Style for unaffordable
+                            }
 
                             return (
                                 <Button 
                                     key={item}
                                     onClick={() => handlePurchase(item)} 
                                     disabled={isDisabled}
-                                    className={`py-3 px-2 text-sm flex flex-col h-24 justify-center items-center ${isDisabled ? 'bg-gray-500 opacity-70' : 'bg-blue-600 hover:bg-blue-700'}`}
+                                    className={`py-3 px-2 text-sm flex flex-col h-24 justify-center items-center ${buttonStyle}`}
                                 >
-                                    <span>{item.replace(/_/g, ' ')}</span> 
-                                    {/* Show (Owned) if globally owned, (Added) if purchased this session */}
-                                    {isGloballyOwned && !isPurchasedThisSession && <span className="text-xs mt-1 text-yellow-300">(Owned)</span>}
-                                    {isPurchasedThisSession && <span className="text-xs mt-1">(Added)</span>}
-                                    {/* <span className="text-xs mt-1">(Cost: 10)</span> */} 
+                                    <span className="mb-1">{item.replace(/_/g, ' ')}</span> 
+                                    <span className="text-xs mt-1">{buttonText}</span> 
                                 </Button>
                             );
                         })
