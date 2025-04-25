@@ -1,6 +1,6 @@
 // src/gameCanvas.ts
 import React from 'react';
-import { GameStateRefs, GameLoopCallbacks, GameState } from './interfaces'; // Import GameState
+import { GameStateRefs, GameLoopCallbacks, GameState } from './interfaces'; 
 import {
     BOARD_WIDTH, BOARD_HEIGHT, INITIAL_PADDLE_WIDTH, LASER_WIDTH, LASER_HEIGHT, LASER_SPEED, PADDLE_Y,
     BALL_SIZE, BIG_BALL_SIZE_INCREASE
@@ -78,38 +78,29 @@ export const setupGameCanvas = ({
             sidebarElement.style.height = `${scaledCanvasHeight}px`;
         }
         
-        // Redraw end message if game is over
         const currentState = gameStateRefs.gameOverStateRef.current;
         if (currentState === 'won' || currentState === 'lost') {
              ctx.clearRect(0, 0, BOARD_WIDTH, BOARD_HEIGHT); 
-             // Ensure drawEndMessage exists in callbacks before calling
              if (gameLoopCallbacks?.drawEndMessage) {
                  gameLoopCallbacks.drawEndMessage(ctx, currentState, gameStateRefs.scoreRef.current);
              }
         }
-        // Initial state drawing is handled by the game loop
     };
 
-    // --- Paddle Position Update Logic (Shared) ---
+    // --- Paddle Position Update Logic ---
     const updatePaddlePosition = (clientX: number) => {
-        // Only update if playing
         if (gameStateRefs.gameOverStateRef.current !== 'playing' || !canvas) return;
         const rect = canvas.getBoundingClientRect();
         const currentScale = scaleRef.current; 
-        
         const logicalMouseX = (clientX - rect.left) / currentScale; 
-
         let newPaddleX = logicalMouseX - gameStateRefs.paddleWidthRef.current / 2;
         newPaddleX = Math.max(0, newPaddleX);
         newPaddleX = Math.min(BOARD_WIDTH - gameStateRefs.paddleWidthRef.current, newPaddleX);
         gameStateRefs.paddleXRef.current = newPaddleX;
-        
-        // If game not started, the stuck ball position is updated in gameUpdate
     };
 
     // --- Mouse Move Handler ---
     const handleMouseMove = (event: MouseEvent) => {
-        // Check state inside updatePaddlePosition
         updatePaddlePosition(event.clientX);
     };
 
@@ -117,16 +108,14 @@ export const setupGameCanvas = ({
     const handleTouchStart = (event: TouchEvent) => {
         event.preventDefault();
         const currentState = gameStateRefs.gameOverStateRef.current;
-
         if (currentState === 'won' || currentState === 'lost') {
-            handleResetGame(); // Reset if game over
-        } else if (currentState === 'playing') { // Only handle game actions if playing
+            handleResetGame();
+        } else if (currentState === 'playing') {
             if (event.touches.length > 0) {
                 if (!gameStateRefs.isGameStartedRef.current) {
-                    launchStuckBalls(true); // Initial launch only if playing and not started
+                    launchStuckBalls(true); 
                 } else {
-                    updatePaddlePosition(event.touches[0].clientX); // Move paddle
-                    // Fire laser only if playing and started
+                    updatePaddlePosition(event.touches[0].clientX); 
                     if (gameStateRefs.laserShotsRef.current > 0) {
                          gameStateRefs.laserShotsRef.current--;
                          const newLaser: Laser = { 
@@ -139,37 +128,30 @@ export const setupGameCanvas = ({
                 }
             }
         }
-        // Do nothing if state is 'menu'
     };
 
     const handleTouchMove = (event: TouchEvent) => {
         event.preventDefault(); 
-        // Only update if playing
         if (gameStateRefs.gameOverStateRef.current === 'playing' && event.touches.length > 0) {
             updatePaddlePosition(event.touches[0].clientX);
         }
     };
 
-     // --- Click Handler (Initial Launch / Laser Fire / Reset) ---
+     // --- Click Handler ---
     const handleClick = (event: MouseEvent) => {
-         if (event.button !== 0) return; // Only main click
-
+         if (event.button !== 0) return;
          const currentState = gameStateRefs.gameOverStateRef.current;
-
          if (currentState === 'won' || currentState === 'lost') {
-            handleResetGame(); // Reset if game over
-         } else if (currentState === 'playing') { // Only handle game actions if playing
+            handleResetGame();
+         } else if (currentState === 'playing') {
              if (!canvas) return; 
              const rect = canvas.getBoundingClientRect(); 
              const clickX = event.clientX;
              const clickY = event.clientY;
-             
-             // Check if click is within the canvas bounds
              if (clickX >= rect.left && clickX <= rect.right && clickY >= rect.top && clickY <= rect.bottom) {
                 if (!gameStateRefs.isGameStartedRef.current) {
-                    launchStuckBalls(true); // Initial launch only if playing and not started
+                    launchStuckBalls(true); 
                 } else {
-                    // Fire laser only if playing and started
                     if (gameStateRefs.laserShotsRef.current > 0) {
                         gameStateRefs.laserShotsRef.current--;
                         const newLaser: Laser = { 
@@ -182,20 +164,37 @@ export const setupGameCanvas = ({
                  }
              } 
          }
-         // Do nothing if state is 'menu'
+    };
+
+    // --- Keyboard Handler (NEW) ---
+    const handleKeyDown = (event: KeyboardEvent) => {
+        if (event.key === 'c' && gameStateRefs.gameOverStateRef.current === 'playing') {
+            // Corrected quotes in console.log
+            console.log("Debug: 'C' key pressed, clearing bricks..."); // Debug log
+            const bricks = gameStateRefs.bricksRef.current;
+            let bricksCleared = 0;
+            for (let c = 0; c < bricks.length; c++) {
+                if (bricks[c]) {
+                    for (let r = 0; r < bricks[c].length; r++) {
+                        if (bricks[c][r] && bricks[c][r].status === 1) {
+                            bricks[c][r].status = 0;
+                            bricksCleared++;
+                        }
+                    }
+                }
+            }
+            console.log(`Debug: Cleared ${bricksCleared} bricks.`); // Debug log
+        }
     };
 
     // --- Setup Event Listeners ---
-    handleResize(); // Initial setup
+    handleResize(); 
     window.addEventListener('resize', handleResize);
     window.addEventListener('mousemove', handleMouseMove); 
-    // Attach touch/click listeners to the canvas itself might be slightly better 
-    // than window for click, especially to check bounds easily.
     canvas.addEventListener('touchstart', handleTouchStart, { passive: false }); 
     canvas.addEventListener('touchmove', handleTouchMove, { passive: false });  
-    canvas.addEventListener('click', handleClick); // Changed from window to canvas
-
-    // Start game loop is now handled by the main component based on state changes
+    canvas.addEventListener('click', handleClick); 
+    window.addEventListener('keydown', handleKeyDown); // Add keyboard listener
 
     // --- Cleanup Function ---
     return () => {
@@ -204,22 +203,22 @@ export const setupGameCanvas = ({
         if (canvas) { 
             canvas.removeEventListener('touchstart', handleTouchStart);
             canvas.removeEventListener('touchmove', handleTouchMove);
-            canvas.removeEventListener('click', handleClick); // Remove listener from canvas
+            canvas.removeEventListener('click', handleClick);
         }
-        // window.removeEventListener('click', handleClick); // Remove if it was on window before
+        window.removeEventListener('keydown', handleKeyDown); // Remove keyboard listener
         if (animationFrameIdRef.current) {
             cancelAnimationFrame(animationFrameIdRef.current);
             animationFrameIdRef.current = null;
         }
-        if (gameContainer) { /* Reset styles */ 
+        if (gameContainer) { 
              gameContainer.style.width = '';
              gameContainer.style.height = '';
         }
-        if (canvas) { /* Reset styles */
+        if (canvas) {
             canvas.style.width = '';
             canvas.style.height = '';
         }
-         if (sidebarElement) { /* Reset styles */
+         if (sidebarElement) {
             sidebarElement.style.width = '';
             sidebarElement.style.height = '';
         }

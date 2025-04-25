@@ -7,7 +7,8 @@ import {
     PADDLE_WIDEN_INCREMENT, FIELD_SHRINK_RATE_H, FIELD_SHRINK_RATE_W,
     FIELD_SHRINK_INTERVAL,
     BRICK_COLUMNS, BRICK_ROWS, 
-    BRICK_HEIGHT, TALL_BRICK_HEIGHT // Import height constants
+    BRICK_HEIGHT, TALL_BRICK_HEIGHT, 
+    BRICK_PADDING, TARGET_TOTAL_BRICK_GRID_HEIGHT // Import constants needed for calculation
 } from '../constants';
 import { Ball, Brick, PowerUp, Laser, PowerUpType, GameState, GameMode, GameStateRefs as IGameStateRefs } from '../interfaces';
 import { initializeBricks, initialBallState } from '../gameLogic';
@@ -134,12 +135,12 @@ export function useGameLogic() {
         }, FIELD_SHRINK_INTERVAL); 
     }, []);
 
-    // Updated resetLevel to pass correct height to initializeBricks
+    // Updated resetLevel to calculate height for levels 8+
     const resetLevel = useCallback((mode: GameMode | null) => {
         const currentMode = mode ?? gameModeRef.current; 
         if (!currentMode) return; 
         
-        let cols = BRICK_COLUMNS; 
+        let cols = BRICK_COLUMNS;
         let rows = BRICK_ROWS;    
         let targetHeight = BRICK_HEIGHT; // Default height
 
@@ -148,23 +149,95 @@ export function useGameLogic() {
             if (level === 1) {
                 cols = 3;
                 rows = 2;
-                targetHeight = TALL_BRICK_HEIGHT; // Level 1 uses tall bricks
+                targetHeight = TALL_BRICK_HEIGHT; 
             } else if (level === 2) {
                 cols = 4;
                 rows = 3;
-                targetHeight = TALL_BRICK_HEIGHT; // Level 2 uses tall bricks
+                targetHeight = TALL_BRICK_HEIGHT; 
             } else if (level === 3) {
                 cols = 5;
                 rows = 4;
-                targetHeight = TALL_BRICK_HEIGHT; // Level 3 uses tall bricks
-            } else {
-                // Default for levels 4+
-                cols = 4; 
-                rows = 2; 
-                targetHeight = BRICK_HEIGHT; // Levels 4+ use default height
+                targetHeight = TALL_BRICK_HEIGHT; 
+            } else if (level === 4) { 
+                cols = 7; 
+                rows = 5; 
+                targetHeight = TALL_BRICK_HEIGHT;
+            } else if (level === 5) { 
+                cols = 9; 
+                rows = 6; 
+                targetHeight = TALL_BRICK_HEIGHT; 
+            } else if (level === 6) { 
+                cols = 11; 
+                rows = 7; 
+                targetHeight = TALL_BRICK_HEIGHT; 
+            } else if (level === 7) { 
+                cols = 13; 
+                rows = 8; 
+                targetHeight = TALL_BRICK_HEIGHT; 
+            } else if (level === 8) { 
+                cols = 15; 
+                rows = 9; 
+                targetHeight = TALL_BRICK_HEIGHT; 
+            } else if (level === 9) { 
+                cols = 17; 
+                rows = 10; 
+                targetHeight = TALL_BRICK_HEIGHT; 
+            } 
+            // Levels 10+
+            else { 
+                cols = 4; // Default cols for these levels
+                // Determine rows based on level, e.g., increase rows for higher levels
+                if (level === 10) { 
+                    cols = 20; 
+                    rows = 11; 
+                } else if (level === 11) { 
+                    cols = 22; 
+                    rows = 12; 
+                } else if (level === 12) { 
+                    cols = 25; 
+                    rows = 13; 
+                } else if (level === 13) { 
+                    cols = 28; 
+                    rows = 14; 
+                } else if (level === 14) { 
+                    cols = 31; 
+                    rows = 15; 
+                } else if (level === 15) { 
+                    cols = 35; 
+                    rows = 16; 
+                } else if (level === 16) { 
+                    cols = 40; 
+                    rows = 17; 
+                } else if (level === 17) { 
+                    cols = 45; 
+                    rows = 18; 
+                } else if (level === 18) { 
+                    cols = 50; 
+                    rows = 19; 
+                } else if (level === 19) { 
+                    cols = 55; 
+                    rows = 20; 
+                } else if (level === 20) { 
+                    cols = 60; 
+                    rows = 23; 
+                } else { 
+                    // Default for level 8+ (e.g., stay at 7 rows or increase further)
+                    rows = 7; 
+                } 
+
+                // Calculate individual brick height to meet target total height
+                if (rows > 0) {
+                    targetHeight = (TARGET_TOTAL_BRICK_GRID_HEIGHT - (rows - 1) * BRICK_PADDING) / rows;
+                    // Ensure minimum height 
+                    targetHeight = Math.max(1, targetHeight); 
+                } else {
+                    targetHeight = BRICK_HEIGHT; // Fallback
+                }
             }
         } else { 
-            // Test mode uses default height
+            // Test mode uses default cols, rows, and height
+            cols = BRICK_COLUMNS;
+            rows = BRICK_ROWS;
             targetHeight = BRICK_HEIGHT;
         }
 
