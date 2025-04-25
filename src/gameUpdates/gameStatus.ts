@@ -1,30 +1,42 @@
 // src/gameUpdates/gameStatus.ts
-import { GameStateRefs, GameLoopCallbacks, GameState } from '../interfaces'; // Import GameState
+import { GameStateRefs, GameLoopCallbacks, GameState } from '../interfaces';
 
-// This function now returns the determined game state, including 'shop'
+// Helper to clear bonus timers (to avoid duplication)
+const clearBonusTimers = (refs: GameStateRefs) => {
+    if (refs.bonusGoldTimerRef?.current) clearTimeout(refs.bonusGoldTimerRef.current);
+    if (refs.bonusGoldDecrementIntervalRef?.current) clearInterval(refs.bonusGoldDecrementIntervalRef.current);
+    refs.bonusGoldTimerRef.current = null;
+    refs.bonusGoldDecrementIntervalRef.current = null;
+    if (refs.bonusCountdownStartedRef) {
+      refs.bonusCountdownStartedRef.current = false;
+    }   
+};
+
 export const checkGameStatus = (
     refs: GameStateRefs,
     callbacks: GameLoopCallbacks,
     previousBallCount: number,
     columns: number, 
     rows: number     
-): GameState => { // Return type is now GameState
-    // Check current state first
+): GameState => {
     if (refs.gameOverStateRef.current !== 'playing') {
-        return refs.gameOverStateRef.current; // Return existing end state
+        return refs.gameOverStateRef.current;
     }
 
     let nextState: GameState = 'playing';
 
     // Check for loss condition
     if (refs.ballsRef.current.length === 0 && refs.stuckBallsRef.current.length === 0 && previousBallCount > 0 && !refs.isGameStartedRef.current) {
-        // Don't lose immediately if ball hasn't been launched yet
-    } else if (refs.ballsRef.current.length === 0 && refs.stuckBallsRef.current.length === 0 && previousBallCount > 0) {
+        // Ball lost before launch - potential edge case, treat as loss or allow reset?
+        // Currently treating as loss if balls existed previously.
+        nextState = 'lost';
+    } else if (refs.ballsRef.current.length === 0 && refs.stuckBallsRef.current.length === 0 && previousBallCount > 0 && refs.isGameStartedRef.current) {
+         // All balls lost after game started
          nextState = 'lost';
     }
 
-    // Check for win/shop condition
-    if (nextState === 'playing') { // Only check win if not already lost
+    // Check for win/shop condition only if not already lost
+    if (nextState === 'playing') {
         let remainingBricks = 0;
         for (let c = 0; c < columns; c++) {
             if (!refs.bricksRef.current[c]) continue;
@@ -39,8 +51,11 @@ export const checkGameStatus = (
         if (remainingBricks === 0) { 
              const currentMode = refs.gameModeRef.current;
              if (currentMode === 'main') {
-                 nextState = 'shop'; // Go to shop after winning a level in main mode
-                 refs.goldRef.current += 20; // AWARD GOLD
+                 nextState = 'shop'; 
+                 // Award bonus gold instead of fixed amount
+                 const bonusEarned = Math.max(0, refs.bonusGoldRef.current); // Ensure non-negative
+                 refs.goldRef.current += bonusEarned; 
+                 console.log(`Level complete! Awarded ${bonusEarned} bonus gold. Total gold: ${refs.goldRef.current}`);
              } else {
                  nextState = 'won'; // Regular win for test level
              }
@@ -49,11 +64,13 @@ export const checkGameStatus = (
 
     // Handle Game End state update if necessary
     if (nextState !== 'playing') {
-        // Update state only if it has changed
+        // Clear bonus timers when game ends (win/loss/shop)
+        clearBonusTimers(refs);
+        
         if (refs.gameOverStateRef.current !== nextState) {
              callbacks.setGameOverState(nextState);
         }
-        refs.gameIsRunningRef.current = false; // Stop game logic updates
+        refs.gameIsRunningRef.current = false;
     }
 
     return nextState;

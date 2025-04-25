@@ -6,9 +6,11 @@ import {
 } from '../constants';
 
 // Constants for spawn logic
-const BASE_SPAWN_CHANCE = 1.0; // Base chance is 100% if conditions met
-const POWER_UP_SPAWN_THRESHOLD = 20; // Limit before chance reduction starts
-const POWER_UP_CHANCE_REDUCTION_PER_EXTRA = 0.02; // Reduction factor per extra power-up
+export const TEST_MODE_BASE_SPAWN_CHANCE = 1.0; // Base chance for test mode
+export const MAIN_GAME_BASE_SPAWN_CHANCE = 0.2; // Base chance for main game mode (20%)
+export const MAIN_GAME_CHANCE_INCREASE_PER_TYPE = 0.1; // +10% chance per available power-up type
+export const POWER_UP_SPAWN_THRESHOLD = 20; // Limit before chance reduction starts
+export const POWER_UP_CHANCE_REDUCTION_PER_EXTRA = 0.02; // Reduction factor per extra power-up
 
 export const createPowerUp = (x: number, y: number, brickWidth: number, type: PowerUpType, timeCreated?: number): PowerUp => ({
     x: x + brickWidth / 2 - POWER_UP_SIZE / 2, 
@@ -19,7 +21,30 @@ export const createPowerUp = (x: number, y: number, brickWidth: number, type: Po
     timeCreated
 });
 
-// Updated trySpawnPowerUp to apply spawn chance reduction in both modes
+// Exported function to calculate the initial spawn chance before reductions
+export const calculateBaseSpawnChance = (
+    availablePowerUps: Set<PowerUpType>, 
+    gameMode: GameMode | null
+): number => {
+    const possibleTypesCount = availablePowerUps.size;
+    if (possibleTypesCount === 0 && gameMode === 'main') {
+        return 0; // No chance if no power-ups are spawnable in main mode
+    }
+
+    let baseChance: number;
+
+    if (gameMode === 'main') {
+        const chanceIncrease = possibleTypesCount * MAIN_GAME_CHANCE_INCREASE_PER_TYPE;
+        baseChance = MAIN_GAME_BASE_SPAWN_CHANCE + chanceIncrease;
+        baseChance = Math.min(1.0, baseChance); // Clamp the initial chance at 100%
+    } else {
+        // Test mode uses a simple base chance (or if gameMode is null)
+        baseChance = TEST_MODE_BASE_SPAWN_CHANCE;
+    }
+    return baseChance;
+};
+
+// trySpawnPowerUp now uses the exported calculation function
 export const trySpawnPowerUp = (
     brickX: number,
     brickY: number,
@@ -32,27 +57,28 @@ export const trySpawnPowerUp = (
     currentTime?: number
 ): void => {
     if (wasSpecial) {
-        // Special bricks always drop ALL_IN_ONE
         newlySpawnedPowerUps.push(createPowerUp(brickX, brickY, brickWidth, 'ALL_IN_ONE', currentTime));
         return; 
     }
 
-    const possibleTypes = Array.from(availablePowerUps);
-    if (possibleTypes.length === 0) {
-        return; // No power-ups available to spawn (either none purchased in main, or none enabled in test)
+    // Get the initial spawn chance using the calculation function
+    let spawnChance = calculateBaseSpawnChance(availablePowerUps, gameMode);
+
+    if (spawnChance <= 0) {
+        return; // No chance to spawn
     }
 
-    // Apply spawn chance reduction based on currently falling power-ups (Applies to both modes)
+    // Apply reduction based on falling power-ups
     const totalEffectivePowerUpCount = currentFallingPowerUpCount + newlySpawnedPowerUps.length;
-    let spawnChance = BASE_SPAWN_CHANCE; // Start with 100% base chance
     if (totalEffectivePowerUpCount > POWER_UP_SPAWN_THRESHOLD) {
         const excessPowerUps = totalEffectivePowerUpCount - POWER_UP_SPAWN_THRESHOLD;
         spawnChance -= excessPowerUps * POWER_UP_CHANCE_REDUCTION_PER_EXTRA;
-        spawnChance = Math.max(0, spawnChance); // Clamp chance at 0%
+        spawnChance = Math.max(0, spawnChance); // Clamp final chance at 0%
     }
 
-    // Roll for spawn based on calculated chance
+    // Roll for spawn
     if (Math.random() < spawnChance) {
+        const possibleTypes = Array.from(availablePowerUps);
         const type = possibleTypes[Math.floor(Math.random() * possibleTypes.length)];
         newlySpawnedPowerUps.push(createPowerUp(brickX, brickY, brickWidth, type, currentTime));
     }

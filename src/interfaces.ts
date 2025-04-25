@@ -91,7 +91,8 @@ export interface GameStateRefsBase {
     scoreRef: React.MutableRefObject<number>;
     totalBricksRef: React.MutableRefObject<number>; 
     goldRef: React.MutableRefObject<number>;
-    spawnablePowerUpsRef: React.MutableRefObject<Set<PowerUpType>>; // Added for spawnable power-ups
+    bonusGoldRef: React.MutableRefObject<number>; // Added for level complete bonus
+    spawnablePowerUpsRef: React.MutableRefObject<Set<PowerUpType>>;
     paddleWidthRef: React.MutableRefObject<number>;
     widenLevelRef: React.MutableRefObject<number>;
     laserShotsRef: React.MutableRefObject<number>;
@@ -104,8 +105,9 @@ export interface GameStateRefsBase {
     collectionFieldWidthOffsetRef: React.MutableRefObject<number>;
     stickyPaddleChargesRef: React.MutableRefObject<number>;
     stuckBallsRef: React.MutableRefObject<Ball[]>;
-    enabledPowerUpsRef: React.MutableRefObject<Set<PowerUpType>>; // This tracks ACTIVE power-ups in test mode
-    isGameStartedRef: React.MutableRefObject<boolean>;
+    enabledPowerUpsRef: React.MutableRefObject<Set<PowerUpType>>;
+    isGameStartedRef: React.MutableRefObject<boolean>; // Tracks if ball launched
+    bonusCountdownStartedRef: React.MutableRefObject<boolean>; // Tracks if bonus countdown started
     brickColumnsRef: React.MutableRefObject<number>; 
     brickRowsRef: React.MutableRefObject<number>;    
     gameModeRef: React.MutableRefObject<GameMode | null>; 
@@ -114,6 +116,7 @@ export interface GameStateRefsBase {
 export interface GameStateRefs extends GameStateRefsBase {
     widenTimeoutRef?: React.MutableRefObject<NodeJS.Timeout | null>;
     collectionFieldShrinkTimerRef?: React.MutableRefObject<NodeJS.Timeout | null>;
+    bonusGoldTimerRef?: React.MutableRefObject<NodeJS.Timeout | null>; // Timer for bonus gold countdown (can be Timeout or Interval)
     animationFrameIdRef?: React.MutableRefObject<number | null>; 
     lastTimeRef?: React.MutableRefObject<number>; 
     currentLevelRef: React.MutableRefObject<number>; 

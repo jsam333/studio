@@ -11,11 +11,13 @@ import { setupGameCanvas } from '../gameCanvas';
 import { PowerUpSidebar } from '../components/PowerUpSidebar';
 import { useGameLogic } from '../hooks/useGameLogic'; 
 import { Button } from '../components/ui/button'; 
+// Import the calculation function
+import { calculateBaseSpawnChance } from '../gameUpdates/gameLoopUtils';
 
 const SIDEBAR_WIDTH_PX = 192;
 const MAX_DELTA_TIME_FACTOR = 3;
 const SHOP_ITEMS_COUNT = 5;
-const POWERUP_COST = 10; // Define the cost for each power-up
+const POWERUP_COST = 10; 
 
 // Helper function to shuffle an array (Fisher-Yates)
 function shuffleArray<T>(array: T[]): T[] {
@@ -51,19 +53,21 @@ export default function Home() {
         startGame, 
         startNextLevel, 
         addSpawnablePowerUp, 
-        gameStateRefs, // Contains goldRef and spawnablePowerUpsRef
+        gameStateRefs, 
     } = useGameLogic();
 
     const [shopItems, setShopItems] = useState<PowerUpType[]>([]); 
     const [purchasedInSession, setPurchasedInSession] = useState<Set<PowerUpType>>(new Set());
-    // State to trigger re-render when gold changes, ensuring buttons update correctly
     const [goldDisplay, setGoldDisplay] = useState(gameStateRefs.goldRef.current);
+    // State to store the calculated spawn chance for display
+    const [currentSpawnChance, setCurrentSpawnChance] = useState(0);
 
     const targetFps = 60; 
     const targetFrameTime = 1000 / targetFps; 
 
     // Draw end message callback
     const drawEndMessageCallback = useCallback((context: CanvasRenderingContext2D, state: 'won' | 'lost' | 'shop', finalScore: number) => {
+        // ... (draw won/lost message as before) ...
         if (state === 'shop') return; 
         const message = state === 'won' ? `You Win! Score: ${finalScore}` : 'Game Over!';
         const subMessage = 'Click to Restart';
@@ -85,7 +89,8 @@ export default function Home() {
 
     // Main game loop effect
     useEffect(() => {
-        const gameLoop = (timestamp: number) => {
+        // ... (game loop logic as before) ...
+         const gameLoop = (timestamp: number) => {
             const currentGameState = gameStateRefs.gameOverStateRef.current;
              if (currentGameState !== 'playing') { 
                  lastTimeRef.current = 0; 
@@ -131,20 +136,27 @@ export default function Home() {
          };
      }, [updateScoreCallback, setGameOverState, schedulePaddleShrink, scheduleFieldShrink, drawEndMessageCallback]);
 
-    // Effect to generate shop items and reset/sync state when entering shop
+    // Effect to setup shop state when entering shop
     useEffect(() => {
         if (gameOverState === 'shop') {
+            // Generate items
             const eligiblePowerUps = ALL_TOGGLEABLE_POWER_UPS.filter(p => p !== 'ALL_IN_ONE');
             const shuffled = shuffleArray(eligiblePowerUps);
             setShopItems(shuffled.slice(0, SHOP_ITEMS_COUNT));
-            setPurchasedInSession(new Set()); // Reset purchased items for the new shop session
-            setGoldDisplay(gameStateRefs.goldRef.current); // Sync gold display state
+            // Reset session purchases
+            setPurchasedInSession(new Set()); 
+            // Sync gold display
+            setGoldDisplay(gameStateRefs.goldRef.current); 
+            // Calculate and set initial spawn chance for display
+            const chance = calculateBaseSpawnChance(gameStateRefs.spawnablePowerUpsRef.current, 'main');
+            setCurrentSpawnChance(chance);
         }
-    }, [gameOverState, gameStateRefs.goldRef]); // Add goldRef to dependencies
+    }, [gameOverState, gameStateRefs.goldRef, gameStateRefs.spawnablePowerUpsRef]); // Add spawnablePowerUpsRef dependency
 
     // Canvas setup and game state effect
     useEffect(() => {
-        if (gameOverState === 'menu' || gameOverState === 'shop') {
+        // ... (canvas setup logic as before) ...
+         if (gameOverState === 'menu' || gameOverState === 'shop') {
              if (animationFrameIdRef.current) {
                  cancelAnimationFrame(animationFrameIdRef.current);
                  animationFrameIdRef.current = null;
@@ -224,6 +236,7 @@ export default function Home() {
 
     // --- Render Logic --- 
     if (gameOverState === 'menu') {
+        // ... (menu render logic as before) ...
         return (
             <div className="flex flex-col items-center justify-center h-screen bg-gray-900 text-white">
                 <h1 className="text-4xl font-bold mb-8">Brick Breaker</h1>
@@ -246,35 +259,35 @@ export default function Home() {
     // Render Shop Screen using UI components
     if (gameOverState === 'shop') {
         const handlePurchase = (item: PowerUpType) => {
-            // Prevent purchase if already owned globally or purchased in this session
             if (gameStateRefs.spawnablePowerUpsRef.current.has(item) || purchasedInSession.has(item)) return; 
-
-            // Check cost
             const cost = POWERUP_COST; 
-            if (gameStateRefs.goldRef.current < cost) {
-                console.log("Not enough gold!"); // Optional: Add user feedback
-                return; // Not enough gold
-            }
+            if (gameStateRefs.goldRef.current < cost) return;
             
-            // Deduct gold
             gameStateRefs.goldRef.current -= cost;
-            setGoldDisplay(gameStateRefs.goldRef.current); // Update display state
-
-            // Add to spawnable list
+            setGoldDisplay(gameStateRefs.goldRef.current); 
             addSpawnablePowerUp(item);
-            // Update purchased items state for UI feedback (disable button)
             setPurchasedInSession(prev => new Set(prev).add(item));
+            
+            // Recalculate spawn chance after purchase for display update
+            const newChance = calculateBaseSpawnChance(gameStateRefs.spawnablePowerUpsRef.current, 'main');
+            setCurrentSpawnChance(newChance);
 
-            console.log(`Purchased ${item} for ${cost} gold. Remaining: ${gameStateRefs.goldRef.current}`); 
+            console.log(`Purchased ${item} for ${cost} gold. Remaining: ${gameStateRefs.goldRef.current}. New Spawn Chance: ${newChance * 100}%`); 
         };
 
         return (
             <div className="flex flex-col items-center justify-center h-screen bg-gray-800 text-white">
                 <h1 className="text-4xl font-bold mb-6">Level Complete!</h1>
-                {/* Use goldDisplay state for rendering */}
-                <p className="text-3xl mb-10" style={{ color: GOLD_COLOR || '#FFD700' }}>
-                    Gold: {goldDisplay}
-                </p>
+                {/* Display Gold and Spawn Chance */}
+                <div className="flex items-center space-x-6 mb-10">
+                    <p className="text-3xl" style={{ color: GOLD_COLOR || '#FFD700' }}>
+                        Gold: {goldDisplay}
+                    </p>
+                    <p className="text-xl text-blue-300">
+                        {/* Format chance as percentage */}
+                        Spawn Chance: {(currentSpawnChance * 100).toFixed(0)}%
+                    </p>
+                </div>
                 
                 <h2 className="text-2xl font-semibold mb-4">Power-up Shop</h2>
                 <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-4 mb-10 w-full max-w-4xl px-4">
@@ -282,11 +295,8 @@ export default function Home() {
                         shopItems.map(item => {
                             const isGloballyOwned = gameStateRefs.spawnablePowerUpsRef.current.has(item);
                             const isPurchasedThisSession = purchasedInSession.has(item);
-                            // Check if affordable
                             const canAfford = goldDisplay >= POWERUP_COST;
-                            // Disable if owned globally OR purchased this session OR cannot afford
                             const isDisabled = isGloballyOwned || isPurchasedThisSession || !canAfford;
-                            // Determine button text/styling based on state
                             let buttonText = `Cost: ${POWERUP_COST}`;
                             let buttonStyle = 'bg-blue-600 hover:bg-blue-700';
                             if (isGloballyOwned) {
@@ -296,7 +306,7 @@ export default function Home() {
                                 buttonText = '(Added)';
                                 buttonStyle = 'bg-gray-500 opacity-70';
                             } else if (!canAfford) {
-                                buttonStyle = 'bg-red-800 opacity-50'; // Style for unaffordable
+                                buttonStyle = 'bg-red-800 opacity-50'; 
                             }
 
                             return (
@@ -334,7 +344,8 @@ export default function Home() {
 
     // Render Game View (Playing, Won, Lost)
     return (
-        <div className="flex items-center justify-center h-screen bg-gray-900 p-4">
+        // ... (game view render logic as before) ...
+         <div className="flex items-center justify-center h-screen bg-gray-900 p-4">
             <div 
                 ref={gameContainerRef} 
                 className="flex flex-row items-start border border-white relative"

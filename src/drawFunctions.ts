@@ -1,6 +1,6 @@
-import { Brick, PowerUp, Ball, Laser, PowerUpType, GameStateRefs } from './interfaces';
+import { Brick, PowerUp, Ball, Laser, PowerUpType } from './interfaces'; // Removed GameStateRefs import as it's not used directly
 import {
-    BOARD_WIDTH, BOARD_HEIGHT, PADDLE_HEIGHT, BALL_SIZE, /*Removed BRICK_WIDTH, BRICK_HEIGHT */ PADDLE_Y,
+    BOARD_WIDTH, BOARD_HEIGHT, PADDLE_HEIGHT, BALL_SIZE, PADDLE_Y,
     BRICK_PADDING, BRICK_OFFSET_LEFT, BRICK_OFFSET_TOP, POWER_UP_SIZE,
     INITIAL_PADDLE_WIDTH, LASER_WIDTH, SAFETY_NET_HEIGHT,
     LASER_STRIPE_WIDTH_PER_SHOT,
@@ -66,6 +66,7 @@ export const drawCollectionFieldRect = (
     fieldHeightOffset: number,
     fieldWidthOffset: number
 ) => {
+    // ... (no changes) ...
     if (fieldHeightOffset <= 0 && fieldWidthOffset <= 0) return;
     const fieldTopY = PADDLE_Y - fieldHeightOffset;
     const fieldX = paddleX - fieldWidthOffset;
@@ -106,7 +107,8 @@ export const drawCollectionFieldRect = (
 
 // Draw Balls
 export const drawBalls = (ctx: CanvasRenderingContext2D, allBalls: Ball[]) => {
-  allBalls.forEach(ball => {
+    // ... (no changes) ...
+    allBalls.forEach(ball => {
     ctx.save();
     const currentRadius = ball.isBig ? BALL_SIZE + BIG_BALL_SIZE_INCREASE : BALL_SIZE;
     ctx.beginPath();
@@ -142,76 +144,71 @@ export const drawBalls = (ctx: CanvasRenderingContext2D, allBalls: Ball[]) => {
   });
 };
 
-// Draw Bricks - Updated to use brick.width and brick.height
+// Draw Bricks
 export const drawBricks = (ctx: CanvasRenderingContext2D, bricks: Brick[][], columns: number, rows: number) => {
-  if (!bricks) return;
+    // ... (no changes) ...
+    if (!bricks) return;
   for (let c = 0; c < columns; c++) {
     if (!bricks[c]) continue;
     for (let r = 0; r < rows; r++) {
         const brick = bricks[c][r];
         if (brick && brick.status === 1) { 
             ctx.beginPath();
-            // Use brick.width and brick.height from the object
             ctx.rect(brick.x, brick.y, brick.width, brick.height);
-            if (brick.isBomb) {
-                ctx.fillStyle = BOMB_BRICK_COLOR;
-            } else if (brick.isSpecial) {
-                ctx.fillStyle = SPECIAL_BRICK_COLOR;
-            } else if (brick.upgradeLevel === 3) {
-                ctx.fillStyle = BUILDER_BRICK_COLOR;
-            } else if (brick.upgradeLevel === 2) {
-                ctx.fillStyle = UPGRADED_BRICK_COLOR;
-            } else if (brick.upgradeLevel === 1) {
-                ctx.fillStyle = REINFORCED_BRICK_COLOR;
-            } else {
-                ctx.fillStyle = NORMAL_BRICK_COLOR;
-            }
+            if (brick.isBomb) { ctx.fillStyle = BOMB_BRICK_COLOR; } else if (brick.isSpecial) { ctx.fillStyle = SPECIAL_BRICK_COLOR; } else if (brick.upgradeLevel === 3) { ctx.fillStyle = BUILDER_BRICK_COLOR; } else if (brick.upgradeLevel === 2) { ctx.fillStyle = UPGRADED_BRICK_COLOR; } else if (brick.upgradeLevel === 1) { ctx.fillStyle = REINFORCED_BRICK_COLOR; } else { ctx.fillStyle = NORMAL_BRICK_COLOR; }
             ctx.fill();
             ctx.closePath();
-
-            // Use brick.width for bomb indicator size
-            if (brick.isBomb) {
-                ctx.fillStyle = '#000000';
-                ctx.beginPath();
-                ctx.arc(brick.x + brick.width / 2, brick.y + brick.height / 2, brick.width / 4, 0, Math.PI * 2);
-                ctx.fill();
-                ctx.closePath();
-            }
-      }
-    }
-  }
+            if (brick.isBomb) { ctx.fillStyle = '#000000'; ctx.beginPath(); ctx.arc(brick.x + brick.width / 2, brick.y + brick.height / 2, brick.width / 4, 0, Math.PI * 2); ctx.fill(); ctx.closePath(); }
+        }
+     }
+   }
 };
 
-// Draw Brick Counter and Gold (Replaces drawBrickCounter)
-export const drawGameInfo = (ctx: CanvasRenderingContext2D, currentBrickCount: number, totalBricks: number, gold: number, isTestMode: boolean) => {
+// Updated to include bonusGold
+export const drawGameInfo = (
+    ctx: CanvasRenderingContext2D, 
+    currentBrickCount: number, 
+    totalBricks: number, 
+    gold: number, 
+    bonusGold: number, // Added bonusGold parameter
+    isTestMode: boolean
+) => {
+  ctx.font = "16px Arial";
+  ctx.textBaseline = 'top'; 
+  const yPos = 10; 
+  const xStart = 8; 
+  const padding = 15; 
+
+  // 1. Draw Brick Count
   const bricksBroken = totalBricks - currentBrickCount;
   const brickText = `Bricks: ${bricksBroken}/${totalBricks}`;
-  ctx.font = "16px Arial";
-  ctx.fillStyle = "#ffffff"; // White for brick count
+  ctx.fillStyle = "#ffffff"; 
   ctx.textAlign = 'left';
-  ctx.textBaseline = 'top'; 
-
-  const yPos = 10; // Y position for the text line
-  const xStart = 8; // Starting X position
-  const padding = 15; // Padding between texts
-
   ctx.fillText(brickText, xStart, yPos);
+  let currentX = xStart + ctx.measureText(brickText).width + padding;
 
-  // Only display gold if not in test mode
+  // 2. Draw Gold (if not test mode)
   if (!isTestMode) {
     const goldText = `Gold: ${gold}`;
-    // Measure the brick text width to position gold next to it
-    const brickTextWidth = ctx.measureText(brickText).width;
-    const goldXPos = xStart + brickTextWidth + padding;
-    ctx.fillStyle = GOLD_COLOR || "#FFD700"; // Gold color for gold count
-    ctx.fillText(goldText, goldXPos, yPos);
+    ctx.fillStyle = GOLD_COLOR || "#FFD700"; 
+    ctx.fillText(goldText, currentX, yPos);
+    currentX += ctx.measureText(goldText).width + padding;
+
+    // 3. Draw Bonus Gold (if not test mode and bonus > 0)
+    if (bonusGold > 0) {
+        const bonusText = `(+${bonusGold})`;
+        ctx.fillStyle = '#90EE90'; // Light green for bonus
+        ctx.fillText(bonusText, currentX, yPos);
+        // currentX += ctx.measureText(bonusText).width + padding; // Update currentX if more items follow
+    }
   }
 };
 
 
 // Draw PowerUps
 export const drawPowerUps = (ctx: CanvasRenderingContext2D, powerUps: PowerUp[]) => {
-  const currentTime = Date.now();
+    // ... (no changes) ...
+    const currentTime = Date.now();
   powerUps.forEach(powerUp => {
     if (powerUp.status === 'falling') {
       ctx.beginPath(); ctx.rect(powerUp.x, powerUp.y, POWER_UP_SIZE, POWER_UP_SIZE);
@@ -235,12 +232,14 @@ export const drawPowerUps = (ctx: CanvasRenderingContext2D, powerUps: PowerUp[])
 
 // Draw Lasers
 export const drawLasers = (ctx: CanvasRenderingContext2D, lasers: Laser[]) => {
+    // ... (no changes) ...
     lasers.forEach(laser => { ctx.beginPath(); ctx.rect(laser.x, laser.y, laser.width, laser.height); ctx.fillStyle = "#e74c3c"; ctx.fill(); ctx.closePath(); });
 };
 
 
 // Draw Safety Net
 export const drawSafetyNet = (ctx: CanvasRenderingContext2D, count: number) => {
+    // ... (no changes) ...
     if (count > 0) {
       ctx.save();
       ctx.fillStyle = POWER_UP_COLORS['SAFETY_NET'] + 'CC'; 
