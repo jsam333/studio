@@ -1,6 +1,7 @@
 // src/gameLoop.ts
 import React from 'react';
-import { Ball, PowerUp, Laser, PowerUpType, PowerUpSpawnEvent } from './interfaces'; 
+// Import GameMode type
+import { Ball, PowerUp, Laser, PowerUpType, PowerUpSpawnEvent, GameMode } from './interfaces'; 
 import { GameStateRefs, GameLoopCallbacks } from './interfaces';
 import { updateLasers } from './gameUpdates/laserUpdates';
 import { updateBalls } from './gameUpdates/ballUpdates';
@@ -19,7 +20,6 @@ export const gameUpdate = (
     callbacks: GameLoopCallbacks,
     deltaTime: number 
 ) => {
-    // Check Game Over State FIRST
     if (refs.gameOverStateRef.current !== 'playing') {
         ctx.clearRect(0, 0, BOARD_WIDTH, BOARD_HEIGHT); 
         callbacks.drawEndMessage(ctx, refs.gameOverStateRef.current, refs.scoreRef.current);
@@ -33,11 +33,10 @@ export const gameUpdate = (
 
     const columns = refs.brickColumnsRef.current;
     const rows = refs.brickRowsRef.current;
+    const gameMode = refs.gameModeRef.current; // Get the current game mode
 
-    // Update Ball Positions
     updateBalls(refs, callbacks, spawnRequests, currentTime, gameSpeedFactor, deltaTime, columns, rows);
 
-    // Pre-Start State Check & Drawing
     if (!refs.isGameStartedRef.current) {
         ctx.clearRect(0, 0, BOARD_WIDTH, BOARD_HEIGHT);
         drawBricks(ctx, refs.bricksRef.current, columns, rows);
@@ -46,13 +45,10 @@ export const gameUpdate = (
         return; 
     }
 
-    // Game Is Started and Running State
     let collectedPowerUpTypes: PowerUpType[] = []; 
-    
-    // Updates
     updateLasers(refs, callbacks, spawnRequests, currentTime, deltaTime, columns, rows); 
 
-    // Process spawn requests - Pass brickWidth
+    // Process spawn requests - Pass gameMode
     let newlySpawnedPowerUps: PowerUp[] = [];
     const currentFallingPowerUpCount = refs.powerUpsRef.current.filter(p => p.status === 'falling').length;
     const enabledPowerUps = refs.enabledPowerUpsRef.current;
@@ -60,11 +56,12 @@ export const gameUpdate = (
         trySpawnPowerUp( 
             request.brickX, 
             request.brickY, 
-            request.brickWidth, // Pass brick width
+            request.brickWidth, 
             request.marker === 'SPAWN_SPECIAL', 
             currentFallingPowerUpCount, 
             newlySpawnedPowerUps, 
             enabledPowerUps, 
+            gameMode, // Pass game mode
             currentTime 
         );
     });
@@ -72,7 +69,6 @@ export const gameUpdate = (
     refs.powerUpsRef.current = updatePowerUps( refs, gameSpeedFactor, newlySpawnedPowerUps, collectedPowerUpTypes, deltaTime );
     applyPowerUpEffects(refs, callbacks, collectedPowerUpTypes, currentTime, gameSpeedFactor);
 
-    // Drawing
     ctx.save();
     ctx.clearRect(0, 0, BOARD_WIDTH, BOARD_HEIGHT);
     drawBricks(ctx, refs.bricksRef.current, columns, rows);
@@ -92,10 +88,8 @@ export const gameUpdate = (
     }
     ctx.restore();
 
-    // Game Status Check
     const finalStatus = checkGameStatus(refs, callbacks, previousBallCount, columns, rows);
 
-    // Draw End Message if ended this frame
     if (finalStatus !== 'playing') {
         ctx.clearRect(0, 0, BOARD_WIDTH, BOARD_HEIGHT); 
         callbacks.drawEndMessage(ctx, finalStatus, refs.scoreRef.current);

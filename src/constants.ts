@@ -5,52 +5,49 @@ export const BOARD_WIDTH = 600;
 export const BOARD_HEIGHT = 400;
 
 // Paddle
-export const INITIAL_PADDLE_WIDTH = 80; // Was 100
+export const INITIAL_PADDLE_WIDTH = 80; 
 export const PADDLE_HEIGHT = 15;
 export const PADDLE_Y = BOARD_HEIGHT - PADDLE_HEIGHT;
-export const PADDLE_SPEED = 7; // Movement speed
-export const PADDLE_FRICTION = 0.9; // Friction factor for smoother stopping
+export const PADDLE_SPEED = 7; 
+export const PADDLE_FRICTION = 0.9; 
 
 // Ball
-export const BALL_SIZE = 4; // Was 10
-export const BASE_BALL_SPEED_FACTOR = 1; // Added this back with default value
+export const BALL_SIZE = 4; 
+export const BASE_BALL_SPEED_FACTOR = 1; 
 export const INITIAL_BALL_SPEED_X = 0;
 export const INITIAL_BALL_SPEED_Y = 4;
-export const MAX_BALL_SPEED_X = 10; // Added back for compatibility, example value
-export const MAX_BALL_SPEED_Y = 10; // Max vertical speed
-export const MIN_BALL_SPEED_Y = 1;  // Min vertical speed to prevent getting stuck horizontally
-export const STICKY_BALL_DURATION_MS = 3000; // How long the ball stays sticky
-export const HOMING_BALL_ACCELERATION = 0.05; // Speed increment per frame towards target
-export const MAX_HOMING_SPEED = 6; // Maximum speed for homing effect
-export const SPLIT_BALL_ANGLE_OFFSET = Math.PI / 6; // Angle offset for split balls (30 degrees)
-export const BIG_BALL_SIZE_INCREASE = 4; // Amount radius increases for BIG_BALL power-up
-export const PIERCE_BALL_HITS = 3; // Number of bricks a PIERCE_BALL can destroy before reverting
+export const MAX_BALL_SPEED_X = 10; 
+export const MAX_BALL_SPEED_Y = 10; 
+export const MIN_BALL_SPEED_Y = 1;  
+export const STICKY_BALL_DURATION_MS = 3000; 
+export const HOMING_BALL_ACCELERATION = 0.05; 
+export const MAX_HOMING_SPEED = 6; 
+export const SPLIT_BALL_ANGLE_OFFSET = Math.PI / 6; 
+export const BIG_BALL_SIZE_INCREASE = 4; 
+export const PIERCE_BALL_HITS = 3; 
 
 // Bricks
-export const BRICK_ROWS = 20; // Was 22
+export const BRICK_ROWS = 20; 
 export const BRICK_COLUMNS = 53;
-export const BRICK_PADDING = 1; // Was 2
-// Calculated width: (600 - (53-1)*1) / 53 = 548/53 = 10.33 -> Using 10
-export const BRICK_WIDTH = 10; // Was 8
-export const BRICK_HEIGHT = 9; // Was 11
-export const BRICK_OFFSET_TOP = 20; // Was 30
-// Calculated Offset Left: (600 - (53 * 10 + (53 - 1) * 1)) / 2 = (600 - 582) / 2 = 9
+export const BRICK_PADDING = 1; 
+export const BRICK_WIDTH = 10; 
+export const BRICK_HEIGHT = 9; 
+export const LEVEL1_BRICK_HEIGHT = 15; // Taller height for Level 1
+export const BRICK_OFFSET_TOP = 20; 
 export const BRICK_OFFSET_LEFT = (BOARD_WIDTH - (BRICK_COLUMNS * BRICK_WIDTH + (BRICK_COLUMNS - 1) * BRICK_PADDING)) / 2;
-export const BRICK_REGEN_DELAY = 5000; // Delay in milliseconds before a brick regenerates
+export const BRICK_REGEN_DELAY = 5000; 
 export const NORMAL_BRICK_POINTS = 10;
 export const REINFORCED_BRICK_POINTS = 30;
 export const UPGRADED_BRICK_POINTS = 50;
 export const BUILDER_BRICK_POINTS = 75;
 export const SPECIAL_BRICK_POINTS = 100;
-// --- Constants for src/gameLogic.ts (Re-added to fix import error without logic change) ---
-export const NORMAL_BRICK_STRENGTH = 1; // Example value
-export const REINFORCED_BRICK_STRENGTH = 2; // Example value
-export const UPGRADED_BRICK_STRENGTH = 3; // Example value
-export const BUILDER_BRICK_STRENGTH = 4; // Example value
-export const MAX_BRICK_UPGRADE_LEVEL = 3; // Example value (Matches BUILDER_BRICK_MAX_LEVEL?)
-export const BOMB_BRICK_POINTS = 1; // Set to 1 as requested
-export const BOMB_DAMAGE_POINTS = 10; // Example value for explosion damage points
-// --- End Re-added Constants ---
+export const NORMAL_BRICK_STRENGTH = 1; 
+export const REINFORCED_BRICK_STRENGTH = 2; 
+export const UPGRADED_BRICK_STRENGTH = 3; 
+export const BUILDER_BRICK_STRENGTH = 4; 
+export const MAX_BRICK_UPGRADE_LEVEL = 3; 
+export const BOMB_BRICK_POINTS = 1; 
+export const BOMB_DAMAGE_POINTS = 10; 
 
 
 // Power-ups
@@ -59,7 +56,7 @@ export const POWER_UP_SPEED = 2;
 export const BASE_POWER_UP_SPEED = 2;
 export const POWER_UP_SPAWN_THRESHOLD = 1.0;
 export const POWER_UP_CHANCE_REDUCTION_PER_EXTRA = 0.05;
-export const SAFETY_NET_HEIGHT = 3; // Was 5
+export const SAFETY_NET_HEIGHT = 3; 
 export const BUILDER_BRICK_MAX_LEVEL = 3;
 export const BUILDER_BALL_SPAWN_CHANCE = 0.15;
 export const MULTI_BALL_COUNT = 3;
@@ -67,20 +64,16 @@ export const BLACK_BALL_DURATION_MS = 10000;
 export const BOMB_BRICK_SPAWN_CHANCE = 0.1;
 export const BOMB_EXPLOSION_RADIUS_FACTOR = 1.5;
 
-// --- Constants for src/gameUtils.ts ---
 export const BASE_POWER_UP_CHANCE = 1;
 export const POWER_UP_COUNT_THRESHOLD = 20;
 export const POWER_UP_SECOND_THRESHOLD = 4;
 export const POWER_UP_SECOND_CHANCE_REDUCTION_PER_EXTRA = 0.02;
-// --- End Re-added Constants ---
 
-// --- Constants for src/gameUpdates/powerUpEffects.ts ---
 export const SPEED_UP_INCREMENT = 0.1;
 export const SPLITTING_BALL_DURATION = 10000;
 export const BIG_BALL_DURATION = 10000;
 export const BUILDER_BALL_DURATION = 10000;
 export const BLACK_BALL_DURATION = 10000;
-// --- End Re-added Constants ---
 
 
 // Collection Field
@@ -117,7 +110,6 @@ export const ALL_TOGGLEABLE_POWER_UPS: PowerUpType[] = [
 ];
 
 // Power-up specific constants
-// NOTE: The WIDEN_PADDLE increment and max width might need adjustment now that INITIAL_PADDLE_WIDTH changed
 export const PADDLE_WIDEN_INCREMENT = INITIAL_PADDLE_WIDTH * 0.1;
 export const MAX_PADDLE_WIDEN_DURATION = 5000;
 export const MIN_PADDLE_WIDEN_DURATION = 100;
@@ -129,7 +121,7 @@ export const LASER_COOLDOWN = 300;
 export const LASER_STRIPE_WIDTH_PER_SHOT = 4;
 
 // Colors
-export const NORMAL_BRICK_COLOR = '#e67e22'; // Was #0095DD
+export const NORMAL_BRICK_COLOR = '#e67e22'; 
 export const REINFORCED_BRICK_COLOR = '#0077AA';
 export const UPGRADED_BRICK_COLOR = '#005588';
 export const BUILDER_BRICK_COLOR = '#44AAFF';
@@ -139,24 +131,24 @@ export const RAINBOW_COLORS = ['#FF0000', '#FF7F00', '#FFFF00', '#00FF00', '#000
 export const RAINBOW_FLASH_INTERVAL = 100;
 
 export const POWER_UP_COLORS: { [key in PowerUpType | 'NONE']: string } = {
-    MULTI_BALL: '#32CD32',       // LimeGreen
-    WIDEN_PADDLE: '#FF69B4',     // HotPink
-    LASER_PADDLE: '#FF4500',     // OrangeRed
-    REGEN_BRICK: '#ADFF2F',      // GreenYellow
-    SAFETY_NET: '#1E90FF',       // DodgerBlue
-    REINFORCE_BRICK: '#708090', // SlateGray
-    MAKE_SPECIAL: '#FFD700',     // Gold
-    BLACK_BALL: '#000000',       // Black
-    PIERCE_BALL: '#DC143C',      // Crimson
-    UPGRADE_BRICK: '#8A2BE2',    // BlueViolet
-    BUILDER_BALL: '#4682B4',    // SteelBlue
-    BIG_BALL: '#F08080',        // LightCoral
-    SPLITTING_BALL: '#9370DB', // MediumPurple
-    SPEED_UP: '#FFA500',        // Orange
-    COLLECTION_FIELD: '#20B2AA', // LightSeaGreen
-    HOMING_BALL: '#DAA520',      // GoldenRod
-    BOMB_BRICK: '#A52A2A',      // Brown
-    ALL_IN_ONE: '#FFFFFF',       // White (placeholder, uses rainbow)
-    STICKY_PADDLE: '#B8860B',   // DarkGoldenRod
-    NONE: '#888888'             // Gray for unknown/default
+    MULTI_BALL: '#32CD32',       
+    WIDEN_PADDLE: '#FF69B4',     
+    LASER_PADDLE: '#FF4500',     
+    REGEN_BRICK: '#ADFF2F',      
+    SAFETY_NET: '#1E90FF',       
+    REINFORCE_BRICK: '#708090', 
+    MAKE_SPECIAL: '#FFD700',     
+    BLACK_BALL: '#000000',       
+    PIERCE_BALL: '#DC143C',      
+    UPGRADE_BRICK: '#8A2BE2',    
+    BUILDER_BALL: '#4682B4',    
+    BIG_BALL: '#F08080',        
+    SPLITTING_BALL: '#9370DB', 
+    SPEED_UP: '#FFA500',        
+    COLLECTION_FIELD: '#20B2AA', 
+    HOMING_BALL: '#DAA520',      
+    BOMB_BRICK: '#A52A2A',      
+    ALL_IN_ONE: '#FFFFFF',       
+    STICKY_PADDLE: '#B8860B',   
+    NONE: '#888888'             
 };

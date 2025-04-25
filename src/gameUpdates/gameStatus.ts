@@ -1,44 +1,59 @@
 // src/gameUpdates/gameStatus.ts
-import { GameStateRefs, GameLoopCallbacks } from '../interfaces';
+import { GameStateRefs, GameLoopCallbacks, GameState } from '../interfaces'; // Import GameState
 
-// This function now returns the determined game state
-// And accepts grid dimensions
+// This function now returns the determined game state, including 'shop'
 export const checkGameStatus = (
     refs: GameStateRefs,
     callbacks: GameLoopCallbacks,
     previousBallCount: number,
-    columns: number, // Add grid dimensions
-    rows: number     // Add grid dimensions
-): 'playing' | 'won' | 'lost' => {
-    let currentGameOverState: 'playing' | 'won' | 'lost' = 'playing';
+    columns: number, 
+    rows: number     
+): GameState => { // Return type is now GameState
+    // Check current state first
+    if (refs.gameOverStateRef.current !== 'playing') {
+        return refs.gameOverStateRef.current; // Return existing end state
+    }
+
+    let nextState: GameState = 'playing';
 
     // Check for loss condition
-    if (refs.ballsRef.current.length === 0 && refs.stuckBallsRef.current.length === 0 && previousBallCount > 0) {
-        currentGameOverState = 'lost';
+    if (refs.ballsRef.current.length === 0 && refs.stuckBallsRef.current.length === 0 && previousBallCount > 0 && !refs.isGameStartedRef.current) {
+        // Don't lose immediately if ball hasn't been launched yet
+    } else if (refs.ballsRef.current.length === 0 && refs.stuckBallsRef.current.length === 0 && previousBallCount > 0) {
+         nextState = 'lost';
     }
 
-    // Check for win condition using provided dimensions
-    let remainingBricks = 0;
-    for (let c = 0; c < columns; c++) {
-        if (!refs.bricksRef.current[c]) continue;
-        for (let r = 0; r < rows; r++) {
-            if (refs.bricksRef.current[c]?.[r]?.status === 1) {
-                remainingBricks++;
+    // Check for win/shop condition
+    if (nextState === 'playing') { // Only check win if not already lost
+        let remainingBricks = 0;
+        for (let c = 0; c < columns; c++) {
+            if (!refs.bricksRef.current[c]) continue;
+            for (let r = 0; r < rows; r++) {
+                if (refs.bricksRef.current[c]?.[r]?.status === 1) {
+                    remainingBricks++;
+                }
             }
         }
-    }
-    
-    if (remainingBricks === 0 && refs.scoreRef.current > 0 && currentGameOverState === 'playing') {
-        currentGameOverState = 'won';
+        
+        // Win/Shop condition met
+        if (remainingBricks === 0 && refs.scoreRef.current >= 0) { // Allow score 0 for win/shop
+             const currentMode = refs.gameModeRef.current;
+             if (currentMode === 'main') {
+                 nextState = 'shop'; // Go to shop after winning level 1
+             } else {
+                 nextState = 'won'; // Regular win for test level
+             }
+        }
     }
 
     // Handle Game End state update if necessary
-    if (currentGameOverState !== 'playing') {
-        if (refs.gameOverStateRef.current !== currentGameOverState) {
-             callbacks.setGameOverState(currentGameOverState);
+    if (nextState !== 'playing') {
+        // Update state only if it has changed
+        if (refs.gameOverStateRef.current !== nextState) {
+             callbacks.setGameOverState(nextState);
         }
-        refs.gameIsRunningRef.current = false; 
+        refs.gameIsRunningRef.current = false; // Stop game logic updates
     }
 
-    return currentGameOverState;
+    return nextState;
 };

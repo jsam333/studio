@@ -1,5 +1,5 @@
 // src/gameUpdates/gameLoopUtils.ts
-import { Ball, Brick, PowerUp, PowerUpType } from '../interfaces';
+import { Ball, Brick, PowerUp, PowerUpType, GameMode } from '../interfaces'; // Import GameMode
 import {
     BRICK_HEIGHT, POWER_UP_SIZE, 
     ALL_TOGGLEABLE_POWER_UPS 
@@ -8,29 +8,28 @@ import {
 const POWER_UP_SPAWN_THRESHOLD = 20;
 const POWER_UP_CHANCE_REDUCTION_PER_EXTRA = 0.02; 
 
-// Updated createPowerUp to accept brickWidth
 export const createPowerUp = (x: number, y: number, brickWidth: number, type: PowerUpType, timeCreated?: number): PowerUp => ({
-    // Use brickWidth for centering
     x: x + brickWidth / 2 - POWER_UP_SIZE / 2, 
     y: y + 5,
     type, status: 'falling', id: Date.now() + Math.random() * 10, timeCreated
 });
 
-// Updated trySpawnPowerUp to accept brickWidth
+// Updated trySpawnPowerUp to accept gameMode and conditionally spawn
 export const trySpawnPowerUp = (
     brickX: number,
     brickY: number,
-    brickWidth: number, // Added brickWidth
+    brickWidth: number, 
     wasSpecial: boolean,
     currentFallingPowerUpCount: number,
     newlySpawnedPowerUps: PowerUp[],
     enabledPowerUps: Set<PowerUpType>, 
+    gameMode: GameMode | null, // Added gameMode parameter
     currentTime?: number
 ): void => {
     if (wasSpecial) {
-        // Pass brickWidth to createPowerUp
+        // Special bricks always drop ALL_IN_ONE regardless of mode
         newlySpawnedPowerUps.push(createPowerUp(brickX, brickY, brickWidth, 'ALL_IN_ONE', currentTime));
-    } else {
+    } else if (gameMode === 'test') { // Only spawn random power-ups in 'test' mode
         const possibleTypes = ALL_TOGGLEABLE_POWER_UPS.filter(type => enabledPowerUps.has(type));
         if (possibleTypes.length === 0) {
             return;
@@ -44,10 +43,10 @@ export const trySpawnPowerUp = (
         }
         if (Math.random() < spawnChance) {
             const type = possibleTypes[Math.floor(Math.random() * possibleTypes.length)];
-            // Pass brickWidth to createPowerUp
             newlySpawnedPowerUps.push(createPowerUp(brickX, brickY, brickWidth, type));
         }
     }
+    // If mode is 'main' and brick wasn't special, do nothing (no power-up spawn)
 };
 
 export const createNewBall = (x: number, y: number, speedX: number, speedY: number, currentSpeedFactor: number): Ball => ({
@@ -58,7 +57,6 @@ export const createNewBall = (x: number, y: number, speedX: number, speedY: numb
     isBlack: false, pierceHitsRemaining: 0, isBlue: false, isBig: false, isSplitting: false, isHoming: false
 });
 
-// Updated findClosestBrick to use brick dimensions
 export const findClosestBrick = (ball: Ball, bricks: Brick[][], columns: number, rows: number): Brick | null => {
     let closestBrick: Brick | null = null;
     let minDistSq = Infinity;
@@ -71,7 +69,6 @@ export const findClosestBrick = (ball: Ball, bricks: Brick[][], columns: number,
         for (let r = 0; r < rows; r++) {
             const brick = bricks[c][r];
             if (brick && brick.status === 1) {
-                // Use brick.width and brick.height for center calculation
                 const brickCenterX = brick.x + brick.width / 2;
                 const brickCenterY = brick.y + brick.height / 2;
                 const distSq = Math.pow(ballCenterX - brickCenterX, 2) + Math.pow(ballCenterY - brickCenterY, 2);

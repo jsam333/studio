@@ -6,32 +6,23 @@ import {
     BALL_SIZE, BIG_BALL_SIZE_INCREASE, PADDLE_Y, INITIAL_BALL_SPEED_Y,
     PADDLE_WIDEN_INCREMENT, FIELD_SHRINK_RATE_H, FIELD_SHRINK_RATE_W,
     FIELD_SHRINK_INTERVAL,
-    BRICK_COLUMNS, BRICK_ROWS // Import default brick dimensions
+    BRICK_COLUMNS, BRICK_ROWS 
 } from '../constants';
-import { Ball, Brick, PowerUp, Laser, PowerUpType, GameState, GameStateRefs as IGameStateRefs } from '../interfaces';
-// Import the updated initializeBricks
+import { Ball, Brick, PowerUp, Laser, PowerUpType, GameState, GameMode, GameStateRefs as IGameStateRefs } from '../interfaces';
 import { initializeBricks, initialBallState } from '../gameLogic';
 import { calculateShrinkDuration } from '../gameUtils';
 
-// Use the imported interface definition
 export interface GameStateRefs extends IGameStateRefs {
     widenTimeoutRef?: React.MutableRefObject<NodeJS.Timeout | null>;
     collectionFieldShrinkTimerRef?: React.MutableRefObject<NodeJS.Timeout | null>;
     animationFrameIdRef?: React.MutableRefObject<number | null>; 
     lastTimeRef?: React.MutableRefObject<number>; 
-    // Add grid dimensions to refs
-    brickColumnsRef: React.MutableRefObject<number>;
-    brickRowsRef: React.MutableRefObject<number>;
 }
 
-type GameMode = 'main' | 'test';
-
-
 export function useGameLogic() {
-    // --- Refs for mutable game state ---
     const paddleXRef = useRef((BOARD_WIDTH - INITIAL_PADDLE_WIDTH) / 2);
     const ballsRef = useRef<Ball[]>([]);
-    const bricksRef = useRef<Brick[][]>([]); // Initialize empty, will be set by startGame/handleResetGame
+    const bricksRef = useRef<Brick[][]>([]); 
     const powerUpsRef = useRef<PowerUp[]>([]);
     const scoreRef = useRef(0);
     const gameIsRunningRef = useRef(false);
@@ -49,20 +40,15 @@ export function useGameLogic() {
     const stuckBallsRef = useRef<Ball[]>([]);
     const enabledPowerUpsRef = useRef<Set<PowerUpType>>(new Set(['MULTI_BALL'])); 
     const isGameStartedRef = useRef(false);
-    // Ref to store the current game mode
-    const gameModeRef = useRef<GameMode | null>(null);
-    // Refs to store current grid dimensions
+    const gameModeRef = useRef<GameMode | null>(null); 
     const brickColumnsRef = useRef<number>(BRICK_COLUMNS);
     const brickRowsRef = useRef<number>(BRICK_ROWS);
 
-
-    // --- State ---
     const [gameOverState, setGameOverState] = useState<GameState>('menu');
     const gameOverStateRef = useRef(gameOverState); 
     const [enabledPowerUps, setEnabledPowerUps] = useState<Set<PowerUpType>>(() => new Set(['MULTI_BALL']));
     const [showSidebar, setShowSidebar] = useState<boolean>(false);
 
-    // Sync state with refs
     useEffect(() => {
         enabledPowerUpsRef.current = enabledPowerUps;
     }, [enabledPowerUps]);
@@ -72,7 +58,6 @@ export function useGameLogic() {
         gameIsRunningRef.current = gameOverState === 'playing';
     }, [gameOverState]);
 
-    // --- Callbacks ---
     const updateScoreCallback = useCallback((points: number) => {
         scoreRef.current += points; 
     }, []);
@@ -146,26 +131,18 @@ export function useGameLogic() {
         }, FIELD_SHRINK_INTERVAL); 
     }, []);
 
-    // Helper to reset common game elements based on mode
     const resetLevel = useCallback((mode: GameMode | null) => {
-        const currentMode = mode ?? gameModeRef.current; // Use provided mode or stored mode
-        if (!currentMode) return; // Should not happen if called after start/during reset
-
-        // Determine dimensions based on mode
+        const currentMode = mode ?? gameModeRef.current; 
+        if (!currentMode) return; 
         const cols = currentMode === 'main' ? 4 : BRICK_COLUMNS;
         const rows = currentMode === 'main' ? 2 : BRICK_ROWS;
-        
-        // Update dimension refs
         brickColumnsRef.current = cols;
         brickRowsRef.current = rows;
-
-        // Reset bricks with correct dimensions
         bricksRef.current = initializeBricks(cols, rows);
-
-        // Reset other game elements
         powerUpsRef.current = [];
         lasersRef.current = [];
-        scoreRef.current = 0;
+        // Keep score between levels? For now, reset it.
+        // scoreRef.current = 0; 
         widenLevelRef.current = 0;
         laserShotsRef.current = 0;
         safetyNetCountRef.current = 0;
@@ -173,28 +150,21 @@ export function useGameLogic() {
         collectionFieldHeightRef.current = FIELD_INITIAL_HEIGHT_OFFSET;
         collectionFieldWidthOffsetRef.current = FIELD_INITIAL_WIDTH_OFFSET;
         stickyPaddleChargesRef.current = 0; 
-
         setupInitialBall();
-
-        // Reset start flag
         isGameStartedRef.current = false;
-
-    }, [setupInitialBall]); // Dependency on setupInitialBall
+    }, [setupInitialBall]); 
 
     const handleResetGame = useCallback(() => {
         gameIsRunningRef.current = false; 
-        isGameStartedRef.current = false; // Ensure start flag is reset here too
+        isGameStartedRef.current = false; 
         if (widenTimeoutRef.current) { clearTimeout(widenTimeoutRef.current); widenTimeoutRef.current = null; }
         if (collectionFieldShrinkTimerRef.current) { clearInterval(collectionFieldShrinkTimerRef.current); collectionFieldShrinkTimerRef.current = null; }
-
-        // Re-initialize level based on the *last* played mode
-        resetLevel(null); // Pass null to use the stored gameModeRef
-
-        // Reset state variables
+        // Reset score when going back to menu
+        scoreRef.current = 0; 
+        resetLevel(null); // Reset using stored mode, but doesn't matter much as we go to menu
         setGameOverState('menu');
         setShowSidebar(false); 
-        gameModeRef.current = null; // Clear the stored mode
-
+        gameModeRef.current = null; 
     }, [resetLevel]); 
 
     const launchStuckBalls = useCallback((isInitialLaunch = false) => {
@@ -264,24 +234,30 @@ export function useGameLogic() {
         });
     }, []); 
 
-
-    // --- Initial setup (Now handled by startGame) ---
-    // useEffect(() => {
-    //     setupInitialBall(); // Removed: Ball setup happens after bricks are ready
-    // }, [setupInitialBall]); 
-
-    // --- Start Game Function (Modified) ---
+    // Function to start the initial game from the menu
     const startGame = useCallback((mode: GameMode) => {
         if (gameOverStateRef.current === 'menu') {
-            gameModeRef.current = mode; // Store the selected mode
-            resetLevel(mode); // Initialize level based on mode
+            scoreRef.current = 0; // Reset score when starting from menu
+            gameModeRef.current = mode; 
+            resetLevel(mode); 
             setShowSidebar(mode === 'test');
             setGameOverState('playing');
         }
-    }, [resetLevel]); // Depends on resetLevel
+    }, [resetLevel]); 
 
+    // New function to start the next level (e.g., from the shop)
+    const startNextLevel = useCallback(() => {
+        // Currently, just restarts level 1 (main mode)
+        // Score is NOT reset here, allowing accumulation
+        if (gameOverStateRef.current === 'shop') {
+            const nextMode: GameMode = 'main'; // Or determine next level logic here
+            gameModeRef.current = nextMode;
+            resetLevel(nextMode); 
+            setShowSidebar(false); // Assuming next levels don't have sidebar by default
+            setGameOverState('playing');
+        }
+    }, [resetLevel]);
 
-    // --- Return values ---
     const gameStateRefs: GameStateRefs = {
         paddleXRef, ballsRef, bricksRef, powerUpsRef, scoreRef, paddleWidthRef,
         widenLevelRef, laserShotsRef, lasersRef, safetyNetCountRef,
@@ -289,20 +265,15 @@ export function useGameLogic() {
         collectionFieldHeightRef, collectionFieldWidthOffsetRef,
         stickyPaddleChargesRef, stuckBallsRef, enabledPowerUpsRef, isGameStartedRef,
         widenTimeoutRef, collectionFieldShrinkTimerRef,
-        // Pass dimension refs
         brickColumnsRef, brickRowsRef, 
+        gameModeRef, 
     };
 
     return {
-        // State values
         gameOverState,
         enabledPowerUps,
         showSidebar,
-
-        // State setters 
         setGameOverState, 
-        
-        // Callback functions
         updateScoreCallback,
         handleResetGame,
         launchStuckBalls,
@@ -310,8 +281,7 @@ export function useGameLogic() {
         schedulePaddleShrink,
         scheduleFieldShrink,
         startGame,
-
-        // Refs collection 
+        startNextLevel, // Expose the new function
         gameStateRefs,
     };
 }

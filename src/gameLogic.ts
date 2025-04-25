@@ -1,13 +1,14 @@
 import { Brick, CollisionResult, Ball, SpawnMarker, PowerUpSpawnEvent } from './interfaces';
 import {
     BOARD_WIDTH, BOARD_HEIGHT, BALL_SIZE, BIG_BALL_SIZE_INCREASE, PADDLE_Y, 
-    BRICK_WIDTH, BRICK_HEIGHT, BRICK_PADDING, BRICK_OFFSET_LEFT, BRICK_OFFSET_TOP,
+    BRICK_HEIGHT, LEVEL1_BRICK_HEIGHT, // Use both height constants
+    BRICK_PADDING, BRICK_OFFSET_LEFT, BRICK_OFFSET_TOP,
     NORMAL_BRICK_STRENGTH, REINFORCED_BRICK_STRENGTH, UPGRADED_BRICK_STRENGTH, BUILDER_BRICK_STRENGTH,
     REINFORCED_BRICK_POINTS, NORMAL_BRICK_POINTS, SPECIAL_BRICK_POINTS, UPGRADED_BRICK_POINTS, BUILDER_BRICK_POINTS,
     MAX_BRICK_UPGRADE_LEVEL, BOMB_BRICK_POINTS, BOMB_DAMAGE_POINTS, INITIAL_PADDLE_WIDTH
 } from './constants';
 
-// Updated initializeBricks to calculate width dynamically
+// Updated initializeBricks to calculate width dynamically and use conditional height
 export const initializeBricks = (columns: number, rows: number): Brick[][] => {
     const newBricks: Brick[][] = [];
     
@@ -15,19 +16,22 @@ export const initializeBricks = (columns: number, rows: number): Brick[][] => {
     const availableWidth = BOARD_WIDTH - 2 * BRICK_OFFSET_LEFT;
     const totalPaddingWidth = (columns - 1) * BRICK_PADDING;
     const calculatedBrickWidth = (availableWidth - totalPaddingWidth) / columns;
-    const calculatedBrickHeight = BRICK_HEIGHT; // Keep original height
+    
+    // Determine brick height based on the number of columns (simple check for level 1)
+    const isLevel1 = columns === 4; 
+    const calculatedBrickHeight = isLevel1 ? LEVEL1_BRICK_HEIGHT : BRICK_HEIGHT;
 
     for (let c = 0; c < columns; c++) {
       newBricks[c] = [];
       for (let r = 0; r < rows; r++) {
-        // Use calculated width and padding for X position
         const brickX = (c * (calculatedBrickWidth + BRICK_PADDING)) + BRICK_OFFSET_LEFT;
+        // Use calculated height for Y position calculation
         const brickY = (r * (calculatedBrickHeight + BRICK_PADDING)) + BRICK_OFFSET_TOP;
         newBricks[c][r] = {
             x: brickX, 
             y: brickY, 
-            width: calculatedBrickWidth, // Store calculated width
-            height: calculatedBrickHeight, // Store height
+            width: calculatedBrickWidth, 
+            height: calculatedBrickHeight, // Store calculated height
             status: 1,
             strength: NORMAL_BRICK_STRENGTH, 
             isSpecial: false,
@@ -78,7 +82,6 @@ const damageBrick = (brick: Brick, bricks: Brick[][], columns: number, rows: num
     if (destroyed) {
         const marker: SpawnMarker = brick.isSpecial ? 'SPAWN_SPECIAL' : 'PENDING';
         if (!brick.isBomb) { 
-             // Include brick.width in the spawn event
              spawnEvents.push({ marker, brickX: brick.x, brickY: brick.y, brickWidth: brick.width });
         }
     }
@@ -139,7 +142,6 @@ export const checkBrickCollision = (
         for (let r = 0; r < rows; r++) { 
             const brick = bricks[c][r];
             if (brick && brick.status === 1) { 
-                // Use brick.width and brick.height for collision check
                 if (nextBallX + checkRadius > brick.x && nextBallX - checkRadius < brick.x + brick.width &&
                     nextBallY + checkRadius > brick.y && nextBallY - checkRadius < brick.y + brick.height) {
 
@@ -150,12 +152,10 @@ export const checkBrickCollision = (
                     let tempSpeedY = ball.speedY;
 
                      if (!(ball.pierceHitsRemaining && ball.pierceHitsRemaining > 0)) {
-                         // Use brick.width and brick.height for center calculation
                          const brickCenterX = brick.x + brick.width / 2;
                          const brickCenterY = brick.y + brick.height / 2;
                          const vecX = ball.x - brickCenterX;
                          const vecY = ball.y - brickCenterY;
-                         // Use brick.width and brick.height for collision side determination
                          const w = (brick.width / 2) + checkRadius;
                          const h = (brick.height / 2) + checkRadius;
                          const crossWidth = w * vecY;
