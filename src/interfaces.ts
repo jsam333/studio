@@ -26,6 +26,8 @@ export interface PowerUp {
   status: 'falling' | 'collected';
   id: number;
   timeCreated?: number;
+  // Add speedY for power-ups that fall
+  speedY?: number; 
 }
 
 export interface Ball {
@@ -76,13 +78,14 @@ export interface Laser {
     y: number;
     width: number;
     height: number;
-    speed: number;
+    speed: number; // Laser speed is inherent, updated via scaledDeltaTime
     id: number;
 }
 
 export type GameState = 'menu' | 'playing' | 'won' | 'lost' | 'shop';
 export type GameMode = 'main' | 'test';
 
+// Base refs shared across hooks and components
 export interface GameStateRefsBase {
     paddleXRef: React.MutableRefObject<number>;
     ballsRef: React.MutableRefObject<Ball[]>;
@@ -113,19 +116,26 @@ export interface GameStateRefsBase {
     gameModeRef: React.MutableRefObject<GameMode | null>;
 }
 
+// Extended refs including timers and loop-specific refs
 export interface GameStateRefs extends GameStateRefsBase {
-    widenTimeoutRef?: React.MutableRefObject<NodeJS.Timeout | null>;
+    // widenTimeoutRef?: React.MutableRefObject<NodeJS.Timeout | null>; // REMOVED
+    paddleShrinkCountdownRef?: React.MutableRefObject<number | null>; // ADDED: Number for remaining ms
     collectionFieldShrinkTimerRef?: React.MutableRefObject<NodeJS.Timeout | null>;
-    bonusGoldTimerRef?: React.MutableRefObject<NodeJS.Timeout | null>; // Timer for bonus gold countdown (can be Timeout or Interval)
+    bonusGoldTimerRef?: React.MutableRefObject<NodeJS.Timeout | null>; 
+    bonusGoldDecrementIntervalRef?: React.MutableRefObject<NodeJS.Timeout | null>; // Timer for bonus gold decrement
     animationFrameIdRef?: React.MutableRefObject<number | null>;
     lastTimeRef?: React.MutableRefObject<number>;
     currentLevelRef: React.MutableRefObject<number>;
 }
 
+// Callbacks passed from the main component/hook to the game loop
 export interface GameLoopCallbacks {
     updateScoreCallback: (points: number) => void;
     setGameOverState: React.Dispatch<React.SetStateAction<GameState>>;
     schedulePaddleShrink: () => void;
+    executePaddleShrink: () => void; // ADDED: Callback to execute the shrink logic
     scheduleFieldShrink: () => void;
-    drawEndMessage: (context: CanvasRenderingContext2D, state: 'won' | 'lost' | 'shop', finalScore: number) => void;
+    drawEndMessage: (context: CanvasRenderingContext2D, state: GameState, finalScore: number) => void; // Use GameState type
+    // Add speedY to PowerUp interface if not already there
+    // Ensure PowerUp interface has speedY?: number;
 }
