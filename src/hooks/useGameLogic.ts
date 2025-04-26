@@ -18,7 +18,10 @@ import { calculateShrinkDuration } from '../gameUtils';
 // Constants for Bonus Gold
 const INITIAL_BONUS_GOLD = 30;
 const MINIMUM_BONUS_GOLD = 5;
-const BONUS_GOLD_START_DELAY = 5000;
+const BONUS_GOLD_START_DELAY_DEFAULT = 10000; // 5 seconds (Levels 1-5)
+const BONUS_GOLD_START_DELAY_EXTENDED = 15000; // 10 seconds (Levels 6-10)
+const BONUS_GOLD_START_DELAY_HIGH = 20000; // 15 seconds (Levels 11-15)
+const BONUS_GOLD_START_DELAY_MAX = 30000; // 20 seconds (Levels 16-20)
 const BONUS_GOLD_DECREMENT_INTERVAL = 1000;
 
 export function useGameLogic() {
@@ -131,18 +134,18 @@ export function useGameLogic() {
         const handleKeyDown = (event: KeyboardEvent) => {
             if (gameOverStateRef.current === 'playing' && event.code === 'Space' && !event.repeat) {
                 event.preventDefault();
-                if (gameSpeedFactorRef.current === BASE_BALL_SPEED_FACTOR) {
-                    gameSpeedFactorRef.current = BASE_BALL_SPEED_FACTOR * 2;
-                }
+                // if (gameSpeedFactorRef.current === BASE_BALL_SPEED_FACTOR) {
+                //     gameSpeedFactorRef.current = BASE_BALL_SPEED_FACTOR * 2;
+                // }
             }
         };
 
         const handleKeyUp = (event: KeyboardEvent) => {
             if (event.code === 'Space') {
                 event.preventDefault();
-                if (gameSpeedFactorRef.current === BASE_BALL_SPEED_FACTOR * 2) {
-                    gameSpeedFactorRef.current = BASE_BALL_SPEED_FACTOR;
-                }
+                // if (gameSpeedFactorRef.current === BASE_BALL_SPEED_FACTOR * 2) {
+                //     gameSpeedFactorRef.current = BASE_BALL_SPEED_FACTOR;
+                // }
             }
         };
 
@@ -195,10 +198,25 @@ export function useGameLogic() {
         }, FIELD_SHRINK_INTERVAL);
     }, []);
 
+    // --- MODIFIED: startBonusGoldCountdown function ---
     const startBonusGoldCountdown = useCallback(() => {
         if (gameModeRef.current !== 'main' || bonusCountdownStartedRef.current) return;
         bonusCountdownStartedRef.current = true;
         clearBonusGoldTimers();
+
+        // Determine delay based on current level
+        const currentLevel = currentLevelRef.current;
+        let startDelay;
+        if (currentLevel >= 16 && currentLevel <= 20) {
+            startDelay = BONUS_GOLD_START_DELAY_MAX;
+        } else if (currentLevel >= 11 && currentLevel <= 15) {
+            startDelay = BONUS_GOLD_START_DELAY_HIGH;
+        } else if (currentLevel >= 6 && currentLevel <= 10) {
+            startDelay = BONUS_GOLD_START_DELAY_EXTENDED;
+        } else {
+            startDelay = BONUS_GOLD_START_DELAY_DEFAULT;
+        }
+
         bonusGoldTimerRef.current = setTimeout(() => {
             bonusGoldDecrementIntervalRef.current = setInterval(() => {
                 if (bonusGoldRef.current > MINIMUM_BONUS_GOLD && gameOverStateRef.current === 'playing') {
@@ -210,8 +228,9 @@ export function useGameLogic() {
                     }
                 }
             }, BONUS_GOLD_DECREMENT_INTERVAL);
-        }, BONUS_GOLD_START_DELAY);
+        }, startDelay); // <-- Use the determined startDelay
     }, [clearBonusGoldTimers]);
+    // --- END MODIFICATION ---
 
     // --- MODIFIED: resetLevel function ---
     const resetLevel = useCallback((mode: GameMode | null) => {
@@ -287,13 +306,13 @@ export function useGameLogic() {
             scoreGoal += 40; 
         }
         if (currentMode === 'main' && level === 9) {
-            scoreGoal += 100; 
+            scoreGoal += 80; 
         }
         if (currentMode === 'main' && level === 10) {
-            scoreGoal += 200; 
+            scoreGoal += 160; 
         }
         if (currentMode === 'main' && level === 11) {
-            scoreGoal += 400; 
+            scoreGoal += 350; 
         }
         if (currentMode === 'main' && level === 12) {
             scoreGoal += 600; 
