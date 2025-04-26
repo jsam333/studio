@@ -20,6 +20,7 @@ interface SetupGameCanvasArgs {
     totalSidebarSpace: number; 
     sidebarWidthPx: number; 
     launchStuckBalls: (isInitialLaunch?: boolean) => void; 
+    isMobile: boolean; // <-- Add isMobile prop
 }
 
 export const setupGameCanvas = ({
@@ -34,7 +35,8 @@ export const setupGameCanvas = ({
     lastTimeRef, 
     totalSidebarSpace, 
     sidebarWidthPx,
-    launchStuckBalls 
+    launchStuckBalls, 
+    isMobile // <-- Destructure isMobile prop
 }: SetupGameCanvasArgs) => {
     const canvas = canvasRef.current;
     const gameContainer = gameContainerRef.current; 
@@ -122,23 +124,34 @@ export const setupGameCanvas = ({
             handleResetGame();
         } else if (currentState === 'playing') {
             if (event.touches.length > 0) {
+                const touchX = event.touches[0].clientX;
                 if (!gameStateRefs.isGameStartedRef.current) {
                     launchStuckBalls(true); 
                 } else {
-                    updatePaddlePosition(event.touches[0].clientX); 
-                    if (gameStateRefs.laserShotsRef.current > 0) {
-                         gameStateRefs.laserShotsRef.current--;
-                         const newLaser: Laser = { 
-                            x: gameStateRefs.paddleXRef.current + gameStateRefs.paddleWidthRef.current / 2 - LASER_WIDTH / 2,
-                            y: PADDLE_Y - LASER_HEIGHT, 
-                            width: LASER_WIDTH, height: LASER_HEIGHT, speed: LASER_SPEED, id: Date.now()
-                         }; 
-                         gameStateRefs.lasersRef.current.push(newLaser);
+                    // Mobile-specific sticky paddle release
+                    if (isMobile && gameStateRefs.stuckBallsRef.current.length > 0) {
+                         // Only update paddle position if releasing sticky ball,
+                         // as launchStuckBalls uses the current paddle position.
+                         updatePaddlePosition(touchX);
+                         launchStuckBalls(false);
+                    } else {
+                         // Standard touch behavior (update paddle, fire laser if available)
+                         updatePaddlePosition(touchX); 
+                         if (gameStateRefs.laserShotsRef.current > 0) {
+                              gameStateRefs.laserShotsRef.current--;
+                              const newLaser: Laser = { 
+                                 x: gameStateRefs.paddleXRef.current + gameStateRefs.paddleWidthRef.current / 2 - LASER_WIDTH / 2,
+                                 y: PADDLE_Y - LASER_HEIGHT, 
+                                 width: LASER_WIDTH, height: LASER_HEIGHT, speed: LASER_SPEED, id: Date.now()
+                              }; 
+                              gameStateRefs.lasersRef.current.push(newLaser);
+                         }
                     }
                 }
             }
         }
     };
+
 
     const handleTouchMove = (event: TouchEvent) => {
         event.preventDefault(); 
@@ -149,7 +162,7 @@ export const setupGameCanvas = ({
 
      // --- Click Handler ---
     const handleClick = (event: MouseEvent) => {
-         if (event.button !== 0) return;
+         if (event.button !== 0) return; // Only handle left clicks
          const currentState = gameStateRefs.gameOverStateRef.current;
          if (currentState === 'won' || currentState === 'lost') {
             handleResetGame();
@@ -162,7 +175,12 @@ export const setupGameCanvas = ({
                 if (!gameStateRefs.isGameStartedRef.current) {
                     launchStuckBalls(true); 
                 } else {
-                    if (gameStateRefs.laserShotsRef.current > 0) {
+                    // Launch stuck balls on click if any exist (non-mobile behavior)
+                    if (gameStateRefs.stuckBallsRef.current.length > 0) {
+                        launchStuckBalls(false);
+                    }
+                    // Fire laser if available (can happen same click as launching ball)
+                    else if (gameStateRefs.laserShotsRef.current > 0) {
                         gameStateRefs.laserShotsRef.current--;
                         const newLaser: Laser = { 
                             x: gameStateRefs.paddleXRef.current + gameStateRefs.paddleWidthRef.current / 2 - LASER_WIDTH / 2,
@@ -175,6 +193,7 @@ export const setupGameCanvas = ({
              } 
          }
     };
+
 
     // --- Keyboard Handler (NEW) ---
     const handleKeyDown = (event: KeyboardEvent) => {

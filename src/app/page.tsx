@@ -11,6 +11,7 @@ import { gameUpdate } from '../gameLoop';
 import { setupGameCanvas } from '../gameCanvas';
 import { PowerUpSidebar } from '../components/PowerUpSidebar';
 import { useGameLogic } from '../hooks/useGameLogic';
+import { useIsMobile } from '../hooks/use-mobile'; // <-- Import useIsMobile
 import { Button } from '../components/ui/button';
 // Import the calculation function
 import { calculateBaseSpawnChance } from '../gameUpdates/gameLoopUtils';
@@ -38,6 +39,7 @@ export default function Home() {
     const scaleRef = useRef(1);
     const animationFrameIdRef = useRef<number | null>(null);
     const lastTimeRef = useRef<number>(0);
+    const isMobile = useIsMobile(); // <-- Use the hook
 
     const {
         gameOverState,
@@ -189,7 +191,8 @@ export default function Home() {
             lastTimeRef: lastTimeRef,
             totalSidebarSpace: totalSidebarSpaceForSetup,
             sidebarWidthPx: sidebarWidthForSetup,
-            launchStuckBalls: () => launchStuckBalls(true),
+            launchStuckBalls: launchStuckBalls, // <-- Pass the function reference
+            isMobile: isMobile, // <-- Pass the isMobile value
         });
 
         const handleContextMenu = (event: MouseEvent) => {
@@ -233,7 +236,7 @@ export default function Home() {
                 clearTimeout(widenTimerRef);
             }
         };
-    }, [gameOverState, handleResetGame, launchStuckBalls, gameStateRefs, showSidebar]);
+    }, [gameOverState, handleResetGame, launchStuckBalls, gameStateRefs, showSidebar, isMobile]); // <-- Add isMobile to dependency array
 
     // --- Render Logic ---
     if (gameOverState === 'menu') {
