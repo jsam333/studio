@@ -18,7 +18,7 @@ import { calculateShrinkDuration } from '../gameUtils'; // Make sure this is imp
 // Constants for Bonus Gold
 const INITIAL_BONUS_GOLD = 30;
 const MINIMUM_BONUS_GOLD = 5; // Minimum bonus gold awarded
-const BONUS_GOLD_START_DELAY = 10000; 
+const BONUS_GOLD_START_DELAY = 5000; 
 const BONUS_GOLD_DECREMENT_INTERVAL = 1000; // 1 second (1000ms)
 
 // Modify GameStateRefs interface (This should be done in interfaces.ts, but shows the intent)

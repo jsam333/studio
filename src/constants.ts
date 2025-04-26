@@ -110,6 +110,31 @@ export const ALL_TOGGLEABLE_POWER_UPS: PowerUpType[] = [
     'STICKY_PADDLE',
 ];
 
+// *** Individual Power-up Costs ***
+export const POWER_UP_COSTS: { [key in PowerUpType]: number } = {
+    MULTI_BALL: 15,
+    WIDEN_PADDLE: 8,
+    LASER_PADDLE: 10,
+    REGEN_BRICK: 2,
+    SAFETY_NET: 8,
+    REINFORCE_BRICK: 2,
+    MAKE_SPECIAL: 12,
+    BLACK_BALL: 15,
+    PIERCE_BALL: 15,
+    UPGRADE_BRICK: 2,
+    BUILDER_BALL: 2,
+    BIG_BALL: 6,
+    SPLITTING_BALL: 20,
+    // SPEED_UP: 5, // Removed SPEED_UP power-up
+    COLLECTION_FIELD: 7,
+    HOMING_BALL: 10,
+    BOMB_BRICK: 10,
+    STICKY_PADDLE: 9,
+    ALL_IN_ONE: 100, // ALL_IN_ONE might not be purchasable, but included for completeness
+    NONE: 0 // Should not be purchasable
+};
+
+
 // Power-up specific constants
 export const PADDLE_WIDEN_INCREMENT = INITIAL_PADDLE_WIDTH * 0.1;
 export const MAX_PADDLE_WIDEN_DURATION = 5000;
