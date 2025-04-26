@@ -92,6 +92,7 @@ export interface GameStateRefsBase {
     bricksRef: React.MutableRefObject<Brick[][]>;
     powerUpsRef: React.MutableRefObject<PowerUp[]>;
     scoreRef: React.MutableRefObject<number>;
+    targetScoreRef: React.MutableRefObject<number>; // ADDED
     totalBricksRef: React.MutableRefObject<number>;
     goldRef: React.MutableRefObject<number>;
     bonusGoldRef: React.MutableRefObject<number>; // Added for level complete bonus
@@ -114,6 +115,7 @@ export interface GameStateRefsBase {
     brickColumnsRef: React.MutableRefObject<number>;
     brickRowsRef: React.MutableRefObject<number>;
     gameModeRef: React.MutableRefObject<GameMode | null>;
+    // bricksBrokenRef: React.MutableRefObject<number>; // REMOVED
 }
 
 // Extended refs including timers and loop-specific refs

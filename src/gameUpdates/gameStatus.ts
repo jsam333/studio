@@ -21,8 +21,9 @@ export const checkGameStatus = (
     refs: GameStateRefs,
     callbacks: GameLoopCallbacks,
     previousBallCount: number,
-    columns: number, 
-    rows: number     
+    // columns and rows parameters are no longer needed for the win condition check
+    // columns: number, 
+    // rows: number     
 ): GameState => {
     if (refs.gameOverStateRef.current !== 'playing') {
         return refs.gameOverStateRef.current;
@@ -37,34 +38,27 @@ export const checkGameStatus = (
 
     // Check for win/shop condition only if not already lost
     if (nextState === 'playing') {
-        let remainingBricks = 0;
-        for (let c = 0; c < columns; c++) {
-            if (!refs.bricksRef.current[c]) continue;
-            for (let r = 0; r < rows; r++) {
-                if (refs.bricksRef.current[c]?.[r]?.status === 1) {
-                    remainingBricks++;
-                }
-            }
-        }
-        
-        // Win/Shop condition met
-        if (remainingBricks === 0) { 
+        // --- MODIFIED: Check win condition using score ---
+        // Check if the current score meets or exceeds the target score for the level
+        if (refs.scoreRef.current >= refs.targetScoreRef.current && refs.targetScoreRef.current > 0) { // Ensure target score is set
              const currentMode = refs.gameModeRef.current;
              if (currentMode === 'main') {
                  // Check if it's the final level
                  if (refs.currentLevelRef.current === FINAL_LEVEL) {
                      nextState = 'won'; // Final win state
-                     console.log(`Final Level (${FINAL_LEVEL}) complete! You Win!`);
+                     console.log(`Final Level (${FINAL_LEVEL}) complete! You Win! Final Score: ${refs.scoreRef.current}`);
                  } else {
                      nextState = 'shop'; // Go to shop for intermediate levels
                      const bonusEarned = Math.max(MINIMUM_BONUS_GOLD, refs.bonusGoldRef.current);
                      refs.goldRef.current += bonusEarned; 
-                     console.log(`Level ${refs.currentLevelRef.current} complete! Awarded ${bonusEarned} bonus gold. Total gold: ${refs.goldRef.current}`);
+                     console.log(`Level ${refs.currentLevelRef.current} complete! Score: ${refs.scoreRef.current}. Awarded ${bonusEarned} bonus gold. Total gold: ${refs.goldRef.current}`);
                  }
              } else {
                  nextState = 'won'; // Regular win for test level
+                 console.log(`Test Level complete! Final Score: ${refs.scoreRef.current}`);
              }
         }
+        // --- END MODIFICATION ---
     }
 
     // Handle Game End state update if necessary

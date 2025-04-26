@@ -13,7 +13,7 @@ import {
 } from './constants';
 import { drawPaddle, drawBalls, drawBricks, drawGameInfo, drawPowerUps, drawLasers, drawSafetyNet, drawCollectionFieldRect } from './drawFunctions';
 
-// Helper function to count active bricks
+// Helper function to count active bricks (Kept for drawGameInfo)
 const countActiveBricks = (bricks: Brick[][], columns: number, rows: number): number => {
     let count = 0;
     for (let c = 0; c < columns; c++) {
@@ -28,7 +28,7 @@ const countActiveBricks = (bricks: Brick[][], columns: number, rows: number): nu
     return count;
 };
 
-// --- NEW: Function to handle paddle shrink countdown ---
+// Function to handle paddle shrink countdown
 const updatePaddleShrinkTimer = (
     refs: GameStateRefs,
     callbacks: GameLoopCallbacks,
@@ -58,9 +58,7 @@ export const gameUpdate = (
 
     const currentTime = Date.now();
     const gameSpeedFactor = refs.gameSpeedFactorRef.current;
-    // --- Scale deltaTime using the gameSpeedFactor ---
     const scaledDeltaTime = deltaTime * gameSpeedFactor;
-    // --- Use scaledDeltaTime for updates ---
 
     let spawnRequests: PowerUpSpawnEvent[] = [];
     const previousBallCount = refs.ballsRef.current.length + refs.stuckBallsRef.current.length;
@@ -71,16 +69,17 @@ export const gameUpdate = (
     const isTestMode = gameMode === 'test';
 
     // --- UPDATES --- 
-    // Update paddle shrink timer FIRST
     updatePaddleShrinkTimer(refs, callbacks, scaledDeltaTime);
-
-    // Update other elements using scaledDeltaTime
     updateBalls(refs, callbacks, spawnRequests, currentTime, gameSpeedFactor, scaledDeltaTime, columns, rows);
 
     // If game hasn't started, only draw static + info and return
     if (!refs.isGameStartedRef.current) {
-        const currentBrickCount = countActiveBricks(refs.bricksRef.current, columns, rows);
-        const totalBricks = refs.totalBricksRef.current;
+        // --- MODIFIED: Use scoreRef and targetScoreRef for display ---
+        // const currentBrickCount = countActiveBricks(refs.bricksRef.current, columns, rows); // Keep for potential brick count display if needed later
+        // const totalBricks = refs.totalBricksRef.current; // Or targetScoreRef.current for target
+        const currentScore = refs.scoreRef.current;
+        const targetScore = refs.targetScoreRef.current;
+        // --- END MODIFICATION ---
         const currentGold = refs.goldRef.current;
         const currentBonusGold = refs.bonusGoldRef.current;
 
@@ -88,7 +87,9 @@ export const gameUpdate = (
         drawBricks(ctx, refs.bricksRef.current, columns, rows);
         drawPaddle(ctx, refs.paddleXRef.current, refs.paddleWidthRef.current, 0, 0);
         drawBalls(ctx, refs.stuckBallsRef.current);
-        drawGameInfo(ctx, currentBrickCount, totalBricks, currentGold, currentBonusGold, isTestMode);
+        // --- MODIFIED: Pass score and targetScore to drawGameInfo ---
+        drawGameInfo(ctx, currentScore, targetScore, currentGold, currentBonusGold, isTestMode);
+        // --- END MODIFICATION ---
         return;
     }
 
@@ -96,7 +97,7 @@ export const gameUpdate = (
     let collectedPowerUpTypes: PowerUpType[] = [];
     updateLasers(refs, callbacks, spawnRequests, currentTime, scaledDeltaTime, columns, rows);
 
-    // Process spawn requests (uses currentTime, not scaledDeltaTime)
+    // Process spawn requests
     let newlySpawnedPowerUps: PowerUp[] = [];
     const currentFallingPowerUpCount = refs.powerUpsRef.current.filter(p => p.status === 'falling').length;
     const availablePowerUpsForSpawning = gameMode === 'main'
@@ -121,8 +122,12 @@ export const gameUpdate = (
     applyPowerUpEffects(refs, callbacks, collectedPowerUpTypes, currentTime, gameSpeedFactor);
 
     // --- Drawing --- 
-    const currentBrickCount = countActiveBricks(refs.bricksRef.current, columns, rows);
-    const totalBricks = refs.totalBricksRef.current;
+    // --- MODIFIED: Use scoreRef and targetScoreRef for display ---
+    // const currentBrickCount = countActiveBricks(refs.bricksRef.current, columns, rows); // Keep for potential brick count display if needed later
+    // const totalBricks = refs.totalBricksRef.current; // Or targetScoreRef.current for target
+    const currentScore = refs.scoreRef.current;
+    const targetScore = refs.targetScoreRef.current;
+    // --- END MODIFICATION ---
     const currentGold = refs.goldRef.current;
     const currentBonusGold = refs.bonusGoldRef.current;
 
@@ -137,7 +142,9 @@ export const gameUpdate = (
     drawPaddle( ctx, refs.paddleXRef.current, refs.paddleWidthRef.current, refs.laserShotsRef.current, refs.stickyPaddleChargesRef.current );
     drawPowerUps(ctx, refs.powerUpsRef.current);
     drawLasers(ctx, refs.lasersRef.current);
-    drawGameInfo(ctx, currentBrickCount, totalBricks, currentGold, currentBonusGold, isTestMode);
+    // --- MODIFIED: Pass score and targetScore to drawGameInfo ---
+    drawGameInfo(ctx, currentScore, targetScore, currentGold, currentBonusGold, isTestMode);
+    // --- END MODIFICATION ---
     drawSafetyNet(ctx, refs.safetyNetCountRef.current);
     if (gameSpeedFactor !== BASE_BALL_SPEED_FACTOR) {
         ctx.font = "12px Arial"; ctx.fillStyle = POWER_UP_COLORS['SPEED_UP'] || '#e74c3c'; ctx.textAlign = 'right';
@@ -146,7 +153,9 @@ export const gameUpdate = (
     ctx.restore();
 
     // --- Check Game Status --- 
-    const finalStatus = checkGameStatus(refs, callbacks, previousBallCount, columns, rows);
+    // --- MODIFIED: Removed columns and rows arguments ---
+    const finalStatus = checkGameStatus(refs, callbacks, previousBallCount);
+    // --- END MODIFICATION ---
 
     if (finalStatus !== 'playing' && refs.gameOverStateRef.current === 'playing') {
         callbacks.setGameOverState(finalStatus);

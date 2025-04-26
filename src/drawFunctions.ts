@@ -164,13 +164,13 @@ export const drawBricks = (ctx: CanvasRenderingContext2D, bricks: Brick[][], col
    }
 };
 
-// Updated to include bonusGold
+// --- MODIFIED: Updated drawGameInfo to show score ---
 export const drawGameInfo = (
     ctx: CanvasRenderingContext2D, 
-    currentBrickCount: number, 
-    totalBricks: number, 
+    currentScore: number, // Changed from currentBrickCount
+    targetScore: number,  // Changed from totalBricks
     gold: number, 
-    bonusGold: number, // Added bonusGold parameter
+    bonusGold: number, 
     isTestMode: boolean
 ) => {
   ctx.font = "16px Arial";
@@ -179,13 +179,14 @@ export const drawGameInfo = (
   const xStart = 8; 
   const padding = 15; 
 
-  // 1. Draw Brick Count
-  const bricksBroken = totalBricks - currentBrickCount;
-  const brickText = `Bricks: ${bricksBroken}/${totalBricks}`;
+  // 1. Draw Score
+  // const bricksBroken = totalBricks - currentBrickCount; // Removed
+  // const brickText = `Bricks: ${bricksBroken}/${totalBricks}`; // Removed
+  const scoreText = `Score: ${currentScore}/${targetScore}`; // ADDED score text
   ctx.fillStyle = "#ffffff"; 
   ctx.textAlign = 'left';
-  ctx.fillText(brickText, xStart, yPos);
-  let currentX = xStart + ctx.measureText(brickText).width + padding;
+  ctx.fillText(scoreText, xStart, yPos); // Use scoreText
+  let currentX = xStart + ctx.measureText(scoreText).width + padding; // Use scoreText for measurement
 
   // 2. Draw Gold (if not test mode)
   if (!isTestMode) {
@@ -203,6 +204,7 @@ export const drawGameInfo = (
     }
   }
 };
+// --- END MODIFICATION ---
 
 
 // Draw PowerUps
