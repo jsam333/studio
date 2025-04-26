@@ -241,8 +241,8 @@ export function useGameLogic() {
 
         // Define level layout
         if (currentMode === 'main') { 
-             if (level === 1) { cols = 3; rows = 2; targetHeight = TALL_BRICK_HEIGHT; } 
-             else if (level === 2) { cols = 4; rows = 3; targetHeight = TALL_BRICK_HEIGHT; } 
+             if (level === 1) { cols = 3; rows = 2; targetHeight = 20; } 
+             else if (level === 2) { cols = 4; rows = 3; targetHeight = 18; } 
              else if (level === 3) { cols = 5; rows = 4; targetHeight = TALL_BRICK_HEIGHT; } 
              else if (level === 4) { cols = 7; rows = 5; targetHeight = TALL_BRICK_HEIGHT; } 
              else if (level === 5) { cols = 9; rows = 6; targetHeight = TALL_BRICK_HEIGHT; } 
