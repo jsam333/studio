@@ -278,49 +278,49 @@ export function useGameLogic() {
         // Set target score: base count + adjustment for level 6
         let scoreGoal = count;
         if (currentMode === 'main' && level === 6) {
-            scoreGoal += 5; 
-        }
-        if (currentMode === 'main' && level === 7) {
             scoreGoal += 10; 
         }
-        if (currentMode === 'main' && level === 8) {
+        if (currentMode === 'main' && level === 7) {
             scoreGoal += 20; 
         }
+        if (currentMode === 'main' && level === 8) {
+            scoreGoal += 40; 
+        }
         if (currentMode === 'main' && level === 9) {
-            scoreGoal += 30; 
-        }
-        if (currentMode === 'main' && level === 10) {
-            scoreGoal += 50; 
-        }
-        if (currentMode === 'main' && level === 11) {
-            scoreGoal += 75; 
-        }
-        if (currentMode === 'main' && level === 12) {
             scoreGoal += 100; 
         }
-        if (currentMode === 'main' && level === 13) {
-            scoreGoal += 150; 
-        }
-        if (currentMode === 'main' && level === 14) {
+        if (currentMode === 'main' && level === 10) {
             scoreGoal += 200; 
         }
-        if (currentMode === 'main' && level === 15) {
-            scoreGoal += 250; 
-        }
-        if (currentMode === 'main' && level === 16) {
-            scoreGoal += 300; 
-        }
-        if (currentMode === 'main' && level === 17) {
-            scoreGoal += 350; 
-        }
-        if (currentMode === 'main' && level === 18) {
+        if (currentMode === 'main' && level === 11) {
             scoreGoal += 400; 
         }
+        if (currentMode === 'main' && level === 12) {
+            scoreGoal += 600; 
+        }
+        if (currentMode === 'main' && level === 13) {
+            scoreGoal += 800; 
+        }
+        if (currentMode === 'main' && level === 14) {
+            scoreGoal += 1000; 
+        }
+        if (currentMode === 'main' && level === 15) {
+            scoreGoal += 1300; 
+        }
+        if (currentMode === 'main' && level === 16) {
+            scoreGoal += 1600; 
+        }
+        if (currentMode === 'main' && level === 17) {
+            scoreGoal += 2000; 
+        }
+        if (currentMode === 'main' && level === 18) {
+            scoreGoal += 3000; 
+        }
         if (currentMode === 'main' && level === 19) {
-            scoreGoal += 500; 
+            scoreGoal += 4000; 
         }
         if (currentMode === 'main' && level === 20) {
-            scoreGoal += 750; 
+            scoreGoal += 5000; 
         }
 
         targetScoreRef.current = scoreGoal;

@@ -112,24 +112,24 @@ export const ALL_TOGGLEABLE_POWER_UPS: PowerUpType[] = [
 
 // *** Individual Power-up Costs ***
 export const POWER_UP_COSTS: { [key in PowerUpType]: number } = {
-    MULTI_BALL: 15,
-    WIDEN_PADDLE: 8,
-    LASER_PADDLE: 10,
-    REGEN_BRICK: 8,
-    SAFETY_NET: 8,
-    REINFORCE_BRICK: 7,
-    MAKE_SPECIAL: 12,
-    BLACK_BALL: 15,
-    PIERCE_BALL: 15,
-    UPGRADE_BRICK: 11,
-    BUILDER_BALL: 15,
-    BIG_BALL: 6,
-    SPLITTING_BALL: 20,
+    MULTI_BALL: 17,
+    WIDEN_PADDLE: 10,
+    LASER_PADDLE: 11,
+    REGEN_BRICK: 10,
+    SAFETY_NET: 9,
+    REINFORCE_BRICK: 9,
+    MAKE_SPECIAL: 16,
+    BLACK_BALL: 16,
+    PIERCE_BALL: 14,
+    UPGRADE_BRICK: 14,
+    BUILDER_BALL: 20,
+    BIG_BALL: 8,
+    SPLITTING_BALL: 25,
     // SPEED_UP: 5, // Removed SPEED_UP power-up
-    COLLECTION_FIELD: 7,
-    HOMING_BALL: 10,
-    BOMB_BRICK: 10,
-    STICKY_PADDLE: 9,
+    COLLECTION_FIELD: 9,
+    HOMING_BALL: 12,
+    BOMB_BRICK: 12,
+    STICKY_PADDLE: 12,
     ALL_IN_ONE: 100, // ALL_IN_ONE might not be purchasable, but included for completeness
     NONE: 0 // Should not be purchasable
 };
