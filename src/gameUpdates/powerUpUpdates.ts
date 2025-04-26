@@ -6,14 +6,14 @@ import { BASE_POWER_UP_SPEED, BOARD_HEIGHT, PADDLE_HEIGHT, POWER_UP_SIZE, PADDLE
 
 export const updatePowerUps = (
     refs: GameStateRefs,
-    gameSpeedFactor: number,
+    gameSpeedFactor: number, // Keep parameter for signature consistency, but don't use it for speed calculation
     newlySpawnedPowerUps: PowerUp[],
     collectedPowerUpTypes: PowerUpType[], // Pass this array to add collected types
     deltaTime: number // Add deltaTime parameter
 ): PowerUp[] => {
     const nextPowerUpsArray: PowerUp[] = [];
-    // Reverted to BASE_POWER_UP_SPEED
-    const currentPowerUpSpeed = BASE_POWER_UP_SPEED * gameSpeedFactor;
+    // *** MODIFIED: Removed gameSpeedFactor multiplication ***
+    const currentPowerUpSpeed = BASE_POWER_UP_SPEED;
     const currentFieldHeight = refs.collectionFieldHeightRef.current;
     const currentFieldWidthOffset = refs.collectionFieldWidthOffsetRef.current;
     // Use PADDLE_Y constant instead of calculating from BOARD_HEIGHT
