@@ -54,11 +54,88 @@ export const handleBombExplosion = ( bombC: number, bombR: number, bricks: Brick
 // --- MODIFIED: checkBrickCollision function ---
 export const checkBrickCollision = ( ball: Ball, bricks: Brick[][], columns: number, rows: number, deltaTime: number ): CollisionResult => {
     let newSpeedX = ball.speedX; let newSpeedY = ball.speedY; let pointsAwarded = 0; const spawnEvents: PowerUpSpawnEvent[] = []; let pierceOccurred = false; let builderHitOccurred = false; let collisionDetected = false; let brickWasHit = false; const currentBallSize = ball.isBig ? BALL_SIZE + BIG_BALL_SIZE_INCREASE : BALL_SIZE; const nextBallX = ball.x + ball.speedX * deltaTime; const nextBallY = ball.y + ball.speedY * deltaTime; const checkRadius = currentBallSize;
-    for (let c = 0; c < columns; c++) { if (!bricks[c]) continue; for (let r = 0; r < rows; r++) { const brick = bricks[c][r]; if (brick && brick.status === 1) { if (nextBallX + checkRadius > brick.x && nextBallX - checkRadius < brick.x + brick.width && nextBallY + checkRadius > brick.y && nextBallY - checkRadius < brick.y + brick.height) { brickWasHit = true; collisionDetected = true; let tempSpeedX = ball.speedX; let tempSpeedY = ball.speedY; if (!(ball.pierceHitsRemaining && ball.pierceHitsRemaining > 0)) { const brickCenterX = brick.x + brick.width / 2; const brickCenterY = brick.y + brick.height / 2; const vecX = ball.x - brickCenterX; const vecY = ball.y - brickCenterY; const w = (brick.width / 2) + checkRadius; const h = (brick.height / 2) + checkRadius; const crossWidth = w * vecY; const crossHeight = h * vecX; if (Math.abs(crossWidth) > Math.abs(crossHeight)) { tempSpeedY = -ball.speedY; } else { tempSpeedX = -ball.speedX; } }
-                    if (ball.pierceHitsRemaining && ball.pierceHitsRemaining > 0) { pierceOccurred = true; ball.pierceHitsRemaining--; pointsAwarded += damageBrick(brick, bricks, columns, rows, spawnEvents); if (brick.isBomb && brick.status === 0) { pointsAwarded += handleBombExplosion(c, r, bricks, columns, rows, spawnEvents); } newSpeedX = ball.speedX; newSpeedY = ball.speedY; }
-                    else if (ball.isBlue) { builderHitOccurred = true; if (!brick.isSpecial && !brick.isBomb) { brick.upgradeLevel = MAX_BRICK_UPGRADE_LEVEL; brick.isSpecial = false; // pointsAwarded += 1; // REMOVED: Builder ball no longer gives points on hit } newSpeedX = tempSpeedX; newSpeedY = tempSpeedY; }
-                    else { const pointsFromHit = damageBrick(brick, bricks, columns, rows, spawnEvents); pointsAwarded += pointsFromHit; const brickDestroyed = brick.status === 0; newSpeedX = tempSpeedX; newSpeedY = tempSpeedY; if (brick.isBomb && brickDestroyed) { pointsAwarded += handleBombExplosion(c, r, bricks, columns, rows, spawnEvents); } else if (brickDestroyed && ball.isBlack && !brick.isBomb) { const neighbors = [{ nc: c + 1, nr: r }, { nc: c - 1, nr: r }, { nc: c, nr: r + 1 }, { nc: c, nr: r - 1 }]; const validNeighbors: { brick: Brick, col: number, row: number }[] = []; neighbors.forEach(n => { if (n.nc >= 0 && n.nc < columns && n.nr >= 0 && n.nr < rows) { const neighborBrick = bricks[n.nc]?.[n.nr]; if (neighborBrick && neighborBrick.status === 1 && !neighborBrick.isBomb) { validNeighbors.push({ brick: neighborBrick, col: n.nc, row: n.nr }); } } }); if (validNeighbors.length > 0) { const targetNeighborData = validNeighbors[Math.floor(Math.random() * validNeighbors.length)]; const targetNeighbor = targetNeighborData.brick; const splashPoints = damageBrick(targetNeighbor, bricks, columns, rows, spawnEvents); pointsAwarded += splashPoints; if(targetNeighbor.isBomb && targetNeighbor.status === 0){ pointsAwarded += handleBombExplosion(targetNeighborData.col, targetNeighborData.row, bricks, columns, rows, spawnEvents); } } } }
-                     return { collision: true, newSpeedX, newSpeedY, spawnEvents, pointsAwarded, pierceOccurred, builderHitOccurred, brickHit: true }; } } } } 
+    for (let c = 0; c < columns; c++) {
+         if (!bricks[c]) continue;
+         for (let r = 0; r < rows; r++) {
+             const brick = bricks[c][r];
+             if (brick && brick.status === 1) {
+                 if (nextBallX + checkRadius > brick.x && nextBallX - checkRadius < brick.x + brick.width && nextBallY + checkRadius > brick.y && nextBallY - checkRadius < brick.y + brick.height) {
+                     brickWasHit = true;
+                     collisionDetected = true;
+                     let tempSpeedX = ball.speedX;
+                     let tempSpeedY = ball.speedY;
+                     if (!(ball.pierceHitsRemaining && ball.pierceHitsRemaining > 0)) {
+                         const brickCenterX = brick.x + brick.width / 2;
+                         const brickCenterY = brick.y + brick.height / 2;
+                         const vecX = ball.x - brickCenterX;
+                         const vecY = ball.y - brickCenterY;
+                         const w = (brick.width / 2) + checkRadius;
+                         const h = (brick.height / 2) + checkRadius;
+                         const crossWidth = w * vecY;
+                         const crossHeight = h * vecX;
+                         if (Math.abs(crossWidth) > Math.abs(crossHeight)) {
+                             tempSpeedY = -ball.speedY;
+                         } else {
+                             tempSpeedX = -ball.speedX;
+                         }
+                     }
+                    if (ball.pierceHitsRemaining && ball.pierceHitsRemaining > 0) {
+                         pierceOccurred = true;
+                         ball.pierceHitsRemaining--;
+                         pointsAwarded += damageBrick(brick, bricks, columns, rows, spawnEvents);
+                         if (brick.isBomb && brick.status === 0) {
+                             pointsAwarded += handleBombExplosion(c, r, bricks, columns, rows, spawnEvents);
+                         }
+                         newSpeedX = ball.speedX; // Keep original speed for pierce
+                         newSpeedY = ball.speedY;
+                     } else if (ball.isBlue) {
+                         builderHitOccurred = true;
+                         if (!brick.isSpecial && !brick.isBomb) {
+                             brick.upgradeLevel = MAX_BRICK_UPGRADE_LEVEL;
+                             brick.isSpecial = false; // Builder ball converts bricks
+                             // pointsAwarded += 1; // REMOVED: Builder ball no longer gives points on hit
+                         }
+                         newSpeedX = tempSpeedX; // Bounce like normal after building
+                         newSpeedY = tempSpeedY;
+                     } else {
+                         const pointsFromHit = damageBrick(brick, bricks, columns, rows, spawnEvents);
+                         pointsAwarded += pointsFromHit;
+                         const brickDestroyed = brick.status === 0;
+                         newSpeedX = tempSpeedX; // Normal bounce
+                         newSpeedY = tempSpeedY;
+                         if (brick.isBomb && brickDestroyed) {
+                             pointsAwarded += handleBombExplosion(c, r, bricks, columns, rows, spawnEvents);
+                         } else if (brickDestroyed && ball.isBlack && !brick.isBomb) {
+                             // Black ball splash damage logic
+                             const neighbors = [{ nc: c + 1, nr: r }, { nc: c - 1, nr: r }, { nc: c, nr: r + 1 }, { nc: c, nr: r - 1 }];
+                             const validNeighbors: { brick: Brick, col: number, row: number }[] = [];
+                             neighbors.forEach(n => {
+                                 if (n.nc >= 0 && n.nc < columns && n.nr >= 0 && n.nr < rows) {
+                                     const neighborBrick = bricks[n.nc]?.[n.nr];
+                                     if (neighborBrick && neighborBrick.status === 1 && !neighborBrick.isBomb) {
+                                         validNeighbors.push({ brick: neighborBrick, col: n.nc, row: n.nr });
+                                     }
+                                 }
+                             });
+                             if (validNeighbors.length > 0) {
+                                 const targetNeighborData = validNeighbors[Math.floor(Math.random() * validNeighbors.length)];
+                                 const targetNeighbor = targetNeighborData.brick;
+                                 const splashPoints = damageBrick(targetNeighbor, bricks, columns, rows, spawnEvents);
+                                 pointsAwarded += splashPoints;
+                                 // Check if splashed neighbor was a bomb and now destroyed
+                                 if(targetNeighbor.isBomb && targetNeighbor.status === 0){
+                                      pointsAwarded += handleBombExplosion(targetNeighborData.col, targetNeighborData.row, bricks, columns, rows, spawnEvents);
+                                 }
+                             }
+                         }
+                     }
+                     // Return immediately after the first collision is processed for this frame
+                     return { collision: true, newSpeedX, newSpeedY, spawnEvents, pointsAwarded, pierceOccurred, builderHitOccurred, brickHit: true };
+                 }
+             }
+         }
+     }
+    // If no collision was detected after checking all bricks
     return { collision: false, newSpeedX: ball.speedX, newSpeedY: ball.speedY, spawnEvents: [], pointsAwarded: 0, pierceOccurred: false, builderHitOccurred: false, brickHit: false };
 };
 // --- END MODIFICATION ---
