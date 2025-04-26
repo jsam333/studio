@@ -3,21 +3,21 @@ import React from 'react'; // Required for MutableRefObject
 export interface Brick {
   x: number;
   y: number;
-  width: number; 
-  height: number; 
-  status: number;     
-  strength: number;   
+  width: number;
+  height: number;
+  status: number;
+  strength: number;
   isSpecial: boolean;
-  upgradeLevel?: number; 
-  isBomb?: boolean; 
+  upgradeLevel?: number;
+  isBomb?: boolean;
 }
 
 export type PowerUpType =
     'MULTI_BALL' | 'WIDEN_PADDLE' | 'LASER_PADDLE' | 'REGEN_BRICK' |
     'SAFETY_NET' | 'REINFORCE_BRICK' | 'MAKE_SPECIAL' | 'BLACK_BALL' |
     'ALL_IN_ONE' | 'PIERCE_BALL' | 'UPGRADE_BRICK' | 'BUILDER_BALL' |
-    'BIG_BALL' | 'SPLITTING_BALL' | 'SPEED_UP' | 'COLLECTION_FIELD' |
-    'HOMING_BALL' | 'BOMB_BRICK' | 'STICKY_PADDLE' | 'NONE';
+    'BIG_BALL' | 'SPLITTING_BALL' | 'COLLECTION_FIELD' |
+    'HOMING_BALL' | 'BOMB_BRICK' | 'STICKY_PADDLE' | 'NONE'; // Removed 'SPEED_UP'
 
 export interface PowerUp {
   x: number;
@@ -48,7 +48,7 @@ export interface Ball {
   splittingEndTime?: number;
   splittingPausedDuration?: number;
   isHoming?: boolean;
-  stuckOffset?: number; 
+  stuckOffset?: number;
 }
 
 export type SpawnMarker = 'PENDING' | 'SPAWN_SPECIAL' | 'NONE';
@@ -57,7 +57,7 @@ export interface PowerUpSpawnEvent {
     marker: SpawnMarker;
     brickX: number;
     brickY: number;
-    brickWidth: number; 
+    brickWidth: number;
 }
 
 export interface CollisionResult {
@@ -80,8 +80,8 @@ export interface Laser {
     id: number;
 }
 
-export type GameState = 'menu' | 'playing' | 'won' | 'lost' | 'shop'; 
-export type GameMode = 'main' | 'test'; 
+export type GameState = 'menu' | 'playing' | 'won' | 'lost' | 'shop';
+export type GameMode = 'main' | 'test';
 
 export interface GameStateRefsBase {
     paddleXRef: React.MutableRefObject<number>;
@@ -89,7 +89,7 @@ export interface GameStateRefsBase {
     bricksRef: React.MutableRefObject<Brick[][]>;
     powerUpsRef: React.MutableRefObject<PowerUp[]>;
     scoreRef: React.MutableRefObject<number>;
-    totalBricksRef: React.MutableRefObject<number>; 
+    totalBricksRef: React.MutableRefObject<number>;
     goldRef: React.MutableRefObject<number>;
     bonusGoldRef: React.MutableRefObject<number>; // Added for level complete bonus
     spawnablePowerUpsRef: React.MutableRefObject<Set<PowerUpType>>;
@@ -108,24 +108,24 @@ export interface GameStateRefsBase {
     enabledPowerUpsRef: React.MutableRefObject<Set<PowerUpType>>;
     isGameStartedRef: React.MutableRefObject<boolean>; // Tracks if ball launched
     bonusCountdownStartedRef: React.MutableRefObject<boolean>; // Tracks if bonus countdown started
-    brickColumnsRef: React.MutableRefObject<number>; 
-    brickRowsRef: React.MutableRefObject<number>;    
-    gameModeRef: React.MutableRefObject<GameMode | null>; 
+    brickColumnsRef: React.MutableRefObject<number>;
+    brickRowsRef: React.MutableRefObject<number>;
+    gameModeRef: React.MutableRefObject<GameMode | null>;
 }
 
 export interface GameStateRefs extends GameStateRefsBase {
     widenTimeoutRef?: React.MutableRefObject<NodeJS.Timeout | null>;
     collectionFieldShrinkTimerRef?: React.MutableRefObject<NodeJS.Timeout | null>;
     bonusGoldTimerRef?: React.MutableRefObject<NodeJS.Timeout | null>; // Timer for bonus gold countdown (can be Timeout or Interval)
-    animationFrameIdRef?: React.MutableRefObject<number | null>; 
-    lastTimeRef?: React.MutableRefObject<number>; 
-    currentLevelRef: React.MutableRefObject<number>; 
+    animationFrameIdRef?: React.MutableRefObject<number | null>;
+    lastTimeRef?: React.MutableRefObject<number>;
+    currentLevelRef: React.MutableRefObject<number>;
 }
 
 export interface GameLoopCallbacks {
     updateScoreCallback: (points: number) => void;
-    setGameOverState: React.Dispatch<React.SetStateAction<GameState>>; 
+    setGameOverState: React.Dispatch<React.SetStateAction<GameState>>;
     schedulePaddleShrink: () => void;
     scheduleFieldShrink: () => void;
-    drawEndMessage: (context: CanvasRenderingContext2D, state: 'won' | 'lost' | 'shop', finalScore: number) => void; 
+    drawEndMessage: (context: CanvasRenderingContext2D, state: 'won' | 'lost' | 'shop', finalScore: number) => void;
 }

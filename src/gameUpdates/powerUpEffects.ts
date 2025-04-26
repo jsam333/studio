@@ -4,13 +4,13 @@ import { GameStateRefs, GameLoopCallbacks } from '../interfaces';
 import { createNewBall } from './gameLoopUtils';
 import {
     FIELD_MAX_HEIGHT_OFFSET, FIELD_HEIGHT_INCREMENT,
-    FIELD_MAX_WIDTH_OFFSET, FIELD_WIDTH_INCREMENT, SPEED_UP_INCREMENT,
+    FIELD_MAX_WIDTH_OFFSET, FIELD_WIDTH_INCREMENT, // Removed SPEED_UP_INCREMENT
     SPLITTING_BALL_DURATION, BIG_BALL_DURATION, BOARD_HEIGHT, PADDLE_HEIGHT,
     BALL_SIZE, BUILDER_BALL_DURATION, BLACK_BALL_DURATION, BRICK_COLUMNS,
     BRICK_ROWS, PIERCE_BALL_HITS, PADDLE_WIDEN_INCREMENT, MAX_PADDLE_WIDTH,
     BOARD_WIDTH, MAX_BRICK_UPGRADE_LEVEL // Added MAX_BRICK_UPGRADE_LEVEL
     // STICKY_PADDLE_DURATION // Removed duration constant
-    // Re-added SPEED_UP_INCREMENT, SPLITTING_BALL_DURATION, BIG_BALL_DURATION, BUILDER_BALL_DURATION, BLACK_BALL_DURATION
+    // Removed SPEED_UP_INCREMENT
 } from '../constants';
 
 export const applyPowerUpEffects = (
@@ -91,17 +91,17 @@ export const applyPowerUpEffects = (
                 callbacks.scheduleFieldShrink();
                 break;
             }
-            case 'SPEED_UP': {
-                const previousFactor = refs.gameSpeedFactorRef.current;
-                const newFactor = previousFactor * 1.02; // Apply 2% increase
-                refs.gameSpeedFactorRef.current = newFactor;
-                const actualIncreaseFactor = 1.02; // The increase factor is exactly 2%
-                refs.ballsRef.current.forEach(ball => {
-                    ball.speedX *= actualIncreaseFactor;
-                    ball.speedY *= actualIncreaseFactor;
-                });
-                break;
-            }
+            // case 'SPEED_UP': { // Removed SPEED_UP case
+            //     const previousFactor = refs.gameSpeedFactorRef.current;
+            //     const newFactor = previousFactor * 1.02; // Apply 2% increase
+            //     refs.gameSpeedFactorRef.current = newFactor;
+            //     const actualIncreaseFactor = 1.02; // The increase factor is exactly 2%
+            //     refs.ballsRef.current.forEach(ball => {
+            //         ball.speedX *= actualIncreaseFactor;
+            //         ball.speedY *= actualIncreaseFactor;
+            //     });
+            //     break;
+            // }
              case 'SPLITTING_BALL': {
                  const targetBall = refs.ballsRef.current.find(b => !b.isSplitting);
                  if (targetBall) {
@@ -179,7 +179,7 @@ export const applyPowerUpEffects = (
                      const brickToUpgrade = refs.bricksRef.current[chosenCandidate.c]?.[chosenCandidate.r];
                      if (brickToUpgrade) {
                          // *** Set upgrade level directly to 3 ***
-                         brickToUpgrade.upgradeLevel = 3; 
+                         brickToUpgrade.upgradeLevel = 3;
                          // Ensure it's not marked as special or bomb
                          brickToUpgrade.isSpecial = false;
                          brickToUpgrade.isBomb = false;
@@ -280,7 +280,7 @@ export const applyPowerUpEffects = (
                 // Apply effects individually
                 applyPowerUpEffects(refs, callbacks, ['HOMING_BALL'], currentTime, gameSpeedFactor);
                 applyPowerUpEffects(refs, callbacks, ['COLLECTION_FIELD'], currentTime, gameSpeedFactor);
-                applyPowerUpEffects(refs, callbacks, ['SPEED_UP'], currentTime, gameSpeedFactor);
+                // applyPowerUpEffects(refs, callbacks, ['SPEED_UP'], currentTime, gameSpeedFactor); // Removed SPEED_UP from ALL_IN_ONE
                 applyPowerUpEffects(refs, callbacks, ['SPLITTING_BALL'], currentTime, gameSpeedFactor);
                 applyPowerUpEffects(refs, callbacks, ['BIG_BALL'], currentTime, gameSpeedFactor);
                 applyPowerUpEffects(refs, callbacks, ['MULTI_BALL'], currentTime, gameSpeedFactor);
