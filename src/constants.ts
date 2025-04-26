@@ -73,7 +73,7 @@ export const POWER_UP_SECOND_CHANCE_REDUCTION_PER_EXTRA = 0.02;
 // export const SPEED_UP_INCREMENT = 0.1; // Removed SPEED_UP power-up
 export const SPLITTING_BALL_DURATION = 10000;
 export const BIG_BALL_DURATION = 10000;
-export const BUILDER_BALL_DURATION = 10000;
+export const BUILDER_BALL_DURATION = 5000;
 export const BLACK_BALL_DURATION = 10000;
 
 
