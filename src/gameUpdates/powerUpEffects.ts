@@ -8,7 +8,7 @@ import {
     SPLITTING_BALL_DURATION, BIG_BALL_DURATION, BOARD_HEIGHT, PADDLE_HEIGHT,
     BALL_SIZE, BUILDER_BALL_DURATION, BLACK_BALL_DURATION, BRICK_COLUMNS,
     BRICK_ROWS, PIERCE_BALL_HITS, PADDLE_WIDEN_INCREMENT, MAX_PADDLE_WIDTH,
-    BOARD_WIDTH, MAX_BRICK_UPGRADE_LEVEL // Added MAX_BRICK_UPGRADE_LEVEL
+    BOARD_WIDTH, MAX_BRICK_UPGRADE_LEVEL, BASE_BALL_SPEED_FACTOR // Added BASE_BALL_SPEED_FACTOR
     // STICKY_PADDLE_DURATION // Removed duration constant
     // Removed SPEED_UP_INCREMENT
 } from '../constants';
@@ -18,7 +18,7 @@ export const applyPowerUpEffects = (
     callbacks: GameLoopCallbacks,
     collectedPowerUpTypes: PowerUpType[],
     currentTime: number,
-    gameSpeedFactor: number
+    gameSpeedFactor: number // Keep this parameter as it might be needed elsewhere
 ) => {
     collectedPowerUpTypes.forEach(type => {
         switch (type) {
@@ -130,7 +130,7 @@ export const applyPowerUpEffects = (
                  refs.ballsRef.current.push(createNewBall(
                      refs.paddleXRef.current + refs.paddleWidthRef.current / 2 + (Math.random() - 0.5) * 10,
                      BOARD_HEIGHT - PADDLE_HEIGHT - BALL_SIZE - 5,
-                     sx, sy, gameSpeedFactor
+                     sx, sy, BASE_BALL_SPEED_FACTOR // *** MODIFIED: Use base speed factor ***
                  ));
                  break;
              }
@@ -277,13 +277,13 @@ export const applyPowerUpEffects = (
                 break;
             }
              case 'ALL_IN_ONE': {
-                // Apply effects individually
+                // Apply effects individually, passing BASE_BALL_SPEED_FACTOR for MULTI_BALL
                 applyPowerUpEffects(refs, callbacks, ['HOMING_BALL'], currentTime, gameSpeedFactor);
                 applyPowerUpEffects(refs, callbacks, ['COLLECTION_FIELD'], currentTime, gameSpeedFactor);
                 // applyPowerUpEffects(refs, callbacks, ['SPEED_UP'], currentTime, gameSpeedFactor); // Removed SPEED_UP from ALL_IN_ONE
                 applyPowerUpEffects(refs, callbacks, ['SPLITTING_BALL'], currentTime, gameSpeedFactor);
                 applyPowerUpEffects(refs, callbacks, ['BIG_BALL'], currentTime, gameSpeedFactor);
-                applyPowerUpEffects(refs, callbacks, ['MULTI_BALL'], currentTime, gameSpeedFactor);
+                applyPowerUpEffects(refs, callbacks, ['MULTI_BALL'], currentTime, gameSpeedFactor); // Note: This recursive call will now use BASE_BALL_SPEED_FACTOR internally
                 applyPowerUpEffects(refs, callbacks, ['BUILDER_BALL'], currentTime, gameSpeedFactor);
                 applyPowerUpEffects(refs, callbacks, ['BLACK_BALL'], currentTime, gameSpeedFactor);
                 applyPowerUpEffects(refs, callbacks, ['PIERCE_BALL'], currentTime, gameSpeedFactor);

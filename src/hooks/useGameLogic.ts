@@ -18,7 +18,7 @@ import { calculateShrinkDuration } from '../gameUtils'; // Make sure this is imp
 // Constants for Bonus Gold
 const INITIAL_BONUS_GOLD = 30;
 const MINIMUM_BONUS_GOLD = 5; // Minimum bonus gold awarded
-const BONUS_GOLD_START_DELAY = 5000; 
+const BONUS_GOLD_START_DELAY = 5000;
 const BONUS_GOLD_DECREMENT_INTERVAL = 1000; // 1 second (1000ms)
 
 // Modify GameStateRefs interface (This should be done in interfaces.ts, but shows the intent)
@@ -153,7 +153,7 @@ export function useGameLogic() {
             if (gameOverStateRef.current === 'playing' && event.code === 'Space' && !event.repeat) {
                 event.preventDefault();
                 if (gameSpeedFactorRef.current === BASE_BALL_SPEED_FACTOR) {
-                    gameSpeedFactorRef.current = BASE_BALL_SPEED_FACTOR * 3;
+                    gameSpeedFactorRef.current = BASE_BALL_SPEED_FACTOR * 2; // Keep speed factor for game updates
                 }
             }
         };
@@ -161,7 +161,7 @@ export function useGameLogic() {
         const handleKeyUp = (event: KeyboardEvent) => {
             if (event.code === 'Space') {
                 event.preventDefault();
-                if (gameSpeedFactorRef.current === BASE_BALL_SPEED_FACTOR * 3) {
+                if (gameSpeedFactorRef.current === BASE_BALL_SPEED_FACTOR * 2) {
                     gameSpeedFactorRef.current = BASE_BALL_SPEED_FACTOR;
                 }
             }
@@ -244,7 +244,7 @@ export function useGameLogic() {
         if (currentMode === 'main') { const level = currentLevelRef.current; if (level === 1) { cols = 3; rows = 2; targetHeight = TALL_BRICK_HEIGHT; } else if (level === 2) { cols = 4; rows = 3; targetHeight = TALL_BRICK_HEIGHT; } else if (level === 3) { cols = 5; rows = 4; targetHeight = TALL_BRICK_HEIGHT; } else if (level === 4) { cols = 7; rows = 5; targetHeight = TALL_BRICK_HEIGHT; } else if (level === 5) { cols = 9; rows = 6; targetHeight = TALL_BRICK_HEIGHT; } else if (level === 6) { cols = 11; rows = 7; targetHeight = TALL_BRICK_HEIGHT; } else if (level === 7) { cols = 13; rows = 8; targetHeight = TALL_BRICK_HEIGHT; } else if (level === 8) { cols = 15; rows = 9; targetHeight = TALL_BRICK_HEIGHT; } else if (level === 9) { cols = 17; rows = 10; targetHeight = TALL_BRICK_HEIGHT; } else { cols = 4; if (level === 10) { cols = 20; rows = 11; } else if (level === 11) { cols = 22; rows = 12; } else if (level === 12) { cols = 25; rows = 13; } else if (level === 13) { cols = 28; rows = 14; } else if (level === 14) { cols = 31; rows = 15; } else if (level === 15) { cols = 35; rows = 16; } else if (level === 16) { cols = 40; rows = 17; } else if (level === 17) { cols = 45; rows = 18; } else if (level === 18) { cols = 50; rows = 19; } else if (level === 19) { cols = 55; rows = 20; } else if (level === 20) { cols = 60; rows = 23; } else { rows = 7; } if (rows > 0) { targetHeight = (TARGET_TOTAL_BRICK_GRID_HEIGHT - (rows - 1) * BRICK_PADDING) / rows; targetHeight = Math.max(1, targetHeight); } else { targetHeight = BRICK_HEIGHT; } } } else { cols = BRICK_COLUMNS; rows = BRICK_ROWS; targetHeight = BRICK_HEIGHT; }
 
         brickColumnsRef.current = cols; brickRowsRef.current = rows; bricksRef.current = initializeBricks(cols, rows, targetHeight);
-        let count = 0; for (let c = 0; c < bricksRef.current.length; c++) { if (bricksRef.current[c]) { for (let r = 0; r < bricksRef.current[c].length; r++) { if (bricksRef.current[c][r] && bricksRef.current[c][r].status === 1) { count++; } } } } totalBricksRef.current = count;
+        let count = 0; for (let c = 0; c < bricksRef.current.length; c++) { if (bricksRef.current[c]) { for (let r = 0; r < bricksRef.current[c].length; r++) { if (bricksRef.current[c]?.[r]?.status === 1) { count++; } } } } totalBricksRef.current = count;
 
         // Reset game state elements
         powerUpsRef.current = []; lasersRef.current = []; widenLevelRef.current = 0; laserShotsRef.current = 0; safetyNetCountRef.current = 0;
@@ -272,7 +272,8 @@ export function useGameLogic() {
 
     const launchStuckBalls = useCallback((isInitialLaunch = false) => {
         if (gameOverStateRef.current !== 'playing' || stuckBallsRef.current.length === 0) return;
-        const launchTime = Date.now(); const currentPaddleX = paddleXRef.current; const currentPaddleWidth = paddleWidthRef.current; const gameSpeed = gameSpeedFactorRef.current;
+        const launchTime = Date.now(); const currentPaddleX = paddleXRef.current; const currentPaddleWidth = paddleWidthRef.current; 
+        // const gameSpeed = gameSpeedFactorRef.current; // No longer needed here
         const launchedBalls = stuckBallsRef.current.map(ball => {
              const absoluteX = currentPaddleX + (ball.stuckOffset ?? currentPaddleWidth / 2); const currentBallSize = ball.isBig ? BALL_SIZE + BIG_BALL_SIZE_INCREASE : BALL_SIZE;
              let resumedBlackEndTime = undefined; if (ball.isBlack && ball.blackPausedDuration) resumedBlackEndTime = launchTime + ball.blackPausedDuration;
@@ -280,9 +281,11 @@ export function useGameLogic() {
              let resumedBigEndTime = undefined; if (ball.isBig && ball.bigPausedDuration) resumedBigEndTime = launchTime + ball.bigPausedDuration;
              let resumedSplittingEndTime = undefined; if (ball.isSplitting && ball.splittingPausedDuration) resumedSplittingEndTime = launchTime + ball.splittingPausedDuration;
              let launchSpeedX = 0;
-             let launchSpeedY = -Math.abs(INITIAL_BALL_SPEED_Y * gameSpeed);
+             // --- MODIFIED ---: Use base speed, gameSpeedFactor applies in update loop
+             let launchSpeedY = -Math.abs(INITIAL_BALL_SPEED_Y); 
              if (isInitialLaunch) {
-                launchSpeedX = 3 * gameSpeed;
+                // --- MODIFIED ---: Use base speed, gameSpeedFactor applies in update loop
+                launchSpeedX = 3; 
                 isGameStartedRef.current = true;
                 startBonusGoldCountdown();
              } else {
