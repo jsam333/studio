@@ -1,37 +1,20 @@
 'use client'
 
-import React, { useRef, useEffect, useCallback, useState } from 'react';
+import React, { useRef, useEffect, useCallback } from 'react';
 import {
-    BOARD_WIDTH, BOARD_HEIGHT, GOLD_COLOR,
-    ALL_TOGGLEABLE_POWER_UPS,
-    POWER_UP_COSTS // Import the costs map
+    BOARD_WIDTH, BOARD_HEIGHT,
 } from '../constants';
-import { GameLoopCallbacks, GameState, PowerUpType } from '../interfaces';
+import { GameLoopCallbacks, GameState } from '../interfaces';
 import { gameUpdate } from '../gameLoop';
 import { setupGameCanvas } from '../gameCanvas';
-import { PowerUpSidebar } from '../components/PowerUpSidebar';
 import { useGameLogic } from '../hooks/useGameLogic';
-import { useIsMobile } from '../hooks/use-mobile'; // <-- Import useIsMobile
-import { Button } from '../components/ui/button';
-// Import the calculation function
-import { calculateBaseSpawnChance } from '../gameUpdates/gameLoopUtils';
+import { useIsMobile } from '../hooks/use-mobile';
+import { GameMenu } from '../components/GameMenu';
+import { ShopScreen } from '../components/ShopScreen';
+import { GameView } from '../components/GameView';
 
 const SIDEBAR_WIDTH_PX = 192;
-const MAX_DELTA_TIME_FACTOR = 3;
-const SHOP_ITEMS_COUNT = 5;
-// Removed const POWERUP_COST = 10;
-
-// Helper function to shuffle an array (Fisher-Yates)
-function shuffleArray<T>(array: T[]): T[] {
-    let currentIndex = array.length, randomIndex;
-    while (currentIndex !== 0) {
-        randomIndex = Math.floor(Math.random() * currentIndex);
-        currentIndex--;
-        [array[currentIndex], array[randomIndex]] = [
-            array[randomIndex], array[currentIndex]];
-    }
-    return array;
-}
+const MAX_DELTA_TIME_FACTOR = 3; // Retained for potential future use or reference
 
 export default function Home() {
     const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -39,7 +22,7 @@ export default function Home() {
     const scaleRef = useRef(1);
     const animationFrameIdRef = useRef<number | null>(null);
     const lastTimeRef = useRef<number>(0);
-    const isMobile = useIsMobile(); // <-- Use the hook
+    const isMobile = useIsMobile();
 
     const {
         gameOverState,
@@ -56,24 +39,13 @@ export default function Home() {
         startGame,
         startNextLevel,
         addSpawnablePowerUp,
-        executePaddleShrink, // Added executePaddleShrink here
+        executePaddleShrink,
         gameStateRefs,
     } = useGameLogic();
 
-    const [shopItems, setShopItems] = useState<PowerUpType[]>([]);
-    const [purchasedInSession, setPurchasedInSession] = useState<Set<PowerUpType>>(new Set());
-    const [goldDisplay, setGoldDisplay] = useState(gameStateRefs.goldRef.current);
-    // State to store the calculated spawn chance for display
-    const [currentSpawnChance, setCurrentSpawnChance] = useState(0);
-
-    // Target FPS is used for calculating a factor if needed, but we pass raw elapsed time
-    // const targetFps = 60;
-    // const targetFrameTime = 1000 / targetFps;
-
     // Draw end message callback
     const drawEndMessageCallback = useCallback((context: CanvasRenderingContext2D, state: 'won' | 'lost' | 'shop', finalScore: number) => {
-        // ... (draw won/lost message as before) ...
-        if (state === 'shop') return;
+        if (state === 'shop') return; // Don't draw if transitioning to shop
         const message = state === 'won' ? `You Win! Score: ${finalScore}` : 'Game Over!';
         const subMessage = 'Click to Restart';
         const logicalCenterX = BOARD_WIDTH / 2;
@@ -94,96 +66,89 @@ export default function Home() {
 
     // Main game loop effect
     useEffect(() => {
-        // ... (game loop logic as before) ...
-         const gameLoop = (timestamp: number) => {
+        const gameLoop = (timestamp: number) => {
             const currentGameState = gameStateRefs.gameOverStateRef.current;
-             if (currentGameState !== 'playing') {
-                 lastTimeRef.current = 0;
-                 if (currentGameState === 'won' || currentGameState === 'lost') {
-                     const canvas = canvasRef.current;
-                     const ctx = canvas?.getContext('2d');
-                     if (ctx && gameLoopCallbacksRef.current) {
+            if (currentGameState !== 'playing') {
+                lastTimeRef.current = 0;
+                if (currentGameState === 'won' || currentGameState === 'lost') {
+                    const canvas = canvasRef.current;
+                    const ctx = canvas?.getContext('2d');
+                    if (ctx && gameLoopCallbacksRef.current) {
                         gameLoopCallbacksRef.current.drawEndMessage(ctx, currentGameState, gameStateRefs.scoreRef.current);
-                     }
-                 }
-                 if (animationFrameIdRef.current) {
-                     cancelAnimationFrame(animationFrameIdRef.current);
-                     animationFrameIdRef.current = null;
-                 }
-                 return;
-             }
-             if (!lastTimeRef.current) lastTimeRef.current = timestamp;
-             const elapsed = timestamp - lastTimeRef.current; // Elapsed time in milliseconds
-             lastTimeRef.current = timestamp;
+                    }
+                }
+                if (animationFrameIdRef.current) {
+                    cancelAnimationFrame(animationFrameIdRef.current);
+                    animationFrameIdRef.current = null;
+                }
+                return;
+            }
+            if (!lastTimeRef.current) lastTimeRef.current = timestamp;
+            const elapsed = timestamp - lastTimeRef.current; 
+            lastTimeRef.current = timestamp;
 
-             // Optional: Clamp max elapsed time to prevent huge jumps if tab is inactive
-             const clampedElapsed = Math.min(elapsed, 100); // Max 100ms jump (adjust as needed)
+            const clampedElapsed = Math.min(elapsed, 100);
 
-             // No longer need deltaTime factor calculation here
-             // const rawDeltaTime = elapsed / targetFrameTime;
-             // const deltaTime = Math.min(rawDeltaTime, MAX_DELTA_TIME_FACTOR);
-
-             const canvas = canvasRef.current;
-             const ctx = canvas?.getContext('2d');
-             if (ctx && gameLoopCallbacksRef.current) {
-                 // Pass clampedElapsed (or raw elapsed) to gameUpdate
-                 gameUpdate(ctx, gameStateRefs, gameLoopCallbacksRef.current, clampedElapsed);
-             }
-             if (gameStateRefs.gameOverStateRef.current === 'playing') {
-                animationFrameIdRef.current = requestAnimationFrame(gameLoopRef.current!); 
-             }
+            const canvas = canvasRef.current;
+            const ctx = canvas?.getContext('2d');
+            if (ctx && gameLoopCallbacksRef.current) {
+                gameUpdate(ctx, gameStateRefs, gameLoopCallbacksRef.current, clampedElapsed);
+            }
+            if (gameStateRefs.gameOverStateRef.current === 'playing') {
+               animationFrameIdRef.current = requestAnimationFrame(gameLoopRef.current!); 
+            }
         };
         gameLoopRef.current = gameLoop;
-    }, [gameStateRefs]); // Removed dependency on targetFrameTime
+    }, [gameStateRefs, drawEndMessageCallback]); // Added drawEndMessageCallback as dependency
 
-     // Game loop callbacks ref
-     const gameLoopCallbacksRef = useRef<GameLoopCallbacks>();
-     useEffect(() => {
-         gameLoopCallbacksRef.current = {
-             updateScoreCallback,
-             setGameOverState,
-             schedulePaddleShrink,
-             executePaddleShrink, // Added executePaddleShrink
-             scheduleFieldShrink,
-             drawEndMessage: drawEndMessageCallback,
-         };
-     }, [updateScoreCallback, setGameOverState, schedulePaddleShrink, executePaddleShrink, scheduleFieldShrink, drawEndMessageCallback]); // Added executePaddleShrink to dependencies
-
-    // Effect to setup shop state when entering shop
+    // Game loop callbacks ref
+    const gameLoopCallbacksRef = useRef<GameLoopCallbacks>();
     useEffect(() => {
-        if (gameOverState === 'shop') {
-            // Generate items
-            const eligiblePowerUps = ALL_TOGGLEABLE_POWER_UPS.filter(p => p !== 'ALL_IN_ONE');
-            const shuffled = shuffleArray(eligiblePowerUps);
-            setShopItems(shuffled.slice(0, SHOP_ITEMS_COUNT));
-            // Reset session purchases
-            setPurchasedInSession(new Set());
-            // Sync gold display
-            setGoldDisplay(gameStateRefs.goldRef.current);
-            // Calculate and set initial spawn chance for display
-            const chance = calculateBaseSpawnChance(gameStateRefs.spawnablePowerUpsRef.current, 'main');
-            setCurrentSpawnChance(chance);
-        }
-    }, [gameOverState, gameStateRefs.goldRef, gameStateRefs.spawnablePowerUpsRef]); // Add spawnablePowerUpsRef dependency
+        gameLoopCallbacksRef.current = {
+            updateScoreCallback,
+            setGameOverState,
+            schedulePaddleShrink,
+            executePaddleShrink,
+            scheduleFieldShrink,
+            drawEndMessage: drawEndMessageCallback,
+        };
+    }, [updateScoreCallback, setGameOverState, schedulePaddleShrink, executePaddleShrink, scheduleFieldShrink, drawEndMessageCallback]);
 
-    // Canvas setup and game state effect
+    // Effect to setup canvas, handle game state transitions, and add cheat code
     useEffect(() => {
-        // ... (canvas setup logic as before) ...
-         if (gameOverState === 'menu' || gameOverState === 'shop') {
-             if (animationFrameIdRef.current) {
-                 cancelAnimationFrame(animationFrameIdRef.current);
-                 animationFrameIdRef.current = null;
-             }
-             const canvas = canvasRef.current;
-             const ctx = canvas?.getContext('2d');
-             if (ctx) {
-                 ctx.clearRect(0, 0, BOARD_WIDTH, BOARD_HEIGHT);
-             }
-             return;
+        // Cheat code listener
+        const handleKeyDown = (event: KeyboardEvent) => {
+            // Use gameStateRefs.gameOverStateRef.current to check the *current* state
+            if (event.key === 'c' && gameStateRefs.gameOverStateRef.current === 'playing') {
+                console.log("Cheat code activated: +1,000,000 points");
+                updateScoreCallback(1000000);
+            }
+        };
+        window.addEventListener('keydown', handleKeyDown);
+
+
+        if (gameOverState === 'menu' || gameOverState === 'shop') {
+            if (animationFrameIdRef.current) {
+                cancelAnimationFrame(animationFrameIdRef.current);
+                animationFrameIdRef.current = null;
+            }
+            const canvas = canvasRef.current;
+            const ctx = canvas?.getContext('2d');
+            if (ctx) {
+                // Clear canvas only if it exists, might not be mounted in menu/shop
+                 ctx.clearRect(0, 0, canvas.width, canvas.height);
+            }
+            // Cleanup listener when in menu/shop
+             return () => {
+                window.removeEventListener('keydown', handleKeyDown);
+            };
         }
 
         if (!gameContainerRef.current || !canvasRef.current) {
-            return;
+            // Cleanup listener if refs aren't ready
+             return () => {
+                window.removeEventListener('keydown', handleKeyDown);
+            };
         }
 
         const sidebarWidthForSetup = showSidebar ? SIDEBAR_WIDTH_PX : 0;
@@ -195,20 +160,20 @@ export default function Home() {
             gameLoop: gameLoopRef.current!,
             scaleRef,
             animationFrameIdRef,
-            handleResetGame,
+            handleResetGame, // Pass reset handler for canvas click on game over
             gameStateRefs,
             gameLoopCallbacks: gameLoopCallbacksRef.current!,
             lastTimeRef: lastTimeRef,
             totalSidebarSpace: totalSidebarSpaceForSetup,
             sidebarWidthPx: sidebarWidthForSetup,
-            launchStuckBalls: launchStuckBalls, // <-- Pass the function reference
-            isMobile: isMobile, // <-- Pass the isMobile value
+            launchStuckBalls: launchStuckBalls,
+            isMobile: isMobile,
         });
 
         const handleContextMenu = (event: MouseEvent) => {
             event.preventDefault();
             if (gameStateRefs.gameOverStateRef.current === 'playing' && gameStateRefs.isGameStartedRef.current) {
-                launchStuckBalls(false);
+                launchStuckBalls(false); // Right-click to launch
             }
         };
 
@@ -231,6 +196,7 @@ export default function Home() {
              }
         };
 
+        // Combined cleanup function
         return () => {
             cleanupCanvas();
             fieldTimerCleanup();
@@ -241,140 +207,38 @@ export default function Home() {
                  cancelAnimationFrame(animationFrameIdRef.current);
                  animationFrameIdRef.current = null;
             }
-            // No longer need widenTimeoutRef cleanup here as it's handled by countdown
+             window.removeEventListener('keydown', handleKeyDown); // Ensure listener is removed
         };
-    }, [gameOverState, handleResetGame, launchStuckBalls, gameStateRefs, showSidebar, isMobile]); // <-- Add isMobile to dependency array
+    // Ensure all dependencies used in the effect, including the cheat code logic, are listed.
+    }, [gameOverState, handleResetGame, launchStuckBalls, gameStateRefs, showSidebar, isMobile, drawEndMessageCallback, scheduleFieldShrink, schedulePaddleShrink, executePaddleShrink, setGameOverState, updateScoreCallback]);
 
     // --- Render Logic ---
     if (gameOverState === 'menu') {
-        // ... (menu render logic as before) ...
-        return (
-            <div className="flex flex-col items-center justify-center h-screen bg-gray-900 text-white">
-                <h1 className="text-4xl font-bold mb-8">Brick Breaker</h1>
-                <Button
-                    onClick={() => startGame('main')} 
-                    className="px-8 py-4 text-xl bg-green-600 hover:bg-green-700 mb-4" 
-                >
-                    Main Game
-                </Button>
-                <Button 
-                    onClick={() => startGame('test')} 
-                    className="px-8 py-4 text-xl bg-blue-600 hover:bg-blue-700"
-                >
-                    Test Level
-                </Button>
-            </div>
-        );
+        return <GameMenu onStartGame={startGame} />;
     }
 
-    // Render Shop Screen using UI components
     if (gameOverState === 'shop') {
-        const handlePurchase = (item: PowerUpType) => {
-            if (gameStateRefs.spawnablePowerUpsRef.current.has(item) || purchasedInSession.has(item)) return;
-            const cost = POWER_UP_COSTS[item] ?? 999; // Get specific cost, fallback if undefined
-            if (gameStateRefs.goldRef.current < cost) return;
-
-            gameStateRefs.goldRef.current -= cost;
-            setGoldDisplay(gameStateRefs.goldRef.current);
-            addSpawnablePowerUp(item);
-            setPurchasedInSession(prev => new Set(prev).add(item));
-
-            // Recalculate spawn chance after purchase for display update
-            const newChance = calculateBaseSpawnChance(gameStateRefs.spawnablePowerUpsRef.current, 'main');
-            setCurrentSpawnChance(newChance);
-
-            console.log(`Purchased ${item} for ${cost} gold. Remaining: ${gameStateRefs.goldRef.current}. New Spawn Chance: ${newChance * 100}%`);
-        };
-
         return (
-            <div className="flex flex-col items-center justify-center h-screen bg-gray-800 text-white">
-                <h1 className="text-4xl font-bold mb-6">Level Complete!</h1>
-                {/* Display Gold and Spawn Chance */}
-                <div className="flex items-center space-x-6 mb-10">
-                    <p className="text-3xl" style={{ color: GOLD_COLOR || '#FFD700' }}>
-                        Gold: {goldDisplay}
-                    </p>
-                    <p className="text-xl text-blue-300">
-                        {/* Format chance as percentage */}
-                        Spawn Chance: {(currentSpawnChance * 100).toFixed(0)}%
-                    </p>
-                </div>
-
-                <h2 className="text-2xl font-semibold mb-4">Power-up Shop</h2>
-                <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-4 mb-10 w-full max-w-4xl px-4">
-                    {shopItems.length > 0 ? (
-                        shopItems.map(item => {
-                            const cost = POWER_UP_COSTS[item] ?? 999; // Get cost again for UI
-                            const isGloballyOwned = gameStateRefs.spawnablePowerUpsRef.current.has(item);
-                            const isPurchasedThisSession = purchasedInSession.has(item);
-                            const canAfford = goldDisplay >= cost;
-                            const isDisabled = isGloballyOwned || isPurchasedThisSession || !canAfford;
-                            let buttonText = `Cost: ${cost}`; // Display specific cost
-                            let buttonStyle = 'bg-blue-600 hover:bg-blue-700';
-                            if (isGloballyOwned) {
-                                buttonText = '(Owned)';
-                                buttonStyle = 'bg-gray-500 opacity-70';
-                            } else if (isPurchasedThisSession) {
-                                buttonText = '(Added)';
-                                buttonStyle = 'bg-gray-500 opacity-70';
-                            } else if (!canAfford) {
-                                buttonStyle = 'bg-red-800 opacity-50';
-                            }
-
-                            return (
-                                <Button
-                                    key={item}
-                                    onClick={() => handlePurchase(item)} 
-                                    disabled={isDisabled}
-                                    className={`py-3 px-2 text-sm flex flex-col h-24 justify-center items-center ${buttonStyle}`}
-                                >
-                                    <span className="mb-1">{item.replace(/_/g, ' ')}</span> 
-                                    <span className="text-xs mt-1">{buttonText}</span> 
-                                </Button>
-                            );
-                        })
-                    ) : (
-                        <p className="text-center col-span-full">Loading Shop...</p>
-                    )}
-                </div>
-
-                 <Button 
-                    onClick={startNextLevel} 
-                    className="mb-4 px-6 py-3 text-lg bg-purple-600 hover:bg-purple-700"
-                >
-                    Start Level {currentLevel + 1}
-                </Button>
-                <Button 
-                    onClick={handleResetGame} 
-                    className="px-6 py-3 text-lg bg-yellow-600 hover:bg-yellow-700"
-                >
-                    Back to Menu 
-                </Button>
-            </div>
+            <ShopScreen
+                gameStateRefs={gameStateRefs}
+                currentLevel={currentLevel}
+                addSpawnablePowerUp={addSpawnablePowerUp}
+                startNextLevel={startNextLevel}
+                handleResetGame={handleResetGame}
+            />
         );
     }
 
     // Render Game View (Playing, Won, Lost)
     return (
-        // ... (game view render logic as before) ...
-         <div className="flex items-center justify-center h-screen bg-gray-900 p-4">
-            <div 
-                ref={gameContainerRef} 
-                className="flex flex-row items-start border border-white relative"
-            >
-                <canvas 
-                    ref={canvasRef} 
-                    className="block flex-shrink-0" 
-                    onClick={(gameOverState === 'won' || gameOverState === 'lost') ? handleResetGame : undefined}
-                    style={{ cursor: (gameOverState === 'won' || gameOverState === 'lost') ? 'pointer' : 'default' }} 
-                />
-                {showSidebar && (
-                    <PowerUpSidebar 
-                        enabledPowerUps={enabledPowerUps} 
-                        onTogglePowerUp={handlePowerUpToggle} 
-                    />
-                )}
-            </div>
-        </div>
+        <GameView
+            gameContainerRef={gameContainerRef}
+            canvasRef={canvasRef}
+            gameOverState={gameOverState}
+            showSidebar={showSidebar}
+            enabledPowerUps={enabledPowerUps}
+            onTogglePowerUp={handlePowerUpToggle}
+            handleResetGame={handleResetGame} // Pass reset for click handling within GameView
+        />
     );
 }
