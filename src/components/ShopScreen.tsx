@@ -6,66 +6,33 @@ import { shuffleArray } from '../utils/helpers';
 import { calculateBaseSpawnChance } from '../gameUpdates/gameLoopUtils';
 
 const SHOP_ITEMS_COUNT = 5;
-const MAX_MULTIBALL_LEVEL = 3;
-const MAX_WIDEN_LEVEL = 3;
-const MAX_LASER_LEVEL = 3; // Added max level
-const MAX_STICKY_LEVEL = 3; // Added max level
+const MAX_LEVEL = 3; // Universal max level for upgradable power-ups
 
-// --- Multiball Helpers ---
-const getCurrentMultiballLevel = (ownedPowerUps: Set<PowerUpType>): number => {
-    for (let level = MAX_MULTIBALL_LEVEL; level >= 1; level--) {
-        const type = getMultiballPowerUpType(level);
+// --- Generic Get Level Function ---
+const getCurrentLevel = (ownedPowerUps: Set<PowerUpType>, baseType: PowerUpType): number => {
+    for (let level = MAX_LEVEL; level >= 1; level--) {
+        const type = getPowerUpTypeForLevel(baseType, level);
         if (type && ownedPowerUps.has(type)) return level;
     }
     return 0;
 };
-const getMultiballPowerUpType = (level: number): PowerUpType | null => {
-    if (level < 1 || level > MAX_MULTIBALL_LEVEL) return null;
-    if (level === 1) return 'MULTI_BALL';
-    return `MULTI_BALL_L${level}` as PowerUpType; 
+
+// --- Generic Get PowerUpType Function ---
+const getPowerUpTypeForLevel = (baseType: PowerUpType, level: number): PowerUpType | null => {
+    if (level < 1 || level > MAX_LEVEL) return null;
+    if (level === 1) return baseType;
+    // Construct the level type string (e.g., "MULTI_BALL_L2")
+    // Type assertion needed as TS doesn't know all combinations exist in PowerUpType
+    return `${baseType}_L${level}` as PowerUpType; 
 };
 
-// --- Widen Paddle Helpers ---
-const getCurrentWidenLevel = (ownedPowerUps: Set<PowerUpType>): number => {
-    for (let level = MAX_WIDEN_LEVEL; level >= 1; level--) {
-        const type = getWidenPowerUpType(level);
-        if (type && ownedPowerUps.has(type)) return level;
-    }
-    return 0;
-};
-const getWidenPowerUpType = (level: number): PowerUpType | null => {
-    if (level < 1 || level > MAX_WIDEN_LEVEL) return null;
-    if (level === 1) return 'WIDEN_PADDLE';
-    return `WIDEN_PADDLE_L${level}` as PowerUpType; 
-};
-
-// --- Laser Paddle Helpers ---
-const getCurrentLaserLevel = (ownedPowerUps: Set<PowerUpType>): number => {
-    for (let level = MAX_LASER_LEVEL; level >= 1; level--) {
-        const type = getLaserPowerUpType(level);
-        if (type && ownedPowerUps.has(type)) return level;
-    }
-    return 0;
-};
-const getLaserPowerUpType = (level: number): PowerUpType | null => {
-    if (level < 1 || level > MAX_LASER_LEVEL) return null;
-    if (level === 1) return 'LASER_PADDLE';
-    return `LASER_PADDLE_L${level}` as PowerUpType; 
-};
-
-// --- Sticky Paddle Helpers ---
-const getCurrentStickyLevel = (ownedPowerUps: Set<PowerUpType>): number => {
-    for (let level = MAX_STICKY_LEVEL; level >= 1; level--) {
-        const type = getStickyPowerUpType(level);
-        if (type && ownedPowerUps.has(type)) return level;
-    }
-    return 0;
-};
-const getStickyPowerUpType = (level: number): PowerUpType | null => {
-    if (level < 1 || level > MAX_STICKY_LEVEL) return null;
-    if (level === 1) return 'STICKY_PADDLE';
-    return `STICKY_PADDLE_L${level}` as PowerUpType; 
-};
+// Identify which base types are upgradable
+const UPGRADABLE_POWER_UPS: PowerUpType[] = [
+    'MULTI_BALL', 'WIDEN_PADDLE', 'LASER_PADDLE', 'STICKY_PADDLE',
+    'REGEN_BRICK', 'SAFETY_NET', 'REINFORCE_BRICK', 'MAKE_SPECIAL', 'BLACK_BALL',
+    'PIERCE_BALL', 'UPGRADE_BRICK', 'BUILDER_BALL', 'BIG_BALL', 'SPLITTING_BALL',
+    'COLLECTION_FIELD', 'HOMING_BALL', 'BOMB_BRICK'
+];
 
 interface ShopScreenProps {
   gameStateRefs: GameStateRefs;
@@ -83,10 +50,8 @@ export const ShopScreen: React.FC<ShopScreenProps> = ({
   handleResetGame
 }) => {
   const [shopItems, setShopItems] = useState<PowerUpType[]>([]);
-  const [purchasedMultiballInSession, setPurchasedMultiballInSession] = useState<boolean>(false);
-  const [purchasedWidenInSession, setPurchasedWidenInSession] = useState<boolean>(false); 
-  const [purchasedLaserInSession, setPurchasedLaserInSession] = useState<boolean>(false); // Added state
-  const [purchasedStickyInSession, setPurchasedStickyInSession] = useState<boolean>(false); // Added state
+  // Use a map to track session purchases for each upgradable type
+  const [purchasedInSession, setPurchasedInSession] = useState<Map<PowerUpType, boolean>>(new Map());
   const [goldDisplay, setGoldDisplay] = useState(gameStateRefs.goldRef.current);
   const [currentSpawnChance, setCurrentSpawnChance] = useState(0);
 
@@ -100,10 +65,7 @@ export const ShopScreen: React.FC<ShopScreenProps> = ({
     setShopItems(currentShopSelection);
 
     // Reset session purchase tracking
-    setPurchasedMultiballInSession(false);
-    setPurchasedWidenInSession(false); 
-    setPurchasedLaserInSession(false); // Reset
-    setPurchasedStickyInSession(false); // Reset
+    setPurchasedInSession(new Map()); 
     setGoldDisplay(gameStateRefs.goldRef.current);
     const chance = calculateBaseSpawnChance(ownedPowerUps, 'main');
     setCurrentSpawnChance(chance);
@@ -114,51 +76,38 @@ export const ShopScreen: React.FC<ShopScreenProps> = ({
     const ownedPowerUps = gameStateRefs.spawnablePowerUpsRef.current;
     let actualItemToAdd: PowerUpType | null = itemToPurchase;
     let cost: number | undefined;
-    let isMultiballPurchase = false;
-    let isWidenPurchase = false;
-    let isLaserPurchase = false;
-    let isStickyPurchase = false;
+    let isUpgradePurchase = false;
+    let baseTypeOfUpgrade: PowerUpType | null = null;
 
-    // Determine actual item and cost for upgradeable power-ups
-    if (itemToPurchase === 'MULTI_BALL') {
-        isMultiballPurchase = true;
-        const currentOwnedLevel = getCurrentMultiballLevel(ownedPowerUps);
-        if (currentOwnedLevel >= MAX_MULTIBALL_LEVEL) return; 
+    // Check if it's a base type that is upgradable
+    if (UPGRADABLE_POWER_UPS.includes(itemToPurchase)) {
+        isUpgradePurchase = true;
+        baseTypeOfUpgrade = itemToPurchase;
+        const currentOwnedLevel = getCurrentLevel(ownedPowerUps, baseTypeOfUpgrade);
+        
+        if (currentOwnedLevel >= MAX_LEVEL) {
+            console.warn("Attempted to purchase max level item:", baseTypeOfUpgrade);
+            return; 
+        }
         const nextLevel = currentOwnedLevel + 1;
-        actualItemToAdd = getMultiballPowerUpType(nextLevel);
-    } else if (itemToPurchase === 'WIDEN_PADDLE') {
-        isWidenPurchase = true;
-        const currentOwnedLevel = getCurrentWidenLevel(ownedPowerUps);
-        if (currentOwnedLevel >= MAX_WIDEN_LEVEL) return;
-        const nextLevel = currentOwnedLevel + 1;
-        actualItemToAdd = getWidenPowerUpType(nextLevel);
-    } else if (itemToPurchase === 'LASER_PADDLE') {
-        isLaserPurchase = true;
-        const currentOwnedLevel = getCurrentLaserLevel(ownedPowerUps);
-        if (currentOwnedLevel >= MAX_LASER_LEVEL) return;
-        const nextLevel = currentOwnedLevel + 1;
-        actualItemToAdd = getLaserPowerUpType(nextLevel);
-    } else if (itemToPurchase === 'STICKY_PADDLE') {
-        isStickyPurchase = true;
-        const currentOwnedLevel = getCurrentStickyLevel(ownedPowerUps);
-        if (currentOwnedLevel >= MAX_STICKY_LEVEL) return;
-        const nextLevel = currentOwnedLevel + 1;
-        actualItemToAdd = getStickyPowerUpType(nextLevel);
-    }
+        actualItemToAdd = getPowerUpTypeForLevel(baseTypeOfUpgrade, nextLevel);
+        if (!actualItemToAdd) {
+             console.error("Could not determine next level type for:", baseTypeOfUpgrade);
+             return; 
+        }
+    } 
     
+    // This should not happen if logic is correct, but safety check
     if (!actualItemToAdd) {
-         console.warn("Could not determine next level for upgradeable item:", itemToPurchase);
-         return; // Exit if next level couldn't be determined
+         console.error("actualItemToAdd is null, cannot proceed with purchase.");
+         return;
     }
 
     cost = POWER_UP_COSTS[actualItemToAdd as keyof typeof POWER_UP_COSTS] ?? 999;
 
-    // Prevent purchasing if already owned OR if this type was bought this session
+    // Prevent purchasing if already owned OR if this base type was bought this session
     if (ownedPowerUps.has(actualItemToAdd) || 
-        (isMultiballPurchase && purchasedMultiballInSession) || 
-        (isWidenPurchase && purchasedWidenInSession) ||
-        (isLaserPurchase && purchasedLaserInSession) ||
-        (isStickyPurchase && purchasedStickyInSession)
+        (isUpgradePurchase && baseTypeOfUpgrade && purchasedInSession.get(baseTypeOfUpgrade))
     ) {
          console.warn("Attempted to purchase already owned or session-purchased item:", actualItemToAdd);
          return;
@@ -170,11 +119,10 @@ export const ShopScreen: React.FC<ShopScreenProps> = ({
     setGoldDisplay(gameStateRefs.goldRef.current);
     addSpawnablePowerUp(actualItemToAdd); // Let addSpawnablePowerUp handle removing lower levels
 
-    // Mark as purchased this session
-    if (isMultiballPurchase) setPurchasedMultiballInSession(true);
-    if (isWidenPurchase) setPurchasedWidenInSession(true);
-    if (isLaserPurchase) setPurchasedLaserInSession(true);
-    if (isStickyPurchase) setPurchasedStickyInSession(true);
+    // Mark base type as purchased this session
+    if (isUpgradePurchase && baseTypeOfUpgrade) {
+        setPurchasedInSession(prev => new Map(prev).set(baseTypeOfUpgrade!, true));
+    }
 
     const newChance = calculateBaseSpawnChance(gameStateRefs.spawnablePowerUpsRef.current, 'main');
     setCurrentSpawnChance(newChance);
@@ -209,74 +157,46 @@ export const ShopScreen: React.FC<ShopScreenProps> = ({
             let buttonText = `Cost: ${displayCost}`;
             let buttonStyle = 'bg-blue-600 hover:bg-blue-700';
             let itemToPurchaseOnClick = item; 
+            const isBaseUpgradable = UPGRADABLE_POWER_UPS.includes(item);
 
-            // --- Handle Upgradable Power-ups --- 
-            if (item === 'MULTI_BALL' || item === 'WIDEN_PADDLE' || item === 'LASER_PADDLE' || item === 'STICKY_PADDLE') {
-                 let currentOwnedLevel = 0;
-                 let maxLevel = 0;
-                 let getLevelTypeFunc: (level: number) => PowerUpType | null = () => null;
-                 let purchasedInSession = false;
-                 let baseName = '';
+            if (isBaseUpgradable) {
+                 const baseName = displayName; // Store the formatted base name
+                 itemKey = `${item}_UPGRADE`; // Unique key for upgradable items
+                 const currentOwnedLevel = getCurrentLevel(ownedPowerUps, item);
+                 const hasPurchasedThisSession = purchasedInSession.get(item) ?? false;
 
-                 if (item === 'MULTI_BALL') {
-                     currentOwnedLevel = getCurrentMultiballLevel(ownedPowerUps);
-                     maxLevel = MAX_MULTIBALL_LEVEL;
-                     getLevelTypeFunc = getMultiballPowerUpType;
-                     purchasedInSession = purchasedMultiballInSession;
-                     baseName = 'Multiball';
-                     itemKey = 'MULTI_BALL_UPGRADE';
-                 } else if (item === 'WIDEN_PADDLE') {
-                     currentOwnedLevel = getCurrentWidenLevel(ownedPowerUps);
-                     maxLevel = MAX_WIDEN_LEVEL;
-                     getLevelTypeFunc = getWidenPowerUpType;
-                     purchasedInSession = purchasedWidenInSession;
-                     baseName = 'Widen Paddle';
-                     itemKey = 'WIDEN_PADDLE_UPGRADE';
-                 } else if (item === 'LASER_PADDLE') {
-                     currentOwnedLevel = getCurrentLaserLevel(ownedPowerUps);
-                     maxLevel = MAX_LASER_LEVEL;
-                     getLevelTypeFunc = getLaserPowerUpType;
-                     purchasedInSession = purchasedLaserInSession;
-                     baseName = 'Laser Paddle';
-                     itemKey = 'LASER_PADDLE_UPGRADE';
-                 } else { // STICKY_PADDLE
-                     currentOwnedLevel = getCurrentStickyLevel(ownedPowerUps);
-                     maxLevel = MAX_STICKY_LEVEL;
-                     getLevelTypeFunc = getStickyPowerUpType;
-                     purchasedInSession = purchasedStickyInSession;
-                     baseName = 'Sticky Paddle';
-                     itemKey = 'STICKY_PADDLE_UPGRADE';
+                 if (currentOwnedLevel >= MAX_LEVEL) {
+                     displayName = `${baseName} Lvl ${MAX_LEVEL}`;
+                     buttonText = '(Max Level)';
+                     isDisabled = true;
+                     buttonStyle = 'bg-gray-500 opacity-70';
+                     const maxLevelType = getPowerUpTypeForLevel(item, MAX_LEVEL);
+                     itemToPurchaseOnClick = maxLevelType ? maxLevelType : item;
+                 } else {
+                     const nextLevel = currentOwnedLevel + 1;
+                     const nextLevelType = getPowerUpTypeForLevel(item, nextLevel);
+                     if (nextLevelType) {
+                         displayName = `${baseName} Lvl ${nextLevel}`;
+                         displayCost = POWER_UP_COSTS[nextLevelType as keyof typeof POWER_UP_COSTS] ?? 999;
+                         buttonText = `Cost: ${displayCost}`;
+                         itemToPurchaseOnClick = item; 
+                         isDisabled = goldDisplay < displayCost || hasPurchasedThisSession;
+                         if (isDisabled) {
+                              buttonStyle = hasPurchasedThisSession ? 'bg-gray-500 opacity-70' : 'bg-red-800 opacity-50';
+                              if (hasPurchasedThisSession) buttonText = '(Added)';
+                         }
+                     } else {
+                         displayName = `${baseName} Error`; isDisabled = true;
+                     }
                  }
-
-                if (currentOwnedLevel >= maxLevel) {
-                    displayName = `${baseName} Lvl ${maxLevel}`;
-                    buttonText = '(Max Level)';
-                    isDisabled = true;
-                    buttonStyle = 'bg-gray-500 opacity-70';
-                    const maxLevelType = getLevelTypeFunc(maxLevel);
-                    itemToPurchaseOnClick = maxLevelType ? maxLevelType : item;
-                } else {
-                    const nextLevel = currentOwnedLevel + 1;
-                    const nextLevelType = getLevelTypeFunc(nextLevel);
-                    if (nextLevelType) {
-                        displayName = `${baseName} Lvl ${nextLevel}`;
-                        displayCost = POWER_UP_COSTS[nextLevelType as keyof typeof POWER_UP_COSTS] ?? 999;
-                        buttonText = `Cost: ${displayCost}`;
-                        itemToPurchaseOnClick = item; 
-                        isDisabled = goldDisplay < displayCost || purchasedInSession;
-                        if (isDisabled) {
-                             buttonStyle = purchasedInSession ? 'bg-gray-500 opacity-70' : 'bg-red-800 opacity-50';
-                             if (purchasedInSession) buttonText = '(Added)';
-                        }
-                    } else {
-                        displayName = `${baseName} Error`; isDisabled = true;
-                    }
-                }
             } else {
                  // --- Regular Non-Upgradeable Power-up --- 
                 const isGloballyOwned = ownedPowerUps.has(item);
-                isDisabled = goldDisplay < displayCost || isGloballyOwned;
-                if(isGloballyOwned) {
+                // Check if it *was* upgradable but isn't the base type (e.g. MULTI_BALL_L2 showing up randomly)
+                const wasUpgraded = UPGRADABLE_POWER_UPS.some(up => item.startsWith(up) && item !== up);
+                isDisabled = goldDisplay < displayCost || isGloballyOwned || wasUpgraded;
+                
+                if(isGloballyOwned || wasUpgraded) { // Treat already upgraded items appearing as 'Owned'
                      buttonText = '(Owned)';
                      buttonStyle = 'bg-gray-500 opacity-70';
                  } else if (goldDisplay < displayCost) {

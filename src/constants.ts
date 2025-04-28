@@ -99,11 +99,11 @@ export const FIELD_SHRINK_RATE_W = 0.08;
 export const FIELD_SHRINK_INTERVAL = 16;
 
 // *** All potentially spawnable power-ups (for UI and logic) ***
-// NOTE: Upgrades (L2/L3) for upgradable powerups are handled by ShopScreen, not listed here.
+// NOTE: Upgrades (L2/L3) are handled by ShopScreen, not listed here.
 export const ALL_TOGGLEABLE_POWER_UPS: PowerUpType[] = [
     'MULTI_BALL', 
     'WIDEN_PADDLE',
-    'LASER_PADDLE', // Base type
+    'LASER_PADDLE', 
     'REGEN_BRICK',
     'SAFETY_NET',
     'REINFORCE_BRICK',
@@ -114,11 +114,10 @@ export const ALL_TOGGLEABLE_POWER_UPS: PowerUpType[] = [
     'BUILDER_BALL',
     'BIG_BALL',
     'SPLITTING_BALL',
-    // 'SPEED_UP', // Removed SPEED_UP power-up
     'COLLECTION_FIELD',
     'HOMING_BALL',
     'BOMB_BRICK',
-    'STICKY_PADDLE', // Base type
+    'STICKY_PADDLE', 
 ];
 
 // *** Individual Power-up Costs ***
@@ -130,25 +129,51 @@ export const POWER_UP_COSTS: { [key in PowerUpType]?: number } = {
     WIDEN_PADDLE_L2: 15, 
     WIDEN_PADDLE_L3: 25, 
     LASER_PADDLE: 11,
-    LASER_PADDLE_L2: 16, // Added L2 cost
-    LASER_PADDLE_L3: 26, // Added L3 cost
+    LASER_PADDLE_L2: 16, 
+    LASER_PADDLE_L3: 26, 
     REGEN_BRICK: 10,
+    REGEN_BRICK_L2: 15,
+    REGEN_BRICK_L3: 25,
     SAFETY_NET: 9,
+    SAFETY_NET_L2: 14,
+    SAFETY_NET_L3: 22,
     REINFORCE_BRICK: 9,
+    REINFORCE_BRICK_L2: 14,
+    REINFORCE_BRICK_L3: 22,
     MAKE_SPECIAL: 16,
+    MAKE_SPECIAL_L2: 24,
+    MAKE_SPECIAL_L3: 36,
     BLACK_BALL: 16,
+    BLACK_BALL_L2: 24,
+    BLACK_BALL_L3: 36,
     PIERCE_BALL: 14,
+    PIERCE_BALL_L2: 21,
+    PIERCE_BALL_L3: 31,
     UPGRADE_BRICK: 14,
+    UPGRADE_BRICK_L2: 21,
+    UPGRADE_BRICK_L3: 31,
     BUILDER_BALL: 20,
+    BUILDER_BALL_L2: 30,
+    BUILDER_BALL_L3: 45,
     BIG_BALL: 8,
+    BIG_BALL_L2: 12,
+    BIG_BALL_L3: 18,
     SPLITTING_BALL: 25,
+    SPLITTING_BALL_L2: 38,
+    SPLITTING_BALL_L3: 55,
     COLLECTION_FIELD: 9,
+    COLLECTION_FIELD_L2: 14,
+    COLLECTION_FIELD_L3: 22,
     HOMING_BALL: 12,
+    HOMING_BALL_L2: 18,
+    HOMING_BALL_L3: 27,
     BOMB_BRICK: 12,
+    BOMB_BRICK_L2: 18,
+    BOMB_BRICK_L3: 27,
     STICKY_PADDLE: 12,
-    STICKY_PADDLE_L2: 18, // Added L2 cost
-    STICKY_PADDLE_L3: 28, // Added L3 cost
-    ALL_IN_ONE: 100, 
+    STICKY_PADDLE_L2: 18, 
+    STICKY_PADDLE_L3: 28, 
+    ALL_IN_ONE: 100, // Remains single level
     NONE: 0
 };
 
@@ -182,25 +207,51 @@ export const POWER_UP_COLORS: { [key in PowerUpType | 'NONE']?: string } = {
     WIDEN_PADDLE: '#FF69B4',      
     WIDEN_PADDLE_L2: '#FF1493',  
     WIDEN_PADDLE_L3: '#C71585',  
-    LASER_PADDLE: '#FF4500',      // OrangeRed
-    LASER_PADDLE_L2: '#FF0000',  // Red
-    LASER_PADDLE_L3: '#DC143C',  // Crimson
-    REGEN_BRICK: '#ADFF2F',
-    SAFETY_NET: '#1E90FF',
-    REINFORCE_BRICK: '#708090',
-    MAKE_SPECIAL: '#FFD700',
-    BLACK_BALL: '#000000',
-    PIERCE_BALL: '#DC143C',
-    UPGRADE_BRICK: '#8A2BE2',
-    BUILDER_BALL: '#4682B4',
-    BIG_BALL: '#F08080',
-    SPLITTING_BALL: '#9370DB',
-    COLLECTION_FIELD: '#20B2AA',
-    HOMING_BALL: '#DAA520',
-    BOMB_BRICK: '#A52A2A',
+    LASER_PADDLE: '#FF4500',      
+    LASER_PADDLE_L2: '#FF0000',  
+    LASER_PADDLE_L3: '#DC143C',  
+    REGEN_BRICK: '#ADFF2F',         // GreenYellow
+    REGEN_BRICK_L2: '#9ACD32',     // YellowGreen
+    REGEN_BRICK_L3: '#556B2F',     // DarkOliveGreen
+    SAFETY_NET: '#1E90FF',         // DodgerBlue
+    SAFETY_NET_L2: '#4169E1',     // RoyalBlue
+    SAFETY_NET_L3: '#0000CD',     // MediumBlue
+    REINFORCE_BRICK: '#708090',   // SlateGray
+    REINFORCE_BRICK_L2: '#778899', // LightSlateGray
+    REINFORCE_BRICK_L3: '#2F4F4F', // DarkSlateGray
+    MAKE_SPECIAL: '#FFD700',      // Gold (Base)
+    MAKE_SPECIAL_L2: '#FFA500',  // Orange
+    MAKE_SPECIAL_L3: '#FF8C00',  // DarkOrange
+    BLACK_BALL: '#000000',         // Black
+    BLACK_BALL_L2: '#444444',     // Darker Gray
+    BLACK_BALL_L3: '#888888',     // Gray
+    PIERCE_BALL: '#DC143C',      // Crimson (Base)
+    PIERCE_BALL_L2: '#B22222',  // Firebrick
+    PIERCE_BALL_L3: '#8B0000',  // DarkRed
+    UPGRADE_BRICK: '#8A2BE2',    // BlueViolet
+    UPGRADE_BRICK_L2: '#9932CC', // DarkOrchid
+    UPGRADE_BRICK_L3: '#8B008B', // DarkMagenta
+    BUILDER_BALL: '#4682B4',     // SteelBlue
+    BUILDER_BALL_L2: '#5F9EA0',  // CadetBlue
+    BUILDER_BALL_L3: '#008B8B', // DarkCyan
+    BIG_BALL: '#F08080',         // LightCoral
+    BIG_BALL_L2: '#CD5C5C',     // IndianRed
+    BIG_BALL_L3: '#A52A2A',     // Brown (Same as Bomb Brick L1)
+    SPLITTING_BALL: '#9370DB',   // MediumPurple
+    SPLITTING_BALL_L2: '#8A2BE2', // BlueViolet (Same as Upgrade L1)
+    SPLITTING_BALL_L3: '#4B0082', // Indigo
+    COLLECTION_FIELD: '#20B2AA', // LightSeaGreen
+    COLLECTION_FIELD_L2: '#008B8B',// DarkCyan (Same as Builder L3)
+    COLLECTION_FIELD_L3: '#008080',// Teal
+    HOMING_BALL: '#DAA520',      // Goldenrod (Same as Sticky L2)
+    HOMING_BALL_L2: '#B8860B',  // DarkGoldenrod (Same as Sticky L1)
+    HOMING_BALL_L3: '#8B4513',  // SaddleBrown
+    BOMB_BRICK: '#A52A2A',       // Brown (Same as Big Ball L3)
+    BOMB_BRICK_L2: '#8B0000',   // DarkRed (Same as Pierce L3)
+    BOMB_BRICK_L3: '#800000',   // Maroon
+    STICKY_PADDLE: '#B8860B',     
+    STICKY_PADDLE_L2: '#DAA520', 
+    STICKY_PADDLE_L3: '#FFD700', 
     ALL_IN_ONE: '#FFFFFF',
-    STICKY_PADDLE: '#B8860B',      // DarkGoldenrod
-    STICKY_PADDLE_L2: '#DAA520', // Goldenrod
-    STICKY_PADDLE_L3: '#FFD700', // Gold
     NONE: '#888888'
 };

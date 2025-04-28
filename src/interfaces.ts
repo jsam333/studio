@@ -13,15 +13,24 @@ export interface Brick {
 }
 
 export type PowerUpType =
-    'MULTI_BALL' | 'MULTI_BALL_L2' | 'MULTI_BALL_L3' | // Max level 3
-    'WIDEN_PADDLE' | 'WIDEN_PADDLE_L2' | 'WIDEN_PADDLE_L3' | // Max level 3
-    'LASER_PADDLE' | 'LASER_PADDLE_L2' | 'LASER_PADDLE_L3' | // Added L2, L3
-    'REGEN_BRICK' |
-    'SAFETY_NET' | 'REINFORCE_BRICK' | 'MAKE_SPECIAL' | 'BLACK_BALL' |
-    'ALL_IN_ONE' | 'PIERCE_BALL' | 'UPGRADE_BRICK' | 'BUILDER_BALL' |
-    'BIG_BALL' | 'SPLITTING_BALL' | 'COLLECTION_FIELD' |
-    'HOMING_BALL' | 'BOMB_BRICK' |
-    'STICKY_PADDLE' | 'STICKY_PADDLE_L2' | 'STICKY_PADDLE_L3' | // Added L2, L3
+    'MULTI_BALL' | 'MULTI_BALL_L2' | 'MULTI_BALL_L3' |
+    'WIDEN_PADDLE' | 'WIDEN_PADDLE_L2' | 'WIDEN_PADDLE_L3' |
+    'LASER_PADDLE' | 'LASER_PADDLE_L2' | 'LASER_PADDLE_L3' |
+    'REGEN_BRICK' | 'REGEN_BRICK_L2' | 'REGEN_BRICK_L3' | 
+    'SAFETY_NET' | 'SAFETY_NET_L2' | 'SAFETY_NET_L3' |
+    'REINFORCE_BRICK' | 'REINFORCE_BRICK_L2' | 'REINFORCE_BRICK_L3' |
+    'MAKE_SPECIAL' | 'MAKE_SPECIAL_L2' | 'MAKE_SPECIAL_L3' |
+    'BLACK_BALL' | 'BLACK_BALL_L2' | 'BLACK_BALL_L3' |
+    'ALL_IN_ONE' | // ALL_IN_ONE remains single level
+    'PIERCE_BALL' | 'PIERCE_BALL_L2' | 'PIERCE_BALL_L3' |
+    'UPGRADE_BRICK' | 'UPGRADE_BRICK_L2' | 'UPGRADE_BRICK_L3' |
+    'BUILDER_BALL' | 'BUILDER_BALL_L2' | 'BUILDER_BALL_L3' |
+    'BIG_BALL' | 'BIG_BALL_L2' | 'BIG_BALL_L3' |
+    'SPLITTING_BALL' | 'SPLITTING_BALL_L2' | 'SPLITTING_BALL_L3' |
+    'COLLECTION_FIELD' | 'COLLECTION_FIELD_L2' | 'COLLECTION_FIELD_L3' |
+    'HOMING_BALL' | 'HOMING_BALL_L2' | 'HOMING_BALL_L3' |
+    'BOMB_BRICK' | 'BOMB_BRICK_L2' | 'BOMB_BRICK_L3' |
+    'STICKY_PADDLE' | 'STICKY_PADDLE_L2' | 'STICKY_PADDLE_L3' |
     'NONE';
 
 export interface PowerUp {
@@ -102,7 +111,7 @@ export interface GameStateRefsBase {
     spawnablePowerUpsRef: React.MutableRefObject<Set<PowerUpType>>;
     paddleWidthRef: React.MutableRefObject<number>;
     widenLevelRef: React.MutableRefObject<number>; 
-    laserShotsRef: React.MutableRefObject<number>; // May represent level/shots depending on implementation
+    laserShotsRef: React.MutableRefObject<number>; 
     lasersRef: React.MutableRefObject<Laser[]>;
     safetyNetCountRef: React.MutableRefObject<number>;
     gameIsRunningRef: React.MutableRefObject<boolean>;
@@ -110,7 +119,7 @@ export interface GameStateRefsBase {
     gameSpeedFactorRef: React.MutableRefObject<number>;
     collectionFieldHeightRef: React.MutableRefObject<number>;
     collectionFieldWidthOffsetRef: React.MutableRefObject<number>;
-    stickyPaddleChargesRef: React.MutableRefObject<number>; // May represent level/charges
+    stickyPaddleChargesRef: React.MutableRefObject<number>; 
     stuckBallsRef: React.MutableRefObject<Ball[]>;
     enabledPowerUpsRef: React.MutableRefObject<Set<PowerUpType>>;
     isGameStartedRef: React.MutableRefObject<boolean>;

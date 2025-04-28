@@ -12,35 +12,14 @@ import { initialBallState } from '../gameLogic';
 import { useLevelLogic } from './useLevelLogic';
 import { usePaddleLogic } from './usePaddleLogic';
 
-// --- Helper functions to get PowerUpType for specific levels ---
-const getMultiballPowerUpType = (level: number): PowerUpType | null => {
-    const MAX_MULTIBALL_LEVEL = 3; 
-    if (level < 1 || level > MAX_MULTIBALL_LEVEL) return null;
-    if (level === 1) return 'MULTI_BALL';
-    return `MULTI_BALL_L${level}` as PowerUpType; 
-};
+const MAX_UPGRADE_LEVEL = 3;
 
-const getWidenPowerUpType = (level: number): PowerUpType | null => {
-    const MAX_WIDEN_LEVEL = 3;
-    if (level < 1 || level > MAX_WIDEN_LEVEL) return null;
-    if (level === 1) return 'WIDEN_PADDLE';
-    return `WIDEN_PADDLE_L${level}` as PowerUpType;
+// Generic function to get PowerUpType for a given level
+const getPowerUpTypeForLevel = (baseType: PowerUpType, level: number): PowerUpType | null => {
+    if (level < 1 || level > MAX_UPGRADE_LEVEL) return null;
+    if (level === 1) return baseType;
+    return `${baseType}_L${level}` as PowerUpType; 
 };
-
-const getLaserPowerUpType = (level: number): PowerUpType | null => {
-    const MAX_LASER_LEVEL = 3;
-    if (level < 1 || level > MAX_LASER_LEVEL) return null;
-    if (level === 1) return 'LASER_PADDLE';
-    return `LASER_PADDLE_L${level}` as PowerUpType;
-};
-
-const getStickyPowerUpType = (level: number): PowerUpType | null => {
-    const MAX_STICKY_LEVEL = 3;
-    if (level < 1 || level > MAX_STICKY_LEVEL) return null;
-    if (level === 1) return 'STICKY_PADDLE';
-    return `STICKY_PADDLE_L${level}` as PowerUpType;
-};
-// --- End Helper Functions ---
 
 export function useGameLogic() {
     // --- Core Game State Refs ---
@@ -54,14 +33,14 @@ export function useGameLogic() {
     const paddleWidthRef = useRef(INITIAL_PADDLE_WIDTH);
     const widenLevelRef = useRef(0); 
     const paddleShrinkCountdownRef = useRef<number | null>(null);
-    const laserShotsRef = useRef(0); // May need refactoring if laser level affects shots/cooldown
+    const laserShotsRef = useRef(0); 
     const lasersRef = useRef<Laser[]>([]);
     const safetyNetCountRef = useRef(0);
     const gameSpeedFactorRef = useRef<number>(BASE_BALL_SPEED_FACTOR);
     const collectionFieldHeightRef = useRef<number>(FIELD_INITIAL_HEIGHT_OFFSET);
     const collectionFieldWidthOffsetRef = useRef<number>(FIELD_INITIAL_WIDTH_OFFSET);
     const collectionFieldShrinkTimerRef = useRef<NodeJS.Timeout | null>(null);
-    const stickyPaddleChargesRef = useRef(0); // May need refactoring if sticky level affects charges/duration
+    const stickyPaddleChargesRef = useRef(0); 
     const stuckBallsRef = useRef<Ball[]>([]);
     const enabledPowerUpsRef = useRef<Set<PowerUpType>>(new Set(ALL_TOGGLEABLE_POWER_UPS));
     const isGameStartedRef = useRef(false);
@@ -118,7 +97,7 @@ export function useGameLogic() {
         goldRef,
         powerUpsRef,
         lasersRef,
-        widenLevelRef, // Pass down relevant refs
+        widenLevelRef, 
         laserShotsRef,
         safetyNetCountRef,
         gameSpeedFactorRef,
@@ -296,8 +275,9 @@ export function useGameLogic() {
         const currentSpawnables = spawnablePowerUpsRef.current;
         currentSpawnables.add(typeToAdd);
 
-        // Generic handler for upgradable power-ups
-        const handleUpgrade = (baseType: string, maxLevel: number, getTypeFunc: (level: number) => PowerUpType | null) => {
+        // Generic handler for removing lower levels of upgradable power-ups
+        const handleUpgrade = (baseType: string) => {
+            // Check if the added type belongs to this upgrade family
             if (typeToAdd.startsWith(baseType)) {
                 let levelAdded = 0;
                 if (typeToAdd === baseType) levelAdded = 1;
@@ -306,20 +286,23 @@ export function useGameLogic() {
                     if (match) levelAdded = parseInt(match[1], 10);
                 }
                 
-                if (levelAdded > 0 && levelAdded <= maxLevel) {
+                // Remove levels lower than the one just added
+                if (levelAdded > 0 && levelAdded <= MAX_UPGRADE_LEVEL) {
                     for (let levelToRemove = 1; levelToRemove < levelAdded; levelToRemove++) {
-                        const lowerLevelType = getTypeFunc(levelToRemove);
-                        if (lowerLevelType) currentSpawnables.delete(lowerLevelType);
+                         // Need to use the generic getPowerUpTypeForLevel here
+                        const lowerLevelType = getPowerUpTypeForLevel(baseType as PowerUpType, levelToRemove);
+                        if (lowerLevelType) {
+                            currentSpawnables.delete(lowerLevelType);
+                        }
                     }
                 }
             }
         };
 
-        // Apply handler for each upgradable type
-        handleUpgrade('MULTI_BALL', 3, getMultiballPowerUpType);
-        handleUpgrade('WIDEN_PADDLE', 3, getWidenPowerUpType);
-        handleUpgrade('LASER_PADDLE', 3, getLaserPowerUpType);
-        handleUpgrade('STICKY_PADDLE', 3, getStickyPowerUpType);
+        // Apply handler for ALL upgradable base types
+        UPGRADABLE_POWER_UPS.forEach(baseType => {
+            handleUpgrade(baseType);
+        });
 
     }, []);
 
@@ -355,3 +338,11 @@ export function useGameLogic() {
         gameStateRefs,
     };
 }
+
+// Need to define UPGRADABLE_POWER_UPS here as it's used in addSpawnablePowerUp
+const UPGRADABLE_POWER_UPS: PowerUpType[] = [
+    'MULTI_BALL', 'WIDEN_PADDLE', 'LASER_PADDLE', 'STICKY_PADDLE',
+    'REGEN_BRICK', 'SAFETY_NET', 'REINFORCE_BRICK', 'MAKE_SPECIAL', 'BLACK_BALL',
+    'PIERCE_BALL', 'UPGRADE_BRICK', 'BUILDER_BALL', 'BIG_BALL', 'SPLITTING_BALL',
+    'COLLECTION_FIELD', 'HOMING_BALL', 'BOMB_BRICK'
+];
