@@ -1,304 +1,36 @@
 // src/gameUpdates/powerUpEffects.ts
-import { PowerUpType, Ball, Brick } from '../interfaces';
+import { PowerUpType } from '../interfaces';
 import { GameStateRefs, GameLoopCallbacks } from '../interfaces';
-import { createNewBall } from './gameLoopUtils';
-import {
-    FIELD_MAX_HEIGHT_OFFSET, FIELD_HEIGHT_INCREMENT,
-    FIELD_MAX_WIDTH_OFFSET, FIELD_WIDTH_INCREMENT, // Removed SPEED_UP_INCREMENT
-    SPLITTING_BALL_DURATION, BIG_BALL_DURATION, BOARD_HEIGHT, PADDLE_HEIGHT,
-    BALL_SIZE, BUILDER_BALL_DURATION, BLACK_BALL_DURATION, BRICK_COLUMNS,
-    BRICK_ROWS, PIERCE_BALL_HITS, PADDLE_WIDEN_INCREMENT, MAX_PADDLE_WIDTH,
-    BOARD_WIDTH, MAX_BRICK_UPGRADE_LEVEL, BASE_BALL_SPEED_FACTOR // Added BASE_BALL_SPEED_FACTOR
-    // STICKY_PADDLE_DURATION // Removed duration constant
-    // Removed SPEED_UP_INCREMENT
-} from '../constants';
+import { applyBrickEffects } from './powerUpEffects/brickEffects';
+import { applyBallEffects } from './powerUpEffects/ballEffects';
+import { applyPaddleEffects } from './powerUpEffects/paddleEffects';
+import { applyGameEffects } from './powerUpEffects/gameEffects';
 
 export const applyPowerUpEffects = (
     refs: GameStateRefs,
     callbacks: GameLoopCallbacks,
     collectedPowerUpTypes: PowerUpType[],
     currentTime: number,
-    gameSpeedFactor: number // Keep this parameter as it might be needed elsewhere
+    gameSpeedFactor: number
 ) => {
     collectedPowerUpTypes.forEach(type => {
-        switch (type) {
-            // ... (other power-up cases) ...
-
-            case 'REINFORCE_BRICK': { // Change to set upgradeLevel to 2
-                const candidates: { c: number; r: number }[] = [];
-                for (let c = 0; c < BRICK_COLUMNS; c++) {
-                    for (let r = 0; r < BRICK_ROWS; r++) {
-                        const brick = refs.bricksRef.current[c]?.[r];
-                        // Find active bricks that are level 0 or 1 (can be reinforced to level 2)
-                        if (brick && brick.status === 1 && !brick.isSpecial && !brick.isBomb && (!brick.upgradeLevel || brick.upgradeLevel < 2)) {
-                            candidates.push({ c, r });
-                        }
-                    }
-                }
-                if (candidates.length > 0) {
-                    const index = Math.floor(Math.random() * candidates.length);
-                    const chosenCandidate = candidates[index];
-                    const brickToReinforce = refs.bricksRef.current[chosenCandidate.c]?.[chosenCandidate.r];
-                    if (brickToReinforce) {
-                        brickToReinforce.upgradeLevel = 2; // *** Set upgrade level to 2 ***
-                        brickToReinforce.isSpecial = false;
-                        brickToReinforce.isBomb = false;
-                    }
-                }
-                break;
-            }
-
-            case 'BOMB_BRICK': {
-                const candidates: { c: number; r: number }[] = [];
-                for (let c = 0; c < BRICK_COLUMNS; c++) {
-                    for (let r = 0; r < BRICK_ROWS; r++) {
-                        const brick = refs.bricksRef.current[c]?.[r];
-                        if (brick && brick.status === 1 && !brick.isSpecial && !brick.isBomb && (!brick.upgradeLevel || brick.upgradeLevel === 0)) {
-                           candidates.push({ c, r });
-                        }
-                    }
-                }
-                if (candidates.length > 0) {
-                    const index = Math.floor(Math.random() * candidates.length);
-                    const chosenCandidate = candidates[index];
-                    const brickToBomb = refs.bricksRef.current[chosenCandidate.c]?.[chosenCandidate.r];
-                    if (brickToBomb) {
-                        brickToBomb.isBomb = true;
-                        brickToBomb.isSpecial = false;
-                        brickToBomb.upgradeLevel = 0;
-                    }
-                }
-                break;
-            }
-            case 'HOMING_BALL': {
-                const targetBall = refs.ballsRef.current.find(b => !b.isHoming);
-                if (targetBall) {
-                    targetBall.isHoming = true;
-                } else if (refs.ballsRef.current.length > 0) {
-                    refs.ballsRef.current[0].isHoming = true;
-                }
-                break;
-            }
-            case 'COLLECTION_FIELD': {
-                refs.collectionFieldHeightRef.current = Math.min(
-                    FIELD_MAX_HEIGHT_OFFSET,
-                    refs.collectionFieldHeightRef.current + FIELD_HEIGHT_INCREMENT
-                );
-                refs.collectionFieldWidthOffsetRef.current = Math.min(
-                    FIELD_MAX_WIDTH_OFFSET,
-                    refs.collectionFieldWidthOffsetRef.current + FIELD_WIDTH_INCREMENT
-                );
-                callbacks.scheduleFieldShrink();
-                break;
-            }
-            // case 'SPEED_UP': { // Removed SPEED_UP case
-            //     const previousFactor = refs.gameSpeedFactorRef.current;
-            //     const newFactor = previousFactor * 1.02; // Apply 2% increase
-            //     refs.gameSpeedFactorRef.current = newFactor;
-            //     const actualIncreaseFactor = 1.02; // The increase factor is exactly 2%
-            //     refs.ballsRef.current.forEach(ball => {
-            //         ball.speedX *= actualIncreaseFactor;
-            //         ball.speedY *= actualIncreaseFactor;
-            //     });
-            //     break;
-            // }
-             case 'SPLITTING_BALL': {
-                 const targetBall = refs.ballsRef.current.find(b => !b.isSplitting);
-                 if (targetBall) {
-                     targetBall.isSplitting = true;
-                     targetBall.splittingEndTime = currentTime + SPLITTING_BALL_DURATION; // Re-added duration usage
-                 } else if (refs.ballsRef.current.length > 0) {
-                     refs.ballsRef.current[0].isSplitting = true;
-                     refs.ballsRef.current[0].splittingEndTime = currentTime + SPLITTING_BALL_DURATION; // Re-added duration usage
-                 }
-                 break;
-             }
-             case 'BIG_BALL': {
-                 const targetBall = refs.ballsRef.current.find(b => !b.isBig);
-                 if (targetBall) {
-                     targetBall.isBig = true;
-                     targetBall.bigEndTime = currentTime + BIG_BALL_DURATION; // Re-added duration usage
-                 } else if (refs.ballsRef.current.length > 0) {
-                     refs.ballsRef.current[0].isBig = true;
-                     refs.ballsRef.current[0].bigEndTime = currentTime + BIG_BALL_DURATION; // Re-added duration usage
-                 }
-                 break;
-             }
-             case 'MULTI_BALL': {
-                 let sx = (Math.random() - 0.5) * 6;
-                 let sy = -3 - Math.random() * 2;
-                 refs.ballsRef.current.push(createNewBall(
-                     refs.paddleXRef.current + refs.paddleWidthRef.current / 2 + (Math.random() - 0.5) * 10,
-                     BOARD_HEIGHT - PADDLE_HEIGHT - BALL_SIZE - 5,
-                     sx, sy, BASE_BALL_SPEED_FACTOR // *** MODIFIED: Use base speed factor ***
-                 ));
-                 break;
-             }
-             case 'BUILDER_BALL': {
-                 const targetBall = refs.ballsRef.current.find(b => !b.isBlack && !b.isBlue && (!b.pierceHitsRemaining || b.pierceHitsRemaining <= 0));
-                 if (targetBall) {
-                     targetBall.isBlue = true;
-                     targetBall.blueEndTime = currentTime + BUILDER_BALL_DURATION; // Re-added duration usage
-                     targetBall.isBlack = false; targetBall.pierceHitsRemaining = 0; targetBall.blackEndTime = undefined;
-                 } else {
-                     const fallbackBall = refs.ballsRef.current.find(b => !b.isBlack && (!b.pierceHitsRemaining || b.pierceHitsRemaining <= 0));
-                     if (fallbackBall) {
-                         fallbackBall.isBlue = true;
-                         fallbackBall.blueEndTime = currentTime + BUILDER_BALL_DURATION; // Re-added duration usage
-                         fallbackBall.isBlack = false; fallbackBall.pierceHitsRemaining = 0; fallbackBall.blackEndTime = undefined;
-                     }
-                 }
-                 break;
-             }
-             case 'BLACK_BALL': {
-                 const targetBall = refs.ballsRef.current.find(b => !b.isBlack && !b.isBlue && (!b.pierceHitsRemaining || b.pierceHitsRemaining <= 0));
-                 if (targetBall) {
-                     targetBall.isBlack = true; targetBall.blackEndTime = currentTime + BLACK_BALL_DURATION; // Reverted to use BLACK_BALL_DURATION
-                     targetBall.pierceHitsRemaining = 0; targetBall.isBlue = false; targetBall.blueEndTime = undefined;
-                 } else if (refs.ballsRef.current.length > 0) {
-                     const firstBall = refs.ballsRef.current[0];
-                     firstBall.isBlack = true; firstBall.blackEndTime = currentTime + BLACK_BALL_DURATION; // Reverted to use BLACK_BALL_DURATION
-                     firstBall.pierceHitsRemaining = 0; firstBall.isBlue = false; firstBall.blueEndTime = undefined;
-                 }
-                 break;
-             }
-             case 'UPGRADE_BRICK': { // Change to set upgradeLevel to 3
-                 const candidates: { c: number; r: number }[] = [];
-                 for (let c = 0; c < BRICK_COLUMNS; c++) {
-                     for (let r = 0; r < BRICK_ROWS; r++) {
-                         const brick = refs.bricksRef.current[c]?.[r];
-                         // Find active bricks that are not special, not bomb, and below max upgrade level (3)
-                         if (brick && brick.status === 1 && !brick.isSpecial && !brick.isBomb && (!brick.upgradeLevel || brick.upgradeLevel < MAX_BRICK_UPGRADE_LEVEL)) {
-                            candidates.push({ c, r });
-                         }
-                     }
-                 }
-                 if (candidates.length > 0) {
-                     const index = Math.floor(Math.random() * candidates.length);
-                     const chosenCandidate = candidates[index];
-                     const brickToUpgrade = refs.bricksRef.current[chosenCandidate.c]?.[chosenCandidate.r];
-                     if (brickToUpgrade) {
-                         // *** Set upgrade level directly to 3 ***
-                         brickToUpgrade.upgradeLevel = 3;
-                         // Ensure it's not marked as special or bomb
-                         brickToUpgrade.isSpecial = false;
-                         brickToUpgrade.isBomb = false;
-                     }
-                 }
-                 break;
-             }
-             case 'PIERCE_BALL': {
-                 const targetBall = refs.ballsRef.current.find(b => !b.isBlack && !b.isBlue && (!b.pierceHitsRemaining || b.pierceHitsRemaining <= 0));
-                 if (targetBall) {
-                     targetBall.pierceHitsRemaining = PIERCE_BALL_HITS;
-                     targetBall.isBlue = false; targetBall.blueEndTime = undefined;
-                 } else if (refs.ballsRef.current.length > 0 && !refs.ballsRef.current[0].isBlack && !refs.ballsRef.current[0].isBlue) {
-                     const firstBall = refs.ballsRef.current[0];
-                     firstBall.pierceHitsRemaining = PIERCE_BALL_HITS;
-                     firstBall.isBlue = false; firstBall.blueEndTime = undefined;
-                 }
-                 break;
-             }
-             case 'WIDEN_PADDLE': {
-                 const originalWidth = refs.paddleWidthRef.current;
-                 const currentPaddleX = refs.paddleXRef.current;
-                 const newWidthAttempt = originalWidth + PADDLE_WIDEN_INCREMENT;
-                 const finalNewWidth = Math.min(MAX_PADDLE_WIDTH, newWidthAttempt);
-                 const widthIncrease = finalNewWidth - originalWidth;
-
-                 if (widthIncrease > 0) {
-                     let newPaddleX = currentPaddleX - widthIncrease / 2;
-                     newPaddleX = Math.max(0, newPaddleX);
-                     newPaddleX = Math.min(BOARD_WIDTH - finalNewWidth, newPaddleX);
-                     refs.paddleWidthRef.current = finalNewWidth;
-                     refs.paddleXRef.current = newPaddleX;
-                     refs.widenLevelRef.current++;
-                     callbacks.schedulePaddleShrink();
-                 } else {
-                     callbacks.schedulePaddleShrink();
-                 }
-                 break;
-             }
-             case 'LASER_PADDLE': {
-                 refs.laserShotsRef.current++;
-                 break;
-             }
-             case 'REGEN_BRICK': {
-                 const destroyedBricks: { c: number; r: number }[] = [];
-                 for (let c = 0; c < BRICK_COLUMNS; c++) {
-                     for (let r = 0; r < BRICK_ROWS; r++) {
-                         const brick = refs.bricksRef.current[c]?.[r];
-                         if (brick && brick.status === 0) {
-                             destroyedBricks.push({ c, r });
-                         }
-                     }
-                 }
-                 if (destroyedBricks.length > 0) {
-                     const index = Math.floor(Math.random() * destroyedBricks.length);
-                     const targetCoords = destroyedBricks[index];
-                     const brickToRegen = refs.bricksRef.current[targetCoords.c]?.[targetCoords.r];
-                     if (brickToRegen) {
-                         brickToRegen.status = 1;
-                         brickToRegen.isSpecial = false;
-                         brickToRegen.isBomb = false;
-                         brickToRegen.upgradeLevel = 0;
-                     }
-                 }
-                 break;
-             }
-             case 'SAFETY_NET': {
-                 refs.safetyNetCountRef.current++;
-                 break;
-             }
-             case 'MAKE_SPECIAL': {
-                 const specialCandidates: { c: number; r: number }[] = [];
-                 for (let c = 0; c < BRICK_COLUMNS; c++) {
-                     for (let r = 0; r < BRICK_ROWS; r++) {
-                         const brick = refs.bricksRef.current[c]?.[r];
-                         if (brick && brick.status === 1 && !brick.isSpecial && !brick.isBomb) {
-                             specialCandidates.push({ c, r });
-                         }
-                     }
-                 }
-                 if (specialCandidates.length > 0) {
-                     const index = Math.floor(Math.random() * specialCandidates.length);
-                     const targetCoords = specialCandidates[index];
-                     const brickToMakeSpecial = refs.bricksRef.current[targetCoords.c]?.[targetCoords.r];
-                     if (brickToMakeSpecial) {
-                         brickToMakeSpecial.isSpecial = true;
-                         brickToMakeSpecial.upgradeLevel = 0;
-                         brickToMakeSpecial.isBomb = false;
-                     }
-                 }
-                 break;
-             }
-            case 'STICKY_PADDLE': { // Changed sticky paddle activation
-                refs.stickyPaddleChargesRef.current++; // Increment charges
-                break;
-            }
-             case 'ALL_IN_ONE': {
-                // Apply effects individually, passing BASE_BALL_SPEED_FACTOR for MULTI_BALL
-                applyPowerUpEffects(refs, callbacks, ['HOMING_BALL'], currentTime, gameSpeedFactor);
-                applyPowerUpEffects(refs, callbacks, ['COLLECTION_FIELD'], currentTime, gameSpeedFactor);
-                // applyPowerUpEffects(refs, callbacks, ['SPEED_UP'], currentTime, gameSpeedFactor); // Removed SPEED_UP from ALL_IN_ONE
-                applyPowerUpEffects(refs, callbacks, ['SPLITTING_BALL'], currentTime, gameSpeedFactor);
-                applyPowerUpEffects(refs, callbacks, ['BIG_BALL'], currentTime, gameSpeedFactor);
-                applyPowerUpEffects(refs, callbacks, ['MULTI_BALL'], currentTime, gameSpeedFactor); // Note: This recursive call will now use BASE_BALL_SPEED_FACTOR internally
-                applyPowerUpEffects(refs, callbacks, ['BUILDER_BALL'], currentTime, gameSpeedFactor);
-                applyPowerUpEffects(refs, callbacks, ['BLACK_BALL'], currentTime, gameSpeedFactor);
-                applyPowerUpEffects(refs, callbacks, ['PIERCE_BALL'], currentTime, gameSpeedFactor);
-                applyPowerUpEffects(refs, callbacks, ['WIDEN_PADDLE'], currentTime, gameSpeedFactor);
-                applyPowerUpEffects(refs, callbacks, ['LASER_PADDLE'], currentTime, gameSpeedFactor);
-                applyPowerUpEffects(refs, callbacks, ['REGEN_BRICK'], currentTime, gameSpeedFactor);
-                applyPowerUpEffects(refs, callbacks, ['SAFETY_NET'], currentTime, gameSpeedFactor);
-                applyPowerUpEffects(refs, callbacks, ['MAKE_SPECIAL'], currentTime, gameSpeedFactor);
-                applyPowerUpEffects(refs, callbacks, ['BOMB_BRICK'], currentTime, gameSpeedFactor);
-                applyPowerUpEffects(refs, callbacks, ['STICKY_PADDLE'], currentTime, gameSpeedFactor);
-                // *** Add REINFORCE_BRICK and UPGRADE_BRICK to ALL_IN_ONE ***
-                applyPowerUpEffects(refs, callbacks, ['REINFORCE_BRICK'], currentTime, gameSpeedFactor);
-                applyPowerUpEffects(refs, callbacks, ['UPGRADE_BRICK'], currentTime, gameSpeedFactor); // Also add UPGRADE_BRICK
-                break;
-            }
+        if (type === 'ALL_IN_ONE') {
+            // Apply all individual power-up effects recursively
+            const allTypes: PowerUpType[] = [
+                'HOMING_BALL', 'COLLECTION_FIELD', 'SPLITTING_BALL', 'BIG_BALL',
+                'MULTI_BALL', 'BUILDER_BALL', 'BLACK_BALL', 'PIERCE_BALL',
+                'WIDEN_PADDLE', 'LASER_PADDLE', 'REGEN_BRICK', 'SAFETY_NET',
+                'MAKE_SPECIAL', 'BOMB_BRICK', 'STICKY_PADDLE',
+                'REINFORCE_BRICK', 'UPGRADE_BRICK'
+            ];
+            // Apply all effects except 'ALL_IN_ONE' itself to avoid infinite loop
+            applyPowerUpEffects(refs, callbacks, allTypes, currentTime, gameSpeedFactor);
+        } else {
+            // Delegate to specific effect handlers
+            applyBrickEffects(refs, callbacks, type, currentTime, gameSpeedFactor);
+            applyBallEffects(refs, callbacks, type, currentTime, gameSpeedFactor);
+            applyPaddleEffects(refs, callbacks, type, currentTime, gameSpeedFactor);
+            applyGameEffects(refs, callbacks, type, currentTime, gameSpeedFactor);
         }
     });
 };

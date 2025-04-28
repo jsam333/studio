@@ -56,6 +56,7 @@ export default function Home() {
         startGame,
         startNextLevel,
         addSpawnablePowerUp,
+        executePaddleShrink, // Added executePaddleShrink here
         gameStateRefs,
     } = useGameLogic();
 
@@ -65,8 +66,9 @@ export default function Home() {
     // State to store the calculated spawn chance for display
     const [currentSpawnChance, setCurrentSpawnChance] = useState(0);
 
-    const targetFps = 60;
-    const targetFrameTime = 1000 / targetFps;
+    // Target FPS is used for calculating a factor if needed, but we pass raw elapsed time
+    // const targetFps = 60;
+    // const targetFrameTime = 1000 / targetFps;
 
     // Draw end message callback
     const drawEndMessageCallback = useCallback((context: CanvasRenderingContext2D, state: 'won' | 'lost' | 'shop', finalScore: number) => {
@@ -111,21 +113,28 @@ export default function Home() {
                  return;
              }
              if (!lastTimeRef.current) lastTimeRef.current = timestamp;
-             const elapsed = timestamp - lastTimeRef.current;
+             const elapsed = timestamp - lastTimeRef.current; // Elapsed time in milliseconds
              lastTimeRef.current = timestamp;
-             const rawDeltaTime = elapsed / targetFrameTime;
-             const deltaTime = Math.min(rawDeltaTime, MAX_DELTA_TIME_FACTOR);
+
+             // Optional: Clamp max elapsed time to prevent huge jumps if tab is inactive
+             const clampedElapsed = Math.min(elapsed, 100); // Max 100ms jump (adjust as needed)
+
+             // No longer need deltaTime factor calculation here
+             // const rawDeltaTime = elapsed / targetFrameTime;
+             // const deltaTime = Math.min(rawDeltaTime, MAX_DELTA_TIME_FACTOR);
+
              const canvas = canvasRef.current;
              const ctx = canvas?.getContext('2d');
              if (ctx && gameLoopCallbacksRef.current) {
-                 gameUpdate(ctx, gameStateRefs, gameLoopCallbacksRef.current, deltaTime);
+                 // Pass clampedElapsed (or raw elapsed) to gameUpdate
+                 gameUpdate(ctx, gameStateRefs, gameLoopCallbacksRef.current, clampedElapsed);
              }
              if (gameStateRefs.gameOverStateRef.current === 'playing') {
                 animationFrameIdRef.current = requestAnimationFrame(gameLoopRef.current!); 
              }
         };
         gameLoopRef.current = gameLoop;
-    }, [gameStateRefs]);
+    }, [gameStateRefs]); // Removed dependency on targetFrameTime
 
      // Game loop callbacks ref
      const gameLoopCallbacksRef = useRef<GameLoopCallbacks>();
@@ -134,10 +143,11 @@ export default function Home() {
              updateScoreCallback,
              setGameOverState,
              schedulePaddleShrink,
+             executePaddleShrink, // Added executePaddleShrink
              scheduleFieldShrink,
              drawEndMessage: drawEndMessageCallback,
          };
-     }, [updateScoreCallback, setGameOverState, schedulePaddleShrink, scheduleFieldShrink, drawEndMessageCallback]);
+     }, [updateScoreCallback, setGameOverState, schedulePaddleShrink, executePaddleShrink, scheduleFieldShrink, drawEndMessageCallback]); // Added executePaddleShrink to dependencies
 
     // Effect to setup shop state when entering shop
     useEffect(() => {
@@ -231,10 +241,7 @@ export default function Home() {
                  cancelAnimationFrame(animationFrameIdRef.current);
                  animationFrameIdRef.current = null;
             }
-            const widenTimerRef = gameStateRefs.widenTimeoutRef?.current;
-            if (widenTimerRef) {
-                clearTimeout(widenTimerRef);
-            }
+            // No longer need widenTimeoutRef cleanup here as it's handled by countdown
         };
     }, [gameOverState, handleResetGame, launchStuckBalls, gameStateRefs, showSidebar, isMobile]); // <-- Add isMobile to dependency array
 

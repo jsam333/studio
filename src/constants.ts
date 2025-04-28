@@ -3,6 +3,7 @@ import { PowerUpType } from './interfaces';
 // Game Board
 export const BOARD_WIDTH = 600;
 export const BOARD_HEIGHT = 400;
+export const TARGET_FPS = 60; // Define target FPS
 
 // Paddle
 export const INITIAL_PADDLE_WIDTH = 80;
