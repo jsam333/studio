@@ -14,11 +14,15 @@ export interface Brick {
 
 export type PowerUpType =
     'MULTI_BALL' | 'MULTI_BALL_L2' | 'MULTI_BALL_L3' | // Max level 3
-    'WIDEN_PADDLE' | 'LASER_PADDLE' | 'REGEN_BRICK' |
+    'WIDEN_PADDLE' | 'WIDEN_PADDLE_L2' | 'WIDEN_PADDLE_L3' | // Max level 3
+    'LASER_PADDLE' | 'LASER_PADDLE_L2' | 'LASER_PADDLE_L3' | // Added L2, L3
+    'REGEN_BRICK' |
     'SAFETY_NET' | 'REINFORCE_BRICK' | 'MAKE_SPECIAL' | 'BLACK_BALL' |
     'ALL_IN_ONE' | 'PIERCE_BALL' | 'UPGRADE_BRICK' | 'BUILDER_BALL' |
     'BIG_BALL' | 'SPLITTING_BALL' | 'COLLECTION_FIELD' |
-    'HOMING_BALL' | 'BOMB_BRICK' | 'STICKY_PADDLE' | 'NONE';
+    'HOMING_BALL' | 'BOMB_BRICK' |
+    'STICKY_PADDLE' | 'STICKY_PADDLE_L2' | 'STICKY_PADDLE_L3' | // Added L2, L3
+    'NONE';
 
 export interface PowerUp {
   x: number;
@@ -78,28 +82,27 @@ export interface Laser {
     y: number;
     width: number;
     height: number;
-    speed: number; // Laser speed is inherent, updated via scaledDeltaTime
+    speed: number; 
     id: number;
 }
 
 export type GameState = 'menu' | 'playing' | 'won' | 'lost' | 'shop';
 export type GameMode = 'main' | 'test';
 
-// Base refs shared across hooks and components
 export interface GameStateRefsBase {
     paddleXRef: React.MutableRefObject<number>;
     ballsRef: React.MutableRefObject<Ball[]>;
     bricksRef: React.MutableRefObject<Brick[][]>;
     powerUpsRef: React.MutableRefObject<PowerUp[]>;
     scoreRef: React.MutableRefObject<number>;
-    targetScoreRef: React.MutableRefObject<number>; // ADDED
+    targetScoreRef: React.MutableRefObject<number>;
     totalBricksRef: React.MutableRefObject<number>;
     goldRef: React.MutableRefObject<number>;
-    bonusGoldRef: React.MutableRefObject<number>; // Added for level complete bonus
+    bonusGoldRef: React.MutableRefObject<number>;
     spawnablePowerUpsRef: React.MutableRefObject<Set<PowerUpType>>;
     paddleWidthRef: React.MutableRefObject<number>;
-    widenLevelRef: React.MutableRefObject<number>;
-    laserShotsRef: React.MutableRefObject<number>;
+    widenLevelRef: React.MutableRefObject<number>; 
+    laserShotsRef: React.MutableRefObject<number>; // May represent level/shots depending on implementation
     lasersRef: React.MutableRefObject<Laser[]>;
     safetyNetCountRef: React.MutableRefObject<number>;
     gameIsRunningRef: React.MutableRefObject<boolean>;
@@ -107,37 +110,31 @@ export interface GameStateRefsBase {
     gameSpeedFactorRef: React.MutableRefObject<number>;
     collectionFieldHeightRef: React.MutableRefObject<number>;
     collectionFieldWidthOffsetRef: React.MutableRefObject<number>;
-    stickyPaddleChargesRef: React.MutableRefObject<number>;
+    stickyPaddleChargesRef: React.MutableRefObject<number>; // May represent level/charges
     stuckBallsRef: React.MutableRefObject<Ball[]>;
     enabledPowerUpsRef: React.MutableRefObject<Set<PowerUpType>>;
-    isGameStartedRef: React.MutableRefObject<boolean>; // Tracks if ball launched
-    bonusCountdownStartedRef: React.MutableRefObject<boolean>; // Tracks if bonus countdown started
+    isGameStartedRef: React.MutableRefObject<boolean>;
+    bonusCountdownStartedRef: React.MutableRefObject<boolean>;
     brickColumnsRef: React.MutableRefObject<number>;
     brickRowsRef: React.MutableRefObject<number>;
     gameModeRef: React.MutableRefObject<GameMode | null>;
-    // bricksBrokenRef: React.MutableRefObject<number>; // REMOVED
 }
 
-// Extended refs including timers and loop-specific refs
 export interface GameStateRefs extends GameStateRefsBase {
-    // widenTimeoutRef?: React.MutableRefObject<NodeJS.Timeout | null>; // REMOVED
-    paddleShrinkCountdownRef?: React.MutableRefObject<number | null>; // ADDED: Number for remaining ms
+    paddleShrinkCountdownRef?: React.MutableRefObject<number | null>;
     collectionFieldShrinkTimerRef?: React.MutableRefObject<NodeJS.Timeout | null>;
     bonusGoldTimerRef?: React.MutableRefObject<NodeJS.Timeout | null>; 
-    bonusGoldDecrementIntervalRef?: React.MutableRefObject<NodeJS.Timeout | null>; // Timer for bonus gold decrement
+    bonusGoldDecrementIntervalRef?: React.MutableRefObject<NodeJS.Timeout | null>;
     animationFrameIdRef?: React.MutableRefObject<number | null>;
     lastTimeRef?: React.MutableRefObject<number>;
     currentLevelRef: React.MutableRefObject<number>;
 }
 
-// Callbacks passed from the main component/hook to the game loop
 export interface GameLoopCallbacks {
     updateScoreCallback: (points: number) => void;
     setGameOverState: React.Dispatch<React.SetStateAction<GameState>>;
     schedulePaddleShrink: () => void;
-    executePaddleShrink: () => void; // ADDED: Callback to execute the shrink logic
+    executePaddleShrink: () => void; 
     scheduleFieldShrink: () => void;
-    drawEndMessage: (context: CanvasRenderingContext2D, state: GameState, finalScore: number) => void; // Use GameState type
-    // Add speedY to PowerUp interface if not already there
-    // Ensure PowerUp interface has speedY?: number;
+    drawEndMessage: (context: CanvasRenderingContext2D, state: GameState, finalScore: number) => void; 
 }

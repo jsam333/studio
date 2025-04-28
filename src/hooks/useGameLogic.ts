@@ -12,14 +12,35 @@ import { initialBallState } from '../gameLogic';
 import { useLevelLogic } from './useLevelLogic';
 import { usePaddleLogic } from './usePaddleLogic';
 
-// Helper to get the PowerUpType for a specific Multiball level (1-3)
-// Copied from ShopScreen for use here
+// --- Helper functions to get PowerUpType for specific levels ---
 const getMultiballPowerUpType = (level: number): PowerUpType | null => {
-    const MAX_MULTIBALL_LEVEL = 3; // Define locally for this helper
+    const MAX_MULTIBALL_LEVEL = 3; 
     if (level < 1 || level > MAX_MULTIBALL_LEVEL) return null;
     if (level === 1) return 'MULTI_BALL';
     return `MULTI_BALL_L${level}` as PowerUpType; 
 };
+
+const getWidenPowerUpType = (level: number): PowerUpType | null => {
+    const MAX_WIDEN_LEVEL = 3;
+    if (level < 1 || level > MAX_WIDEN_LEVEL) return null;
+    if (level === 1) return 'WIDEN_PADDLE';
+    return `WIDEN_PADDLE_L${level}` as PowerUpType;
+};
+
+const getLaserPowerUpType = (level: number): PowerUpType | null => {
+    const MAX_LASER_LEVEL = 3;
+    if (level < 1 || level > MAX_LASER_LEVEL) return null;
+    if (level === 1) return 'LASER_PADDLE';
+    return `LASER_PADDLE_L${level}` as PowerUpType;
+};
+
+const getStickyPowerUpType = (level: number): PowerUpType | null => {
+    const MAX_STICKY_LEVEL = 3;
+    if (level < 1 || level > MAX_STICKY_LEVEL) return null;
+    if (level === 1) return 'STICKY_PADDLE';
+    return `STICKY_PADDLE_L${level}` as PowerUpType;
+};
+// --- End Helper Functions ---
 
 export function useGameLogic() {
     // --- Core Game State Refs ---
@@ -31,18 +52,18 @@ export function useGameLogic() {
     const spawnablePowerUpsRef = useRef<Set<PowerUpType>>(new Set());
     const gameIsRunningRef = useRef(false);
     const paddleWidthRef = useRef(INITIAL_PADDLE_WIDTH);
-    const widenLevelRef = useRef(0);
+    const widenLevelRef = useRef(0); 
     const paddleShrinkCountdownRef = useRef<number | null>(null);
-    const laserShotsRef = useRef(0);
+    const laserShotsRef = useRef(0); // May need refactoring if laser level affects shots/cooldown
     const lasersRef = useRef<Laser[]>([]);
     const safetyNetCountRef = useRef(0);
     const gameSpeedFactorRef = useRef<number>(BASE_BALL_SPEED_FACTOR);
     const collectionFieldHeightRef = useRef<number>(FIELD_INITIAL_HEIGHT_OFFSET);
     const collectionFieldWidthOffsetRef = useRef<number>(FIELD_INITIAL_WIDTH_OFFSET);
     const collectionFieldShrinkTimerRef = useRef<NodeJS.Timeout | null>(null);
-    const stickyPaddleChargesRef = useRef(0);
+    const stickyPaddleChargesRef = useRef(0); // May need refactoring if sticky level affects charges/duration
     const stuckBallsRef = useRef<Ball[]>([]);
-    const enabledPowerUpsRef = useRef<Set<PowerUpType>>(new Set(ALL_TOGGLEABLE_POWER_UPS)); // Used for Test Mode sidebar
+    const enabledPowerUpsRef = useRef<Set<PowerUpType>>(new Set(ALL_TOGGLEABLE_POWER_UPS));
     const isGameStartedRef = useRef(false);
     const gameModeRef = useRef<GameMode | null>(null);
     const currentLevelRef = useRef<number>(1);
@@ -52,7 +73,7 @@ export function useGameLogic() {
     // --- UI State ---
     const [gameOverState, setGameOverState] = useState<GameState>('menu');
     const gameOverStateRef = useRef(gameOverState);
-    const [enabledPowerUps, setEnabledPowerUps] = useState<Set<PowerUpType>>(() => new Set(ALL_TOGGLEABLE_POWER_UPS)); // Used for Test Mode sidebar UI
+    const [enabledPowerUps, setEnabledPowerUps] = useState<Set<PowerUpType>>(() => new Set(ALL_TOGGLEABLE_POWER_UPS));
     const [showSidebar, setShowSidebar] = useState<boolean>(false);
 
     // --- Instantiate Paddle Logic Hook FIRST ---
@@ -63,7 +84,7 @@ export function useGameLogic() {
     } = usePaddleLogic({
         paddleXRef,
         paddleWidthRef,
-        widenLevelRef,
+        widenLevelRef, 
         paddleShrinkCountdownRef,
     });
 
@@ -97,7 +118,7 @@ export function useGameLogic() {
         goldRef,
         powerUpsRef,
         lasersRef,
-        widenLevelRef,
+        widenLevelRef, // Pass down relevant refs
         laserShotsRef,
         safetyNetCountRef,
         gameSpeedFactorRef,
@@ -124,7 +145,7 @@ export function useGameLogic() {
                  gameSpeedFactorRef.current = BASE_BALL_SPEED_FACTOR;
             }
         }
-    }, [gameOverState, clearBonusGoldTimers]); // Removed paddleShrinkCountdownRef dependency
+    }, [gameOverState, clearBonusGoldTimers]);
 
     // Keyboard Listeners
     useEffect(() => {
@@ -186,16 +207,16 @@ export function useGameLogic() {
 
         scoreRef.current = 0;
         goldRef.current = 0;
-        spawnablePowerUpsRef.current = new Set(); // Reset spawnable power-ups
+        spawnablePowerUpsRef.current = new Set();
         currentLevelRef.current = 1;
         gameModeRef.current = null;
 
-        resetLevel(null, true); 
-        resetPaddle();
+        resetLevel(null, true);
+        resetPaddle(); 
 
         setGameOverState('menu');
         setShowSidebar(false);
-        setEnabledPowerUps(new Set(ALL_TOGGLEABLE_POWER_UPS)); // Reset test mode sidebar toggles
+        setEnabledPowerUps(new Set(ALL_TOGGLEABLE_POWER_UPS));
         clearBonusGoldTimers();
 
     }, [resetLevel, resetPaddle, clearBonusGoldTimers]);
@@ -225,7 +246,7 @@ export function useGameLogic() {
         });
         ballsRef.current.push(...launchedBalls);
         stuckBallsRef.current = [];
-    }, [startBonusGoldCountdown]); // Added startBonusGoldCountdown dependency
+    }, [startBonusGoldCountdown]);
 
     const handlePowerUpToggle = useCallback((type: PowerUpType) => {
         setEnabledPowerUps(prev => {
@@ -239,10 +260,9 @@ export function useGameLogic() {
          if (gameOverStateRef.current === 'menu') {
             scoreRef.current = 0;
             goldRef.current = 0;
-            // Initialize spawnablePowerUpsRef based on mode ONLY if it needs reset
             if (mode === 'main') {
                  spawnablePowerUpsRef.current = new Set(); 
-             } else { // Test mode starts with all base power-ups available
+             } else {
                  spawnablePowerUpsRef.current = new Set(ALL_TOGGLEABLE_POWER_UPS);
              }
             currentLevelRef.current = 1;
@@ -251,7 +271,6 @@ export function useGameLogic() {
             resetLevel(mode, false);
 
             setShowSidebar(mode === 'test');
-            // Set enabledPowerUps for test mode UI sidebar
             setEnabledPowerUps(new Set(ALL_TOGGLEABLE_POWER_UPS)); 
            
             setGameOverState('playing');
@@ -260,12 +279,12 @@ export function useGameLogic() {
 
     const startNextLevel = useCallback(() => {
         if (gameOverStateRef.current === 'shop') {
-            scoreRef.current = 0; // Reset score for the new level
+            scoreRef.current = 0;
             currentLevelRef.current++;
-            const nextMode: GameMode = 'main'; // Assume next level is main game mode
+            const nextMode: GameMode = 'main'; 
             gameModeRef.current = nextMode;
 
-            resetLevel(nextMode, false); // Reset level state
+            resetLevel(nextMode, false); 
 
             setShowSidebar(false);
             setGameOverState('playing');
@@ -275,30 +294,33 @@ export function useGameLogic() {
     // --- MODIFIED addSpawnablePowerUp --- 
     const addSpawnablePowerUp = useCallback((typeToAdd: PowerUpType) => {
         const currentSpawnables = spawnablePowerUpsRef.current;
-        
-        // Add the new type
         currentSpawnables.add(typeToAdd);
 
-        // If the added type is a Multiball upgrade, remove lower levels
-        if (typeToAdd.startsWith('MULTI_BALL')) {
-            let levelAdded = 0;
-            if (typeToAdd === 'MULTI_BALL') levelAdded = 1;
-            else if (typeToAdd === 'MULTI_BALL_L2') levelAdded = 2;
-            else if (typeToAdd === 'MULTI_BALL_L3') levelAdded = 3;
-            // L4, L5 removed
-
-            if (levelAdded > 0) {
-                // Remove levels lower than the one just added
-                for (let levelToRemove = 1; levelToRemove < levelAdded; levelToRemove++) {
-                    const lowerLevelType = getMultiballPowerUpType(levelToRemove);
-                    if (lowerLevelType) {
-                        currentSpawnables.delete(lowerLevelType);
-                        // console.log(`Removed ${lowerLevelType} from spawnables because ${typeToAdd} was added.`);
+        // Generic handler for upgradable power-ups
+        const handleUpgrade = (baseType: string, maxLevel: number, getTypeFunc: (level: number) => PowerUpType | null) => {
+            if (typeToAdd.startsWith(baseType)) {
+                let levelAdded = 0;
+                if (typeToAdd === baseType) levelAdded = 1;
+                else {
+                    const match = typeToAdd.match(/_L(\d+)$/);
+                    if (match) levelAdded = parseInt(match[1], 10);
+                }
+                
+                if (levelAdded > 0 && levelAdded <= maxLevel) {
+                    for (let levelToRemove = 1; levelToRemove < levelAdded; levelToRemove++) {
+                        const lowerLevelType = getTypeFunc(levelToRemove);
+                        if (lowerLevelType) currentSpawnables.delete(lowerLevelType);
                     }
                 }
             }
-        }
-        // No need to explicitly set the ref again, modification is done in place.
+        };
+
+        // Apply handler for each upgradable type
+        handleUpgrade('MULTI_BALL', 3, getMultiballPowerUpType);
+        handleUpgrade('WIDEN_PADDLE', 3, getWidenPowerUpType);
+        handleUpgrade('LASER_PADDLE', 3, getLaserPowerUpType);
+        handleUpgrade('STICKY_PADDLE', 3, getStickyPowerUpType);
+
     }, []);
 
 

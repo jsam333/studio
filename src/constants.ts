@@ -99,11 +99,11 @@ export const FIELD_SHRINK_RATE_W = 0.08;
 export const FIELD_SHRINK_INTERVAL = 16;
 
 // *** All potentially spawnable power-ups (for UI and logic) ***
-// NOTE: MULTI_BALL L2-L3 are handled internally by ShopScreen logic, not placed here.
+// NOTE: Upgrades (L2/L3) for upgradable powerups are handled by ShopScreen, not listed here.
 export const ALL_TOGGLEABLE_POWER_UPS: PowerUpType[] = [
     'MULTI_BALL', 
     'WIDEN_PADDLE',
-    'LASER_PADDLE',
+    'LASER_PADDLE', // Base type
     'REGEN_BRICK',
     'SAFETY_NET',
     'REINFORCE_BRICK',
@@ -118,19 +118,20 @@ export const ALL_TOGGLEABLE_POWER_UPS: PowerUpType[] = [
     'COLLECTION_FIELD',
     'HOMING_BALL',
     'BOMB_BRICK',
-    'STICKY_PADDLE',
+    'STICKY_PADDLE', // Base type
 ];
 
 // *** Individual Power-up Costs ***
-// Costs for MULTI_BALL L1-L3 are used by ShopScreen logic.
-export const POWER_UP_COSTS: { [key in PowerUpType]?: number } = { // Made optional
+export const POWER_UP_COSTS: { [key in PowerUpType]?: number } = { 
     MULTI_BALL: 17,
     MULTI_BALL_L2: 25,
     MULTI_BALL_L3: 35, 
-    // MULTI_BALL_L4: 50, // Removed L4 cost
-    // MULTI_BALL_L5: 70, // Removed L5 cost
     WIDEN_PADDLE: 10,
+    WIDEN_PADDLE_L2: 15, 
+    WIDEN_PADDLE_L3: 25, 
     LASER_PADDLE: 11,
+    LASER_PADDLE_L2: 16, // Added L2 cost
+    LASER_PADDLE_L3: 26, // Added L3 cost
     REGEN_BRICK: 10,
     SAFETY_NET: 9,
     REINFORCE_BRICK: 9,
@@ -141,11 +142,12 @@ export const POWER_UP_COSTS: { [key in PowerUpType]?: number } = { // Made optio
     BUILDER_BALL: 20,
     BIG_BALL: 8,
     SPLITTING_BALL: 25,
-    // SPEED_UP: 5, // Removed SPEED_UP power-up
     COLLECTION_FIELD: 9,
     HOMING_BALL: 12,
     BOMB_BRICK: 12,
     STICKY_PADDLE: 12,
+    STICKY_PADDLE_L2: 18, // Added L2 cost
+    STICKY_PADDLE_L3: 28, // Added L3 cost
     ALL_IN_ONE: 100, 
     NONE: 0
 };
@@ -163,7 +165,7 @@ export const LASER_COOLDOWN = 300;
 export const LASER_STRIPE_WIDTH_PER_SHOT = 4;
 
 // Colors
-export const GOLD_COLOR = '#FFD700'; // Added gold color
+export const GOLD_COLOR = '#FFD700';
 export const NORMAL_BRICK_COLOR = '#e67e22';
 export const REINFORCED_BRICK_COLOR = '#0077AA';
 export const UPGRADED_BRICK_COLOR = '#005588';
@@ -173,15 +175,16 @@ export const BOMB_BRICK_COLOR = '#8B0000';
 export const RAINBOW_COLORS = ['#FF0000', '#FF7F00', '#FFFF00', '#00FF00', '#0000FF', '#4B0082', '#9400D3'];
 export const RAINBOW_FLASH_INTERVAL = 100;
 
-// NOTE: Colors for L2-L3 are still needed for potential display differences.
-export const POWER_UP_COLORS: { [key in PowerUpType | 'NONE']?: string } = { // Made optional
-    MULTI_BALL: '#32CD32', // LimeGreen
-    MULTI_BALL_L2: '#228B22', // ForestGreen
-    MULTI_BALL_L3: '#006400', // DarkGreen
-    // MULTI_BALL_L4: '#90EE90', // Removed L4 color
-    // MULTI_BALL_L5: '#98FB98', // Removed L5 color
-    WIDEN_PADDLE: '#FF69B4',
-    LASER_PADDLE: '#FF4500',
+export const POWER_UP_COLORS: { [key in PowerUpType | 'NONE']?: string } = { 
+    MULTI_BALL: '#32CD32',
+    MULTI_BALL_L2: '#228B22',
+    MULTI_BALL_L3: '#006400',
+    WIDEN_PADDLE: '#FF69B4',      
+    WIDEN_PADDLE_L2: '#FF1493',  
+    WIDEN_PADDLE_L3: '#C71585',  
+    LASER_PADDLE: '#FF4500',      // OrangeRed
+    LASER_PADDLE_L2: '#FF0000',  // Red
+    LASER_PADDLE_L3: '#DC143C',  // Crimson
     REGEN_BRICK: '#ADFF2F',
     SAFETY_NET: '#1E90FF',
     REINFORCE_BRICK: '#708090',
@@ -192,11 +195,12 @@ export const POWER_UP_COLORS: { [key in PowerUpType | 'NONE']?: string } = { // 
     BUILDER_BALL: '#4682B4',
     BIG_BALL: '#F08080',
     SPLITTING_BALL: '#9370DB',
-    // SPEED_UP: '#FFA500', // Removed SPEED_UP power-up
     COLLECTION_FIELD: '#20B2AA',
     HOMING_BALL: '#DAA520',
     BOMB_BRICK: '#A52A2A',
     ALL_IN_ONE: '#FFFFFF',
-    STICKY_PADDLE: '#B8860B',
+    STICKY_PADDLE: '#B8860B',      // DarkGoldenrod
+    STICKY_PADDLE_L2: '#DAA520', // Goldenrod
+    STICKY_PADDLE_L3: '#FFD700', // Gold
     NONE: '#888888'
 };
