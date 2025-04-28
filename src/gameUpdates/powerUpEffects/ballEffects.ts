@@ -14,54 +14,57 @@ export const applyBallEffects = (
     currentTime: number,
     gameSpeedFactor: number // Keep for consistency, might be used later
 ) => {
+    let numToAffect = 1;
+    if (type.endsWith('_L2')) {
+        numToAffect = 2;
+    } else if (type.endsWith('_L3')) {
+        numToAffect = 3;
+    }
+
     switch (type) {
         case 'HOMING_BALL':
-        case 'HOMING_BALL_L2': // Assuming higher levels might exist, handled same way for now
+        case 'HOMING_BALL_L2':
         case 'HOMING_BALL_L3': {
-            const targetBall = refs.ballsRef.current.find(b => !b.isHoming);
-            if (targetBall) {
-                targetBall.isHoming = true;
-            } else if (refs.ballsRef.current.length > 0) {
-                refs.ballsRef.current[0].isHoming = true;
-            }
+            const eligibleBalls = refs.ballsRef.current.filter(b => !b.isHoming);
+            const ballsToModify = eligibleBalls.slice(0, numToAffect);
+            ballsToModify.forEach(ball => {
+                ball.isHoming = true;
+                 // Note: Homing duration TBD
+            });
             break;
         }
         case 'SPLITTING_BALL':
-        case 'SPLITTING_BALL_L2': // Assuming higher levels might exist, handled same way for now
+        case 'SPLITTING_BALL_L2':
         case 'SPLITTING_BALL_L3': {
-            const targetBall = refs.ballsRef.current.find(b => !b.isSplitting);
-            if (targetBall) {
-                targetBall.isSplitting = true;
-                targetBall.splittingEndTime = currentTime + SPLITTING_BALL_DURATION; // Duration might vary by level later
-            } else if (refs.ballsRef.current.length > 0) {
-                refs.ballsRef.current[0].isSplitting = true;
-                refs.ballsRef.current[0].splittingEndTime = currentTime + SPLITTING_BALL_DURATION;
-            }
+            const eligibleBalls = refs.ballsRef.current.filter(b => !b.isSplitting);
+            const ballsToModify = eligibleBalls.slice(0, numToAffect);
+            ballsToModify.forEach(ball => {
+                ball.isSplitting = true;
+                ball.splittingEndTime = currentTime + SPLITTING_BALL_DURATION; // Duration might vary by level later
+            });
             break;
         }
         case 'BIG_BALL':
-        case 'BIG_BALL_L2': // Assuming higher levels might exist, handled same way for now
+        case 'BIG_BALL_L2':
         case 'BIG_BALL_L3': {
-            const targetBall = refs.ballsRef.current.find(b => !b.isBig);
-            if (targetBall) {
-                targetBall.isBig = true;
-                targetBall.bigEndTime = currentTime + BIG_BALL_DURATION; // Duration might vary by level later
-            } else if (refs.ballsRef.current.length > 0) {
-                refs.ballsRef.current[0].isBig = true;
-                refs.ballsRef.current[0].bigEndTime = currentTime + BIG_BALL_DURATION;
-            }
+            const eligibleBalls = refs.ballsRef.current.filter(b => !b.isBig);
+            const ballsToModify = eligibleBalls.slice(0, numToAffect);
+            ballsToModify.forEach(ball => {
+                ball.isBig = true;
+                ball.bigEndTime = currentTime + BIG_BALL_DURATION; // Duration might vary by level later
+            });
             break;
         }
         case 'MULTI_BALL':
         case 'MULTI_BALL_L2':
         case 'MULTI_BALL_L3': {
+            // Spawning logic remains the same (spawns 1, 2, or 3 *new* balls)
             let numberOfBallsToSpawn = 1;
             if (type === 'MULTI_BALL_L2') {
                 numberOfBallsToSpawn = 2;
             } else if (type === 'MULTI_BALL_L3') {
                 numberOfBallsToSpawn = 3;
             }
-
             for (let i = 0; i < numberOfBallsToSpawn; i++) {
                 let sx = (Math.random() - 0.5) * 6;
                 let sy = -3 - Math.random() * 2;
@@ -74,49 +77,51 @@ export const applyBallEffects = (
             break;
         }
         case 'BUILDER_BALL':
-        case 'BUILDER_BALL_L2': // Assuming higher levels might exist, handled same way for now
+        case 'BUILDER_BALL_L2':
         case 'BUILDER_BALL_L3': {
-            const targetBall = refs.ballsRef.current.find(b => !b.isBlack && !b.isBlue && (!b.pierceHitsRemaining || b.pierceHitsRemaining <= 0));
-            if (targetBall) {
-                targetBall.isBlue = true;
-                targetBall.blueEndTime = currentTime + BUILDER_BALL_DURATION; // Duration might vary by level later
-                targetBall.isBlack = false; targetBall.pierceHitsRemaining = 0; targetBall.blackEndTime = undefined;
-            } else {
-                const fallbackBall = refs.ballsRef.current.find(b => !b.isBlack && (!b.pierceHitsRemaining || b.pierceHitsRemaining <= 0));
-                if (fallbackBall) {
-                    fallbackBall.isBlue = true;
-                    fallbackBall.blueEndTime = currentTime + BUILDER_BALL_DURATION;
-                    fallbackBall.isBlack = false; fallbackBall.pierceHitsRemaining = 0; fallbackBall.blackEndTime = undefined;
-                }
-            }
+            const eligibleBalls = refs.ballsRef.current.filter(
+                b => !b.isBlack && !b.isBlue && (!b.pierceHitsRemaining || b.pierceHitsRemaining <= 0)
+            );
+            const ballsToModify = eligibleBalls.slice(0, numToAffect);
+            ballsToModify.forEach(ball => {
+                ball.isBlue = true;
+                ball.blueEndTime = currentTime + BUILDER_BALL_DURATION; // Duration might vary by level later
+                // Remove conflicting effects
+                ball.isBlack = false; ball.blackEndTime = undefined;
+                ball.pierceHitsRemaining = 0;
+            });
             break;
         }
         case 'BLACK_BALL':
-        case 'BLACK_BALL_L2': // Assuming higher levels might exist, handled same way for now
+        case 'BLACK_BALL_L2':
         case 'BLACK_BALL_L3': {
-            const targetBall = refs.ballsRef.current.find(b => !b.isBlack && !b.isBlue && (!b.pierceHitsRemaining || b.pierceHitsRemaining <= 0));
-            if (targetBall) {
-                targetBall.isBlack = true; targetBall.blackEndTime = currentTime + BLACK_BALL_DURATION; // Duration might vary by level later
-                targetBall.pierceHitsRemaining = 0; targetBall.isBlue = false; targetBall.blueEndTime = undefined;
-            } else if (refs.ballsRef.current.length > 0) {
-                const firstBall = refs.ballsRef.current[0];
-                firstBall.isBlack = true; firstBall.blackEndTime = currentTime + BLACK_BALL_DURATION;
-                firstBall.pierceHitsRemaining = 0; firstBall.isBlue = false; firstBall.blueEndTime = undefined;
-            }
+            const eligibleBalls = refs.ballsRef.current.filter(
+                b => !b.isBlack && !b.isBlue && (!b.pierceHitsRemaining || b.pierceHitsRemaining <= 0)
+            );
+            const ballsToModify = eligibleBalls.slice(0, numToAffect);
+            ballsToModify.forEach(ball => {
+                ball.isBlack = true;
+                ball.blackEndTime = currentTime + BLACK_BALL_DURATION; // Duration might vary by level later
+                 // Remove conflicting effects
+                ball.isBlue = false; ball.blueEndTime = undefined;
+                ball.pierceHitsRemaining = 0;
+            });
             break;
         }
         case 'PIERCE_BALL':
-        case 'PIERCE_BALL_L2': // Assuming higher levels might exist, handled same way for now
+        case 'PIERCE_BALL_L2':
         case 'PIERCE_BALL_L3': {
-            const targetBall = refs.ballsRef.current.find(b => !b.isBlack && !b.isBlue && (!b.pierceHitsRemaining || b.pierceHitsRemaining <= 0));
-            if (targetBall) {
-                targetBall.pierceHitsRemaining = PIERCE_BALL_HITS; // Hits might vary by level later
-                targetBall.isBlue = false; targetBall.blueEndTime = undefined;
-            } else if (refs.ballsRef.current.length > 0 && !refs.ballsRef.current[0].isBlack && !refs.ballsRef.current[0].isBlue) {
-                const firstBall = refs.ballsRef.current[0];
-                firstBall.pierceHitsRemaining = PIERCE_BALL_HITS;
-                firstBall.isBlue = false; firstBall.blueEndTime = undefined;
-            }
+            const eligibleBalls = refs.ballsRef.current.filter(
+                b => !b.isBlack && !b.isBlue && (!b.pierceHitsRemaining || b.pierceHitsRemaining <= 0)
+            );
+            const ballsToModify = eligibleBalls.slice(0, numToAffect);
+            ballsToModify.forEach(ball => {
+                 // Apply pierce effect (hits might vary by level later)
+                ball.pierceHitsRemaining = PIERCE_BALL_HITS;
+                 // Remove conflicting effects
+                ball.isBlue = false; ball.blueEndTime = undefined;
+                ball.isBlack = false; ball.blackEndTime = undefined;
+            });
             break;
         }
         default:
