@@ -6,6 +6,25 @@ import { shuffleArray } from '../utils/helpers';
 import { calculateBaseSpawnChance } from '../gameUpdates/gameLoopUtils';
 
 const SHOP_ITEMS_COUNT = 5;
+const MAX_MULTIBALL_LEVEL = 5;
+
+// Helper to get the current Multiball level owned (0 if none)
+const getCurrentMultiballLevel = (ownedPowerUps: Set<PowerUpType>): number => {
+    for (let level = MAX_MULTIBALL_LEVEL; level >= 1; level--) {
+        const type = getMultiballPowerUpType(level);
+        if (type && ownedPowerUps.has(type)) {
+            return level;
+        }
+    }
+    return 0;
+};
+
+// Helper to get the PowerUpType for a specific Multiball level (1-5)
+const getMultiballPowerUpType = (level: number): PowerUpType | null => {
+    if (level < 1 || level > MAX_MULTIBALL_LEVEL) return null;
+    if (level === 1) return 'MULTI_BALL';
+    return `MULTI_BALL_L${level}` as PowerUpType; // Type assertion
+};
 
 interface ShopScreenProps {
   gameStateRefs: GameStateRefs;
@@ -23,51 +42,78 @@ export const ShopScreen: React.FC<ShopScreenProps> = ({
   handleResetGame
 }) => {
   const [shopItems, setShopItems] = useState<PowerUpType[]>([]);
-  const [purchasedInSession, setPurchasedInSession] = useState<Set<PowerUpType>>(new Set());
+  const [purchasedMultiballInSession, setPurchasedMultiballInSession] = useState<boolean>(false);
   const [goldDisplay, setGoldDisplay] = useState(gameStateRefs.goldRef.current);
   const [currentSpawnChance, setCurrentSpawnChance] = useState(0);
 
   useEffect(() => {
-    // Generate items
-    const eligiblePowerUps = ALL_TOGGLEABLE_POWER_UPS.filter(p => p !== 'ALL_IN_ONE');
-    const shuffled = shuffleArray(eligiblePowerUps);
-    setShopItems(shuffled.slice(0, SHOP_ITEMS_COUNT));
-    // Reset session purchases
-    setPurchasedInSession(new Set());
+    const ownedPowerUps = gameStateRefs.spawnablePowerUpsRef.current;
+
+    // Get all power-ups eligible for the shop pool (excluding ALL_IN_ONE)
+    let potentialShopPool = ALL_TOGGLEABLE_POWER_UPS.filter(p => p !== 'ALL_IN_ONE');
+    potentialShopPool = shuffleArray(potentialShopPool);
+
+    // Select the top N items for the shop
+    const currentShopSelection = potentialShopPool.slice(0, SHOP_ITEMS_COUNT);
+
+    setShopItems(currentShopSelection);
+
+    // Reset session purchase tracking
+    setPurchasedMultiballInSession(false);
     // Sync gold display
     setGoldDisplay(gameStateRefs.goldRef.current);
     // Calculate and set initial spawn chance for display
-    const chance = calculateBaseSpawnChance(gameStateRefs.spawnablePowerUpsRef.current, 'main');
+    const chance = calculateBaseSpawnChance(ownedPowerUps, 'main');
     setCurrentSpawnChance(chance);
-  }, [gameStateRefs.goldRef, gameStateRefs.spawnablePowerUpsRef]); // Re-run only when gold or spawnable power-ups change externally
 
-  const handlePurchase = (item: PowerUpType) => {
-    if (gameStateRefs.spawnablePowerUpsRef.current.has(item) || purchasedInSession.has(item)) return;
-    const cost = POWER_UP_COSTS[item] ?? 999; // Get specific cost, fallback if undefined
-    if (gameStateRefs.goldRef.current < cost) return;
+  }, [gameStateRefs.goldRef, gameStateRefs.spawnablePowerUpsRef]);
+
+  const handlePurchase = (itemToPurchase: PowerUpType) => {
+    const ownedPowerUps = gameStateRefs.spawnablePowerUpsRef.current;
+    const currentOwnedLevel = getCurrentMultiballLevel(ownedPowerUps);
+    let actualItemToAdd: PowerUpType | null = itemToPurchase;
+    let cost = POWER_UP_COSTS[itemToPurchase] ?? 999;
+
+    // If the generic 'MULTI_BALL' was clicked, determine the *actual* level to purchase
+    if (itemToPurchase === 'MULTI_BALL') {
+        if (currentOwnedLevel >= MAX_MULTIBALL_LEVEL) return; // Already maxed
+        const nextLevel = currentOwnedLevel + 1;
+        actualItemToAdd = getMultiballPowerUpType(nextLevel);
+        if (!actualItemToAdd) return; // Should not happen
+        cost = POWER_UP_COSTS[actualItemToAdd] ?? 999;
+    }
+    
+    // Prevent purchasing if the *specific* level is already owned OR if Multiball was already bought this session
+    if (ownedPowerUps.has(actualItemToAdd) || (actualItemToAdd.startsWith('MULTI_BALL') && purchasedMultiballInSession)) {
+         console.warn("Attempted to purchase already owned or session-purchased item:", actualItemToAdd);
+         return;
+    }
+
+    if (gameStateRefs.goldRef.current < cost) return; // Can't afford
 
     gameStateRefs.goldRef.current -= cost;
     setGoldDisplay(gameStateRefs.goldRef.current);
-    addSpawnablePowerUp(item);
-    setPurchasedInSession(prev => new Set(prev).add(item));
+    addSpawnablePowerUp(actualItemToAdd);
 
-    // Recalculate spawn chance after purchase for display update
+    // Mark Multiball as purchased this session if applicable
+    if (actualItemToAdd.startsWith('MULTI_BALL')) {
+        setPurchasedMultiballInSession(true);
+    }
+
     const newChance = calculateBaseSpawnChance(gameStateRefs.spawnablePowerUpsRef.current, 'main');
     setCurrentSpawnChance(newChance);
 
-    console.log(`Purchased ${item} for ${cost} gold. Remaining: ${gameStateRefs.goldRef.current}. New Spawn Chance: ${newChance * 100}%`);
+    console.log(`Purchased ${actualItemToAdd} for ${cost} gold. Remaining: ${gameStateRefs.goldRef.current}. New Spawn Chance: ${newChance * 100}%`);
   };
 
   return (
     <div className="flex flex-col items-center justify-center h-screen bg-gray-800 text-white">
       <h1 className="text-4xl font-bold mb-6">Level Complete!</h1>
-      {/* Display Gold and Spawn Chance */}
       <div className="flex items-center space-x-6 mb-10">
         <p className="text-3xl" style={{ color: GOLD_COLOR || '#FFD700' }}>
           Gold: {goldDisplay}
         </p>
         <p className="text-xl text-blue-300">
-          {/* Format chance as percentage */}
           Spawn Chance: {(currentSpawnChance * 100).toFixed(0)}%
         </p>
       </div>
@@ -76,31 +122,74 @@ export const ShopScreen: React.FC<ShopScreenProps> = ({
       <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-4 mb-10 w-full max-w-4xl px-4">
         {shopItems.length > 0 ? (
           shopItems.map(item => {
-            const cost = POWER_UP_COSTS[item] ?? 999; // Get cost again for UI
-            const isGloballyOwned = gameStateRefs.spawnablePowerUpsRef.current.has(item);
-            const isPurchasedThisSession = purchasedInSession.has(item);
-            const canAfford = goldDisplay >= cost;
-            const isDisabled = isGloballyOwned || isPurchasedThisSession || !canAfford;
-            let buttonText = `Cost: ${cost}`; // Display specific cost
+            const ownedPowerUps = gameStateRefs.spawnablePowerUpsRef.current;
+            let itemKey = item; // Unique key for React rendering
+            let displayName = item.replace(/_/g, ' ');
+            let displayCost = POWER_UP_COSTS[item] ?? 999;
+            let isDisabled = false;
+            let buttonText = `Cost: ${displayCost}`;
             let buttonStyle = 'bg-blue-600 hover:bg-blue-700';
-            if (isGloballyOwned) {
-              buttonText = '(Owned)';
-              buttonStyle = 'bg-gray-500 opacity-70';
-            } else if (isPurchasedThisSession) {
-              buttonText = '(Added)';
-              buttonStyle = 'bg-gray-500 opacity-70';
-            } else if (!canAfford) {
-              buttonStyle = 'bg-red-800 opacity-50';
+            let itemToPurchaseOnClick = item; // The item type passed to handlePurchase
+
+            const isGenericMultiball = item === 'MULTI_BALL';
+            let currentOwnedMBLevel = 0;
+            let nextMBLevelType: PowerUpType | null = null;
+
+            if (isGenericMultiball) {
+                itemKey = 'MULTI_BALL_UPGRADE'; // Use a consistent key for the dynamic button
+                currentOwnedMBLevel = getCurrentMultiballLevel(ownedPowerUps);
+
+                if (currentOwnedMBLevel >= MAX_MULTIBALL_LEVEL) {
+                    // --- Max Level --- 
+                    displayName = `Multiball Lvl ${MAX_MULTIBALL_LEVEL}`;
+                    buttonText = '(Max Level)';
+                    isDisabled = true;
+                    buttonStyle = 'bg-gray-500 opacity-70';
+                    itemToPurchaseOnClick = getMultiballPowerUpType(MAX_MULTIBALL_LEVEL)!; // Reference L5 for consistency
+                } else {
+                    // --- Upgrade Available --- 
+                    const nextLevel = currentOwnedMBLevel + 1;
+                    nextMBLevelType = getMultiballPowerUpType(nextLevel);
+                    if (nextMBLevelType) {
+                        displayName = `Multiball Lvl ${nextLevel}`;
+                        displayCost = POWER_UP_COSTS[nextMBLevelType] ?? 999;
+                        buttonText = `Cost: ${displayCost}`;
+                        itemToPurchaseOnClick = 'MULTI_BALL'; // Click triggers purchase of *next* level via handlePurchase logic
+                        // Disable checks based on the *next* level's cost and session purchase status
+                         isDisabled = goldDisplay < displayCost || purchasedMultiballInSession;
+                        if (isDisabled) {
+                             buttonStyle = purchasedMultiballInSession 
+                                ? 'bg-gray-500 opacity-70' // Style for 'Added'
+                                : 'bg-red-800 opacity-50'; // Style for 'Cannot Afford'
+                             if (purchasedMultiballInSession) buttonText = '(Added)';
+                        }
+                    } else {
+                        // Should not happen if MAX_MULTIBALL_LEVEL is correct
+                        displayName = 'Multiball Error';
+                        isDisabled = true;
+                    }
+                }
+            } else {
+                 // --- Regular Power-up --- 
+                const isGloballyOwned = ownedPowerUps.has(item);
+                // Note: purchasedInSession only tracks MB now, other items disable via isGloballyOwned check after purchase
+                isDisabled = goldDisplay < displayCost || isGloballyOwned;
+                if(isGloballyOwned) {
+                     buttonText = '(Owned)';
+                     buttonStyle = 'bg-gray-500 opacity-70';
+                 } else if (goldDisplay < displayCost) {
+                     buttonStyle = 'bg-red-800 opacity-50';
+                 }
             }
 
             return (
               <Button
-                key={item}
-                onClick={() => handlePurchase(item)} 
+                key={itemKey}
+                onClick={() => handlePurchase(itemToPurchaseOnClick)} 
                 disabled={isDisabled}
                 className={`py-3 px-2 text-sm flex flex-col h-24 justify-center items-center ${buttonStyle}`}
               >
-                <span className="mb-1">{item.replace(/_/g, ' ')}</span> 
+                <span className="mb-1">{displayName}</span> 
                 <span className="text-xs mt-1">{buttonText}</span> 
               </Button>
             );

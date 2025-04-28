@@ -61,7 +61,7 @@ export const POWER_UP_CHANCE_REDUCTION_PER_EXTRA = 0.05;
 export const SAFETY_NET_HEIGHT = 3;
 export const BUILDER_BRICK_MAX_LEVEL = 3;
 export const BUILDER_BALL_SPAWN_CHANCE = 0.15;
-export const MULTI_BALL_COUNT = 3;
+export const MULTI_BALL_COUNT = 3; // Base count for L1
 export const BLACK_BALL_DURATION_MS = 10000;
 export const BOMB_BRICK_SPAWN_CHANCE = 0.1;
 export const BOMB_EXPLOSION_RADIUS_FACTOR = 1.5;
@@ -99,8 +99,9 @@ export const FIELD_SHRINK_RATE_W = 0.08;
 export const FIELD_SHRINK_INTERVAL = 16;
 
 // *** All potentially spawnable power-ups (for UI and logic) ***
+// NOTE: MULTI_BALL L2-L5 are handled internally by ShopScreen logic, not placed here.
 export const ALL_TOGGLEABLE_POWER_UPS: PowerUpType[] = [
-    'MULTI_BALL',
+    'MULTI_BALL', 
     'WIDEN_PADDLE',
     'LASER_PADDLE',
     'REGEN_BRICK',
@@ -121,8 +122,13 @@ export const ALL_TOGGLEABLE_POWER_UPS: PowerUpType[] = [
 ];
 
 // *** Individual Power-up Costs ***
+// Costs for MULTI_BALL L1-L5 are used by ShopScreen logic.
 export const POWER_UP_COSTS: { [key in PowerUpType]: number } = {
     MULTI_BALL: 17,
+    MULTI_BALL_L2: 25,
+    MULTI_BALL_L3: 35, 
+    MULTI_BALL_L4: 50, 
+    MULTI_BALL_L5: 70, 
     WIDEN_PADDLE: 10,
     LASER_PADDLE: 11,
     REGEN_BRICK: 10,
@@ -167,8 +173,13 @@ export const BOMB_BRICK_COLOR = '#8B0000';
 export const RAINBOW_COLORS = ['#FF0000', '#FF7F00', '#FFFF00', '#00FF00', '#0000FF', '#4B0082', '#9400D3'];
 export const RAINBOW_FLASH_INTERVAL = 100;
 
+// NOTE: Colors for L2-L5 are still needed for potential display differences, even if not toggleable directly.
 export const POWER_UP_COLORS: { [key in PowerUpType | 'NONE']: string } = {
-    MULTI_BALL: '#32CD32',
+    MULTI_BALL: '#32CD32', // LimeGreen
+    MULTI_BALL_L2: '#228B22', // ForestGreen
+    MULTI_BALL_L3: '#006400', // DarkGreen
+    MULTI_BALL_L4: '#90EE90', // LightGreen
+    MULTI_BALL_L5: '#98FB98', // PaleGreen
     WIDEN_PADDLE: '#FF69B4',
     LASER_PADDLE: '#FF4500',
     REGEN_BRICK: '#ADFF2F',

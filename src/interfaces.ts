@@ -13,11 +13,12 @@ export interface Brick {
 }
 
 export type PowerUpType =
-    'MULTI_BALL' | 'WIDEN_PADDLE' | 'LASER_PADDLE' | 'REGEN_BRICK' |
+    'MULTI_BALL' | 'MULTI_BALL_L2' | 'MULTI_BALL_L3' | 'MULTI_BALL_L4' | 'MULTI_BALL_L5' | // Added L3, L4, L5
+    'WIDEN_PADDLE' | 'LASER_PADDLE' | 'REGEN_BRICK' |
     'SAFETY_NET' | 'REINFORCE_BRICK' | 'MAKE_SPECIAL' | 'BLACK_BALL' |
     'ALL_IN_ONE' | 'PIERCE_BALL' | 'UPGRADE_BRICK' | 'BUILDER_BALL' |
     'BIG_BALL' | 'SPLITTING_BALL' | 'COLLECTION_FIELD' |
-    'HOMING_BALL' | 'BOMB_BRICK' | 'STICKY_PADDLE' | 'NONE'; // Removed 'SPEED_UP'
+    'HOMING_BALL' | 'BOMB_BRICK' | 'STICKY_PADDLE' | 'NONE';
 
 export interface PowerUp {
   x: number;
@@ -26,7 +27,6 @@ export interface PowerUp {
   status: 'falling' | 'collected';
   id: number;
   timeCreated?: number;
-  // Add speedY for power-ups that fall
   speedY?: number; 
 }
 
