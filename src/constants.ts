@@ -99,7 +99,7 @@ export const FIELD_SHRINK_RATE_W = 0.08;
 export const FIELD_SHRINK_INTERVAL = 16;
 
 // *** All potentially spawnable power-ups (for UI and logic) ***
-// NOTE: MULTI_BALL L2-L5 are handled internally by ShopScreen logic, not placed here.
+// NOTE: MULTI_BALL L2-L3 are handled internally by ShopScreen logic, not placed here.
 export const ALL_TOGGLEABLE_POWER_UPS: PowerUpType[] = [
     'MULTI_BALL', 
     'WIDEN_PADDLE',
@@ -122,13 +122,13 @@ export const ALL_TOGGLEABLE_POWER_UPS: PowerUpType[] = [
 ];
 
 // *** Individual Power-up Costs ***
-// Costs for MULTI_BALL L1-L5 are used by ShopScreen logic.
-export const POWER_UP_COSTS: { [key in PowerUpType]: number } = {
+// Costs for MULTI_BALL L1-L3 are used by ShopScreen logic.
+export const POWER_UP_COSTS: { [key in PowerUpType]?: number } = { // Made optional
     MULTI_BALL: 17,
     MULTI_BALL_L2: 25,
     MULTI_BALL_L3: 35, 
-    MULTI_BALL_L4: 50, 
-    MULTI_BALL_L5: 70, 
+    // MULTI_BALL_L4: 50, // Removed L4 cost
+    // MULTI_BALL_L5: 70, // Removed L5 cost
     WIDEN_PADDLE: 10,
     LASER_PADDLE: 11,
     REGEN_BRICK: 10,
@@ -146,8 +146,8 @@ export const POWER_UP_COSTS: { [key in PowerUpType]: number } = {
     HOMING_BALL: 12,
     BOMB_BRICK: 12,
     STICKY_PADDLE: 12,
-    ALL_IN_ONE: 100, // ALL_IN_ONE might not be purchasable, but included for completeness
-    NONE: 0 // Should not be purchasable
+    ALL_IN_ONE: 100, 
+    NONE: 0
 };
 
 
@@ -173,13 +173,13 @@ export const BOMB_BRICK_COLOR = '#8B0000';
 export const RAINBOW_COLORS = ['#FF0000', '#FF7F00', '#FFFF00', '#00FF00', '#0000FF', '#4B0082', '#9400D3'];
 export const RAINBOW_FLASH_INTERVAL = 100;
 
-// NOTE: Colors for L2-L5 are still needed for potential display differences, even if not toggleable directly.
-export const POWER_UP_COLORS: { [key in PowerUpType | 'NONE']: string } = {
+// NOTE: Colors for L2-L3 are still needed for potential display differences.
+export const POWER_UP_COLORS: { [key in PowerUpType | 'NONE']?: string } = { // Made optional
     MULTI_BALL: '#32CD32', // LimeGreen
     MULTI_BALL_L2: '#228B22', // ForestGreen
     MULTI_BALL_L3: '#006400', // DarkGreen
-    MULTI_BALL_L4: '#90EE90', // LightGreen
-    MULTI_BALL_L5: '#98FB98', // PaleGreen
+    // MULTI_BALL_L4: '#90EE90', // Removed L4 color
+    // MULTI_BALL_L5: '#98FB98', // Removed L5 color
     WIDEN_PADDLE: '#FF69B4',
     LASER_PADDLE: '#FF4500',
     REGEN_BRICK: '#ADFF2F',

@@ -6,7 +6,7 @@ import { shuffleArray } from '../utils/helpers';
 import { calculateBaseSpawnChance } from '../gameUpdates/gameLoopUtils';
 
 const SHOP_ITEMS_COUNT = 5;
-const MAX_MULTIBALL_LEVEL = 5;
+const MAX_MULTIBALL_LEVEL = 3; // Changed max level to 3
 
 // Helper to get the current Multiball level owned (0 if none)
 const getCurrentMultiballLevel = (ownedPowerUps: Set<PowerUpType>): number => {
@@ -19,11 +19,12 @@ const getCurrentMultiballLevel = (ownedPowerUps: Set<PowerUpType>): number => {
     return 0;
 };
 
-// Helper to get the PowerUpType for a specific Multiball level (1-5)
+// Helper to get the PowerUpType for a specific Multiball level (1-3)
 const getMultiballPowerUpType = (level: number): PowerUpType | null => {
     if (level < 1 || level > MAX_MULTIBALL_LEVEL) return null;
     if (level === 1) return 'MULTI_BALL';
-    return `MULTI_BALL_L${level}` as PowerUpType; // Type assertion
+    // Type assertion needed because TS doesn't automatically know L4/L5 are removed from PowerUpType
+    return `MULTI_BALL_L${level}` as PowerUpType; 
 };
 
 interface ShopScreenProps {
@@ -72,7 +73,8 @@ export const ShopScreen: React.FC<ShopScreenProps> = ({
     const ownedPowerUps = gameStateRefs.spawnablePowerUpsRef.current;
     const currentOwnedLevel = getCurrentMultiballLevel(ownedPowerUps);
     let actualItemToAdd: PowerUpType | null = itemToPurchase;
-    let cost = POWER_UP_COSTS[itemToPurchase] ?? 999;
+    // Use optional chaining and nullish coalescing for safety with potentially missing costs
+    let cost = POWER_UP_COSTS[itemToPurchase as keyof typeof POWER_UP_COSTS] ?? 999;
 
     // If the generic 'MULTI_BALL' was clicked, determine the *actual* level to purchase
     if (itemToPurchase === 'MULTI_BALL') {
@@ -80,12 +82,18 @@ export const ShopScreen: React.FC<ShopScreenProps> = ({
         const nextLevel = currentOwnedLevel + 1;
         actualItemToAdd = getMultiballPowerUpType(nextLevel);
         if (!actualItemToAdd) return; // Should not happen
-        cost = POWER_UP_COSTS[actualItemToAdd] ?? 999;
+        cost = POWER_UP_COSTS[actualItemToAdd as keyof typeof POWER_UP_COSTS] ?? 999;
     }
     
     // Prevent purchasing if the *specific* level is already owned OR if Multiball was already bought this session
-    if (ownedPowerUps.has(actualItemToAdd) || (actualItemToAdd.startsWith('MULTI_BALL') && purchasedMultiballInSession)) {
+    if (actualItemToAdd && (ownedPowerUps.has(actualItemToAdd) || (actualItemToAdd.startsWith('MULTI_BALL') && purchasedMultiballInSession))) {
          console.warn("Attempted to purchase already owned or session-purchased item:", actualItemToAdd);
+         return;
+    }
+    
+    // Ensure actualItemToAdd is not null before proceeding
+    if (!actualItemToAdd) {
+         console.error("Could not determine the actual item to add for purchase.");
          return;
     }
 
@@ -125,7 +133,8 @@ export const ShopScreen: React.FC<ShopScreenProps> = ({
             const ownedPowerUps = gameStateRefs.spawnablePowerUpsRef.current;
             let itemKey = item; // Unique key for React rendering
             let displayName = item.replace(/_/g, ' ');
-            let displayCost = POWER_UP_COSTS[item] ?? 999;
+            // Use optional chaining and nullish coalescing for safety
+            let displayCost = POWER_UP_COSTS[item as keyof typeof POWER_UP_COSTS] ?? 999;
             let isDisabled = false;
             let buttonText = `Cost: ${displayCost}`;
             let buttonStyle = 'bg-blue-600 hover:bg-blue-700';
@@ -145,14 +154,15 @@ export const ShopScreen: React.FC<ShopScreenProps> = ({
                     buttonText = '(Max Level)';
                     isDisabled = true;
                     buttonStyle = 'bg-gray-500 opacity-70';
-                    itemToPurchaseOnClick = getMultiballPowerUpType(MAX_MULTIBALL_LEVEL)!; // Reference L5 for consistency
+                    const maxLevelType = getMultiballPowerUpType(MAX_MULTIBALL_LEVEL);
+                    itemToPurchaseOnClick = maxLevelType ? maxLevelType : 'MULTI_BALL'; // Reference max level type
                 } else {
                     // --- Upgrade Available --- 
                     const nextLevel = currentOwnedMBLevel + 1;
                     nextMBLevelType = getMultiballPowerUpType(nextLevel);
                     if (nextMBLevelType) {
                         displayName = `Multiball Lvl ${nextLevel}`;
-                        displayCost = POWER_UP_COSTS[nextMBLevelType] ?? 999;
+                        displayCost = POWER_UP_COSTS[nextMBLevelType as keyof typeof POWER_UP_COSTS] ?? 999;
                         buttonText = `Cost: ${displayCost}`;
                         itemToPurchaseOnClick = 'MULTI_BALL'; // Click triggers purchase of *next* level via handlePurchase logic
                         // Disable checks based on the *next* level's cost and session purchase status
@@ -172,7 +182,6 @@ export const ShopScreen: React.FC<ShopScreenProps> = ({
             } else {
                  // --- Regular Power-up --- 
                 const isGloballyOwned = ownedPowerUps.has(item);
-                // Note: purchasedInSession only tracks MB now, other items disable via isGloballyOwned check after purchase
                 isDisabled = goldDisplay < displayCost || isGloballyOwned;
                 if(isGloballyOwned) {
                      buttonText = '(Owned)';

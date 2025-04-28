@@ -13,7 +13,7 @@ export interface Brick {
 }
 
 export type PowerUpType =
-    'MULTI_BALL' | 'MULTI_BALL_L2' | 'MULTI_BALL_L3' | 'MULTI_BALL_L4' | 'MULTI_BALL_L5' | // Added L3, L4, L5
+    'MULTI_BALL' | 'MULTI_BALL_L2' | 'MULTI_BALL_L3' | // Max level 3
     'WIDEN_PADDLE' | 'LASER_PADDLE' | 'REGEN_BRICK' |
     'SAFETY_NET' | 'REINFORCE_BRICK' | 'MAKE_SPECIAL' | 'BLACK_BALL' |
     'ALL_IN_ONE' | 'PIERCE_BALL' | 'UPGRADE_BRICK' | 'BUILDER_BALL' |
