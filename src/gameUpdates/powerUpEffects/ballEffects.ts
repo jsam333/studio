@@ -15,7 +15,9 @@ export const applyBallEffects = (
     gameSpeedFactor: number // Keep for consistency, might be used later
 ) => {
     switch (type) {
-        case 'HOMING_BALL': {
+        case 'HOMING_BALL':
+        case 'HOMING_BALL_L2': // Assuming higher levels might exist, handled same way for now
+        case 'HOMING_BALL_L3': {
             const targetBall = refs.ballsRef.current.find(b => !b.isHoming);
             if (targetBall) {
                 targetBall.isHoming = true;
@@ -24,43 +26,60 @@ export const applyBallEffects = (
             }
             break;
         }
-        case 'SPLITTING_BALL': {
+        case 'SPLITTING_BALL':
+        case 'SPLITTING_BALL_L2': // Assuming higher levels might exist, handled same way for now
+        case 'SPLITTING_BALL_L3': {
             const targetBall = refs.ballsRef.current.find(b => !b.isSplitting);
             if (targetBall) {
                 targetBall.isSplitting = true;
-                targetBall.splittingEndTime = currentTime + SPLITTING_BALL_DURATION;
+                targetBall.splittingEndTime = currentTime + SPLITTING_BALL_DURATION; // Duration might vary by level later
             } else if (refs.ballsRef.current.length > 0) {
                 refs.ballsRef.current[0].isSplitting = true;
                 refs.ballsRef.current[0].splittingEndTime = currentTime + SPLITTING_BALL_DURATION;
             }
             break;
         }
-        case 'BIG_BALL': {
+        case 'BIG_BALL':
+        case 'BIG_BALL_L2': // Assuming higher levels might exist, handled same way for now
+        case 'BIG_BALL_L3': {
             const targetBall = refs.ballsRef.current.find(b => !b.isBig);
             if (targetBall) {
                 targetBall.isBig = true;
-                targetBall.bigEndTime = currentTime + BIG_BALL_DURATION;
+                targetBall.bigEndTime = currentTime + BIG_BALL_DURATION; // Duration might vary by level later
             } else if (refs.ballsRef.current.length > 0) {
                 refs.ballsRef.current[0].isBig = true;
                 refs.ballsRef.current[0].bigEndTime = currentTime + BIG_BALL_DURATION;
             }
             break;
         }
-        case 'MULTI_BALL': {
-            let sx = (Math.random() - 0.5) * 6;
-            let sy = -3 - Math.random() * 2;
-            refs.ballsRef.current.push(createNewBall(
-                refs.paddleXRef.current + refs.paddleWidthRef.current / 2 + (Math.random() - 0.5) * 10,
-                BOARD_HEIGHT - PADDLE_HEIGHT - BALL_SIZE - 5,
-                sx, sy, BASE_BALL_SPEED_FACTOR
-            ));
+        case 'MULTI_BALL':
+        case 'MULTI_BALL_L2':
+        case 'MULTI_BALL_L3': {
+            let numberOfBallsToSpawn = 1;
+            if (type === 'MULTI_BALL_L2') {
+                numberOfBallsToSpawn = 2;
+            } else if (type === 'MULTI_BALL_L3') {
+                numberOfBallsToSpawn = 3;
+            }
+
+            for (let i = 0; i < numberOfBallsToSpawn; i++) {
+                let sx = (Math.random() - 0.5) * 6;
+                let sy = -3 - Math.random() * 2;
+                refs.ballsRef.current.push(createNewBall(
+                    refs.paddleXRef.current + refs.paddleWidthRef.current / 2 + (Math.random() - 0.5) * 10,
+                    BOARD_HEIGHT - PADDLE_HEIGHT - BALL_SIZE - 5,
+                    sx, sy, BASE_BALL_SPEED_FACTOR
+                ));
+            }
             break;
         }
-        case 'BUILDER_BALL': {
+        case 'BUILDER_BALL':
+        case 'BUILDER_BALL_L2': // Assuming higher levels might exist, handled same way for now
+        case 'BUILDER_BALL_L3': {
             const targetBall = refs.ballsRef.current.find(b => !b.isBlack && !b.isBlue && (!b.pierceHitsRemaining || b.pierceHitsRemaining <= 0));
             if (targetBall) {
                 targetBall.isBlue = true;
-                targetBall.blueEndTime = currentTime + BUILDER_BALL_DURATION;
+                targetBall.blueEndTime = currentTime + BUILDER_BALL_DURATION; // Duration might vary by level later
                 targetBall.isBlack = false; targetBall.pierceHitsRemaining = 0; targetBall.blackEndTime = undefined;
             } else {
                 const fallbackBall = refs.ballsRef.current.find(b => !b.isBlack && (!b.pierceHitsRemaining || b.pierceHitsRemaining <= 0));
@@ -72,10 +91,12 @@ export const applyBallEffects = (
             }
             break;
         }
-        case 'BLACK_BALL': {
+        case 'BLACK_BALL':
+        case 'BLACK_BALL_L2': // Assuming higher levels might exist, handled same way for now
+        case 'BLACK_BALL_L3': {
             const targetBall = refs.ballsRef.current.find(b => !b.isBlack && !b.isBlue && (!b.pierceHitsRemaining || b.pierceHitsRemaining <= 0));
             if (targetBall) {
-                targetBall.isBlack = true; targetBall.blackEndTime = currentTime + BLACK_BALL_DURATION;
+                targetBall.isBlack = true; targetBall.blackEndTime = currentTime + BLACK_BALL_DURATION; // Duration might vary by level later
                 targetBall.pierceHitsRemaining = 0; targetBall.isBlue = false; targetBall.blueEndTime = undefined;
             } else if (refs.ballsRef.current.length > 0) {
                 const firstBall = refs.ballsRef.current[0];
@@ -84,10 +105,12 @@ export const applyBallEffects = (
             }
             break;
         }
-        case 'PIERCE_BALL': {
+        case 'PIERCE_BALL':
+        case 'PIERCE_BALL_L2': // Assuming higher levels might exist, handled same way for now
+        case 'PIERCE_BALL_L3': {
             const targetBall = refs.ballsRef.current.find(b => !b.isBlack && !b.isBlue && (!b.pierceHitsRemaining || b.pierceHitsRemaining <= 0));
             if (targetBall) {
-                targetBall.pierceHitsRemaining = PIERCE_BALL_HITS;
+                targetBall.pierceHitsRemaining = PIERCE_BALL_HITS; // Hits might vary by level later
                 targetBall.isBlue = false; targetBall.blueEndTime = undefined;
             } else if (refs.ballsRef.current.length > 0 && !refs.ballsRef.current[0].isBlack && !refs.ballsRef.current[0].isBlue) {
                 const firstBall = refs.ballsRef.current[0];
@@ -97,6 +120,7 @@ export const applyBallEffects = (
             break;
         }
         default:
+            // console.log(`Ball effect not handled for type: ${type}`); // Optional: log unhandled types
             break;
     }
 };
