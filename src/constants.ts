@@ -77,6 +77,15 @@ export const BIG_BALL_DURATION = 10000;
 export const BUILDER_BALL_DURATION = 5000;
 export const BLACK_BALL_DURATION = 10000;
 
+// Bonus Gold
+export const INITIAL_BONUS_GOLD = 30;
+export const MINIMUM_BONUS_GOLD = 5;
+export const BONUS_GOLD_START_DELAY_DEFAULT = 10000;
+export const BONUS_GOLD_START_DELAY_EXTENDED = 15000;
+export const BONUS_GOLD_START_DELAY_HIGH = 20000;
+export const BONUS_GOLD_START_DELAY_MAX = 30000;
+export const BONUS_GOLD_DECREMENT_INTERVAL = 1000; // Added this export
+
 
 // Collection Field
 export const FIELD_INITIAL_HEIGHT_OFFSET = 0;
