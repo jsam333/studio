@@ -51,12 +51,12 @@ export const applyPaddleEffects = (
         case 'LASER_PADDLE':
         case 'LASER_PADDLE_L2':
         case 'LASER_PADDLE_L3': {
-            // Simplified logic: Add 1, 2, or 3 shots based on level
-            let shotsToAdd = 1;
+            // Add 2, 3, or 4 shots based on level
+            let shotsToAdd = 2; // Level 1 gives 2 shots
             if (type === 'LASER_PADDLE_L2') {
-                shotsToAdd = 2;
+                shotsToAdd = 4; // Level 2 gives 3 shots
             } else if (type === 'LASER_PADDLE_L3') {
-                shotsToAdd = 3;
+                shotsToAdd = 6; // Level 3 gives 4 shots
             }
              refs.laserShotsRef.current += shotsToAdd;
             break;

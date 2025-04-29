@@ -89,13 +89,13 @@ export const BONUS_GOLD_DECREMENT_INTERVAL = 1000; // Added this export
 
 // Collection Field
 export const FIELD_INITIAL_HEIGHT_OFFSET = 0;
-export const FIELD_HEIGHT_INCREMENT = 5;
+export const FIELD_HEIGHT_INCREMENT = 6;
 export const FIELD_MAX_HEIGHT_OFFSET = 75;
 export const FIELD_INITIAL_WIDTH_OFFSET = 0;
 export const FIELD_WIDTH_INCREMENT = 8;
 export const FIELD_MAX_WIDTH_OFFSET = 80;
-export const FIELD_SHRINK_RATE_H = 0.1;
-export const FIELD_SHRINK_RATE_W = 0.08;
+export const FIELD_SHRINK_RATE_H = 0.08;
+export const FIELD_SHRINK_RATE_W = 0.07;
 export const FIELD_SHRINK_INTERVAL = 16;
 
 // *** All potentially spawnable power-ups (for UI and logic) ***
