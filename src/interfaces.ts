@@ -54,7 +54,6 @@ export interface Ball {
   isBlack?: boolean;
   blackEndTime?: number;
   blackPausedDuration?: number;
-  pierceHitsRemaining?: number;
   isBlue?: boolean;
   blueEndTime?: number;
   bluePausedDuration?: number;
@@ -65,7 +64,9 @@ export interface Ball {
   splittingEndTime?: number;
   splittingPausedDuration?: number;
   isHoming?: boolean;
-  stuckOffset?: number;
+  stuckOffset?: number; // For top sticking
+  stuckSide?: 'left' | 'right' | null; // For side sticking
+  stuckSideOffset?: number; // Vertical offset for side sticking
 }
 
 export type SpawnMarker = 'PENDING' | 'SPAWN_SPECIAL' | 'SPAWN_BALL' | 'NONE';

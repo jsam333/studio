@@ -11,6 +11,8 @@ export const PADDLE_HEIGHT = 15;
 export const PADDLE_Y = BOARD_HEIGHT - PADDLE_HEIGHT;
 export const PADDLE_SPEED = 7;
 export const PADDLE_FRICTION = 0.9;
+export const PADDLE_EDGE_STICK_THRESHOLD = 0.15; // 15% of paddle width from edge for top-sticking
+export const PADDLE_SIDE_SAVE_THRESHOLD = 30; // Pixels from paddle side to trigger bottom save
 
 // Ball
 export const BALL_SIZE = 4;

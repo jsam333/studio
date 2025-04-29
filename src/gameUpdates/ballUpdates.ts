@@ -6,7 +6,8 @@ import { checkBrickCollision } from '../gameLogic';
 import { createNewBall, findClosestBrick } from './gameLoopUtils';
 import {
     BOARD_WIDTH, BOARD_HEIGHT, PADDLE_Y, BALL_SIZE, MAX_BALL_SPEED_X, SAFETY_NET_HEIGHT,
-    BIG_BALL_SIZE_INCREASE, BRICK_WIDTH, BRICK_HEIGHT, PADDLE_HEIGHT, BASE_BALL_SPEED_FACTOR // Added PADDLE_HEIGHT and BASE_BALL_SPEED_FACTOR
+    BIG_BALL_SIZE_INCREASE, BRICK_WIDTH, BRICK_HEIGHT, PADDLE_HEIGHT, BASE_BALL_SPEED_FACTOR,
+    PADDLE_EDGE_STICK_THRESHOLD, PADDLE_SIDE_SAVE_THRESHOLD // Include the new constant
 } from '../constants';
 
 export const updateBalls = (
@@ -26,9 +27,20 @@ export const updateBalls = (
     // Update Stuck Balls
     refs.stuckBallsRef.current.forEach(stuckBall => {
         const currentBallSize = stuckBall.isBig ? BALL_SIZE + BIG_BALL_SIZE_INCREASE : BALL_SIZE;
-        const offset = stuckBall.stuckOffset ?? refs.paddleWidthRef.current / 2;
-        stuckBall.x = refs.paddleXRef.current + offset;
-        stuckBall.y = PADDLE_Y - currentBallSize;
+        if (stuckBall.stuckSide) {
+            // Side Stuck Update
+            const sideOffset = currentBallSize;
+            stuckBall.x = stuckBall.stuckSide === 'left'
+                ? refs.paddleXRef.current - sideOffset
+                : refs.paddleXRef.current + refs.paddleWidthRef.current + sideOffset;
+            // Calculate y based on the stored offset relative to paddle center
+            stuckBall.y = PADDLE_Y + PADDLE_HEIGHT / 2 + (stuckBall.stuckSideOffset ?? -PADDLE_HEIGHT / 2); // Default to top if offset is missing
+        } else {
+            // Top Stuck Update
+            const offset = stuckBall.stuckOffset ?? refs.paddleWidthRef.current / 2;
+            stuckBall.x = refs.paddleXRef.current + offset;
+            stuckBall.y = PADDLE_Y - currentBallSize;
+        }
     });
 
     // Update Active Balls
@@ -37,7 +49,7 @@ export const updateBalls = (
             let processBallUpdate = true;
 
             // Effect Expiration Check
-            if (ball.stuckOffset === undefined) {
+            if (ball.stuckOffset === undefined && !ball.stuckSide) {
                 if (ball.isBlack && ball.blackEndTime && currentTime >= ball.blackEndTime) { ball.isBlack = false; ball.blackEndTime = undefined; }
                 if (ball.isBlue && ball.blueEndTime && currentTime >= ball.blueEndTime) { ball.isBlue = false; ball.blueEndTime = undefined; }
                 if (ball.isBig && ball.bigEndTime && currentTime >= ball.bigEndTime) { ball.isBig = false; ball.bigEndTime = undefined; }
@@ -74,6 +86,8 @@ export const updateBalls = (
             const effectiveSpeedY = currentSpeedY * deltaTime;
             let nextX = ball.x + effectiveSpeedX;
             let nextY = ball.y + effectiveSpeedY;
+            const paddleLeft = refs.paddleXRef.current;
+            const paddleRight = paddleLeft + refs.paddleWidthRef.current;
 
             // Wall collisions
             if (nextX > BOARD_WIDTH - currentBallSize || nextX < currentBallSize) {
@@ -90,40 +104,96 @@ export const updateBalls = (
                  currentSpeedY = -currentSpeedY;
                  nextY = currentBallSize + overshoot;
              }
-            // Bottom collision
+            // Bottom collision (or sticky side save)
             else if (nextY + currentBallSize > BOARD_HEIGHT) {
-                if (refs.safetyNetCountRef.current > 0) {
+                const isNearLeft = Math.abs(nextX - paddleLeft) < PADDLE_SIDE_SAVE_THRESHOLD;
+                const isNearRight = Math.abs(nextX - paddleRight) < PADDLE_SIDE_SAVE_THRESHOLD;
+
+                if (refs.stickyPaddleChargesRef.current > 0 && !ball.isBig && (isNearLeft || isNearRight)) {
+                    // *** Sticky Side Save ***
+                    refs.stickyPaddleChargesRef.current--;
+
+                    ball.stuckSide = isNearLeft ? 'left' : 'right';
+                    // Set vertical offset to stick to the *top* edge of the paddle side
+                    ball.stuckSideOffset = -PADDLE_HEIGHT / 2; // Offset relative to paddle center for top edge
+
+                    const sideOffset = currentBallSize;
+                    ball.x = ball.stuckSide === 'left'
+                        ? paddleLeft - sideOffset
+                        : paddleRight + sideOffset;
+                    // Calculate Y position based on paddle center and the fixed top offset
+                    ball.y = PADDLE_Y + PADDLE_HEIGHT / 2 + ball.stuckSideOffset; // Sets y position to PADDLE_Y
+
+                    ball.speedX = 0; ball.speedY = 0;
+                    ball.stuckOffset = undefined;
+
+                    // Pause effects
+                    if (ball.isHoming) { ball.isHoming = false; }
+                    if (ball.isBlack && ball.blackEndTime) { ball.blackPausedDuration = ball.blackEndTime - currentTime; ball.blackEndTime = undefined; }
+                    if (ball.isBlue && ball.blueEndTime) { ball.bluePausedDuration = ball.blueEndTime - currentTime; ball.blueEndTime = undefined; }
+                    // Big ball effect is removed by !ball.isBig check above
+                    if (ball.isSplitting && ball.splittingEndTime) { ball.splittingPausedDuration = ball.splittingEndTime - currentTime; ball.splittingEndTime = undefined; }
+
+                    refs.stuckBallsRef.current.push(ball);
+                    ballsToRemoveIds.push(ball.id);
+                    processBallUpdate = false;
+                } else if (refs.safetyNetCountRef.current > 0) {
+                    // Safety Net Save
                     currentSpeedY = -Math.abs(currentSpeedY);
                     ball.y = BOARD_HEIGHT - currentBallSize - refs.safetyNetCountRef.current * SAFETY_NET_HEIGHT;
                     refs.safetyNetCountRef.current--;
                     nextY = ball.y + currentSpeedY * deltaTime;
                 } else {
+                    // Ball Dies
                     ballsToRemoveIds.push(ball.id);
                     processBallUpdate = false;
                 }
             }
-            // Paddle collision check
+            // Paddle collision check (Top)
             else if (currentSpeedY > 0 &&
                      ball.y + currentBallSize <= PADDLE_Y &&
                      nextY + currentBallSize > PADDLE_Y)
              {
-                const paddleLeft = refs.paddleXRef.current;
-                const paddleRight = paddleLeft + refs.paddleWidthRef.current;
                 const timeToPaddleY = (PADDLE_Y - (ball.y + currentBallSize)) / effectiveSpeedY;
                 const collisionX = ball.x + effectiveSpeedX * timeToPaddleY;
 
                 if (collisionX + currentBallSize > paddleLeft && collisionX - currentBallSize < paddleRight) {
                     if (refs.stickyPaddleChargesRef.current > 0 && !ball.isBig) {
-                        // Sticky Catch
+                        // *** Sticky Top/Edge Catch ***
                         refs.stickyPaddleChargesRef.current--;
-                        ball.stuckOffset = collisionX - paddleLeft;
+
+                        const relativeCollisionX = collisionX - paddleLeft;
+                        const edgeThreshold = PADDLE_EDGE_STICK_THRESHOLD * refs.paddleWidthRef.current; // Use a percentage of paddle width
+
+                        if (relativeCollisionX < edgeThreshold) {
+                            // Stick to Left Side (from top collision)
+                            ball.stuckSide = 'left';
+                            // Set vertical offset to stick to the *top* edge of the paddle side
+                            ball.stuckSideOffset = -PADDLE_HEIGHT / 2; // Offset relative to paddle center for top edge
+                            ball.x = paddleLeft - currentBallSize;
+                            ball.y = PADDLE_Y + PADDLE_HEIGHT / 2 + ball.stuckSideOffset; // Sets y to PADDLE_Y
+                        } else if (relativeCollisionX > refs.paddleWidthRef.current - edgeThreshold) {
+                            // Stick to Right Side (from top collision)
+                            ball.stuckSide = 'right';
+                            // Set vertical offset to stick to the *top* edge of the paddle side
+                            ball.stuckSideOffset = -PADDLE_HEIGHT / 2; // Offset relative to paddle center for top edge
+                            ball.x = paddleRight + currentBallSize;
+                            ball.y = PADDLE_Y + PADDLE_HEIGHT / 2 + ball.stuckSideOffset; // Sets y to PADDLE_Y
+                        } else {
+                            // Stick to Top (Original)
+                            ball.stuckSide = null;
+                            ball.stuckSideOffset = undefined;
+                            ball.stuckOffset = relativeCollisionX;
+                            ball.x = paddleLeft + ball.stuckOffset;
+                            ball.y = PADDLE_Y - currentBallSize;
+                        }
+
+                        // Common sticking logic
                         ball.speedX = 0; ball.speedY = 0;
-                        ball.y = PADDLE_Y - currentBallSize;
-                        ball.x = paddleLeft + ball.stuckOffset;
                         if (ball.isHoming) { ball.isHoming = false; }
                         if (ball.isBlack && ball.blackEndTime) { ball.blackPausedDuration = ball.blackEndTime - currentTime; ball.blackEndTime = undefined; }
                         if (ball.isBlue && ball.blueEndTime) { ball.bluePausedDuration = ball.blueEndTime - currentTime; ball.blueEndTime = undefined; }
-                        if (ball.isBig && ball.bigEndTime) { ball.bigPausedDuration = ball.bigEndTime - currentTime; ball.bigEndTime = undefined; }
+                        // Big ball effect is removed by !ball.isBig check above
                         if (ball.isSplitting && ball.splittingEndTime) { ball.splittingPausedDuration = ball.splittingEndTime - currentTime; ball.splittingEndTime = undefined; }
                         refs.stuckBallsRef.current.push(ball);
                         ballsToRemoveIds.push(ball.id);

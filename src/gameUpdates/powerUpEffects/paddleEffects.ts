@@ -51,12 +51,12 @@ export const applyPaddleEffects = (
         case 'LASER_PADDLE':
         case 'LASER_PADDLE_L2':
         case 'LASER_PADDLE_L3': {
-            // Add 2, 3, or 4 shots based on level
+            // Add 2, 4, or 6 shots based on level (updated)
             let shotsToAdd = 2; // Level 1 gives 2 shots
             if (type === 'LASER_PADDLE_L2') {
-                shotsToAdd = 4; // Level 2 gives 3 shots
+                shotsToAdd = 4; // Level 2 gives 4 shots
             } else if (type === 'LASER_PADDLE_L3') {
-                shotsToAdd = 6; // Level 3 gives 4 shots
+                shotsToAdd = 6; // Level 3 gives 6 shots
             }
              refs.laserShotsRef.current += shotsToAdd;
             break;
@@ -64,12 +64,12 @@ export const applyPaddleEffects = (
         case 'STICKY_PADDLE':
         case 'STICKY_PADDLE_L2':
         case 'STICKY_PADDLE_L3': {
-             // Simplified logic: Add 1, 2, or 3 charges based on level
-             let chargesToAdd = 1;
+             // Updated logic: Add 2, 4, or 6 charges based on level
+             let chargesToAdd = 2; // L1 = 2 charges
              if (type === 'STICKY_PADDLE_L2') {
-                 chargesToAdd = 2;
+                 chargesToAdd = 4; // L2 = 4 charges
              } else if (type === 'STICKY_PADDLE_L3') {
-                 chargesToAdd = 3;
+                 chargesToAdd = 6; // L3 = 6 charges
              }
              refs.stickyPaddleChargesRef.current += chargesToAdd;
             break;

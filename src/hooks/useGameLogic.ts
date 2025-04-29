@@ -5,7 +5,7 @@ import {
     FIELD_INITIAL_HEIGHT_OFFSET, FIELD_INITIAL_WIDTH_OFFSET,
     BALL_SIZE, BIG_BALL_SIZE_INCREASE, PADDLE_Y, INITIAL_BALL_SPEED_Y,
     FIELD_SHRINK_RATE_H, FIELD_SHRINK_RATE_W, FIELD_SHRINK_INTERVAL,
-    ALL_TOGGLEABLE_POWER_UPS
+    ALL_TOGGLEABLE_POWER_UPS, PADDLE_HEIGHT, BOARD_HEIGHT // Added BOARD_HEIGHT
 } from '../constants';
 import { Ball, PowerUp, Laser, PowerUpType, GameState, GameMode, GameStateRefs as IGameStateRefs } from '../interfaces';
 import { initialBallState } from '../gameLogic';
@@ -214,23 +214,60 @@ export function useGameLogic() {
         const launchTime = Date.now();
         const currentPaddleX = paddleXRef.current;
         const currentPaddleWidth = paddleWidthRef.current;
+
         const launchedBalls = stuckBallsRef.current.map(ball => {
-             const absoluteX = currentPaddleX + (ball.stuckOffset ?? currentPaddleWidth / 2);
-             const currentBallSize = ball.isBig ? BALL_SIZE + BIG_BALL_SIZE_INCREASE : BALL_SIZE;
-             let resumedBlackEndTime = undefined; if (ball.isBlack && ball.blackPausedDuration) resumedBlackEndTime = launchTime + ball.blackPausedDuration;
-             let resumedBlueEndTime = undefined; if (ball.isBlue && ball.bluePausedDuration) resumedBlueEndTime = launchTime + ball.bluePausedDuration;
-             let resumedBigEndTime = undefined; if (ball.isBig && ball.bigPausedDuration) resumedBigEndTime = launchTime + ball.bigPausedDuration;
-             let resumedSplittingEndTime = undefined; if (ball.isSplitting && ball.splittingPausedDuration) resumedSplittingEndTime = launchTime + ball.splittingPausedDuration;
-             let launchSpeedX = 0;
-             let launchSpeedY = -Math.abs(INITIAL_BALL_SPEED_Y);
-             if (isInitialLaunch) {
-                launchSpeedX = 3;
+            const currentBallSize = ball.isBig ? BALL_SIZE + BIG_BALL_SIZE_INCREASE : BALL_SIZE;
+            let launchX = 0, launchY = 0;
+            // Set launchSpeedX conditionally based on initial launch
+            const launchSpeedX = isInitialLaunch ? 3 : 0;
+            const launchSpeedY = -Math.abs(INITIAL_BALL_SPEED_Y);
+
+            if (ball.stuckSide) {
+                 // Launching from side
+                 const sideOffset = currentBallSize;
+                 launchX = ball.stuckSide === 'left'
+                     ? currentPaddleX - sideOffset
+                     : currentPaddleX + currentPaddleWidth + sideOffset;
+                 // Use the stored vertical offset relative to paddle center
+                 launchY = PADDLE_Y + PADDLE_HEIGHT / 2 + (ball.stuckSideOffset ?? 0);
+                 // Ensure ball is slightly outside paddle bounds visually
+                 launchY = Math.min(BOARD_HEIGHT - currentBallSize -1, Math.max(currentBallSize + 1, launchY))
+
+            } else {
+                 // Launching from top
+                 launchX = currentPaddleX + (ball.stuckOffset ?? currentPaddleWidth / 2);
+                 launchY = PADDLE_Y - currentBallSize - 1; // Position just above the paddle
+            }
+
+            // Common launch logic
+            if (isInitialLaunch && !isGameStartedRef.current) {
                 isGameStartedRef.current = true;
                 startBonusGoldCountdown();
-             } else {
-                launchSpeedX = 0;
-             }
-            return { ...ball, x: absoluteX, y: PADDLE_Y - currentBallSize - 1, speedY: launchSpeedY, speedX: launchSpeedX, stuckOffset: undefined, blackEndTime: resumedBlackEndTime ?? ball.blackEndTime, blueEndTime: resumedBlueEndTime ?? ball.blueEndTime, bigEndTime: resumedBigEndTime ?? ball.bigEndTime, splittingEndTime: resumedSplittingEndTime ?? ball.splittingEndTime, blackPausedDuration: undefined, bluePausedDuration: undefined, bigPausedDuration: undefined, splittingPausedDuration: undefined };
+            }
+
+            let resumedBlackEndTime = undefined; if (ball.isBlack && ball.blackPausedDuration) resumedBlackEndTime = launchTime + ball.blackPausedDuration;
+            let resumedBlueEndTime = undefined; if (ball.isBlue && ball.bluePausedDuration) resumedBlueEndTime = launchTime + ball.bluePausedDuration;
+            let resumedBigEndTime = undefined; if (ball.isBig && ball.bigPausedDuration) resumedBigEndTime = launchTime + ball.bigPausedDuration;
+            let resumedSplittingEndTime = undefined; if (ball.isSplitting && ball.splittingPausedDuration) resumedSplittingEndTime = launchTime + ball.splittingPausedDuration;
+
+            return {
+                ...ball,
+                x: launchX,
+                y: launchY,
+                speedX: launchSpeedX, // Now conditional
+                speedY: launchSpeedY,
+                stuckOffset: undefined,
+                stuckSide: null,
+                stuckSideOffset: undefined,
+                blackEndTime: resumedBlackEndTime ?? ball.blackEndTime,
+                blueEndTime: resumedBlueEndTime ?? ball.blueEndTime,
+                bigEndTime: resumedBigEndTime ?? ball.bigEndTime,
+                splittingEndTime: resumedSplittingEndTime ?? ball.splittingEndTime,
+                blackPausedDuration: undefined,
+                bluePausedDuration: undefined,
+                bigPausedDuration: undefined,
+                splittingPausedDuration: undefined
+            };
         });
         ballsRef.current.push(...launchedBalls);
         stuckBallsRef.current = [];
