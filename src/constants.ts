@@ -125,9 +125,9 @@ export const ALL_TOGGLEABLE_POWER_UPS: PowerUpType[] = [
 
 // *** Individual Power-up Costs ***
 export const POWER_UP_COSTS: { [key in PowerUpType]?: number } = {
-    MULTI_BALL: 17,
-    MULTI_BALL_L2: 21,
-    MULTI_BALL_L3: 27,
+    MULTI_BALL: 15,
+    MULTI_BALL_L2: 18,
+    MULTI_BALL_L3: 21,
     WIDEN_PADDLE: 10,
     WIDEN_PADDLE_L2: 13,
     WIDEN_PADDLE_L3: 17,
@@ -176,9 +176,9 @@ export const POWER_UP_COSTS: { [key in PowerUpType]?: number } = {
     STICKY_PADDLE: 12,
     STICKY_PADDLE_L2: 15,
     STICKY_PADDLE_L3: 18,
-    BALL_BRICK: 15,
-    BALL_BRICK_L2: 19, // Added L2 cost
-    BALL_BRICK_L3: 24, // Added L3 cost
+    BALL_BRICK: 11,
+    BALL_BRICK_L2: 13, // Added L2 cost
+    BALL_BRICK_L3: 15, // Added L3 cost
     ALL_IN_ONE: 100, // Remains single level
     NONE: 0
 };
