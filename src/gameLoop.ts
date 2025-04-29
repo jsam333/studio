@@ -1,16 +1,17 @@
-// src/gameLoop.ts (Modified)
+// src/gameLoop.ts (Corrected)
 import React from 'react';
-import { Ball, PowerUp, Laser, PowerUpType, PowerUpSpawnEvent, GameMode, Brick, GameState } from './interfaces'; // Added GameState import
+import { Ball, PowerUp, Laser, PowerUpType, PowerUpSpawnEvent, GameMode, Brick, GameState } from './interfaces';
 import { GameStateRefs, GameLoopCallbacks } from './interfaces';
 import { updateLasers } from './gameUpdates/laserUpdates';
 import { updateBalls } from './gameUpdates/ballUpdates';
 import { updatePowerUps } from './gameUpdates/powerUpUpdates';
 import { applyPowerUpEffects } from './gameUpdates/powerUpEffects';
 import { checkGameStatus } from './gameUpdates/gameStatus';
-import { trySpawnPowerUp } from './gameUpdates/gameLoopUtils';
+// *** MODIFIED: Import handleSpawnEvents instead of trySpawnPowerUp ***
+import { handleSpawnEvents } from './gameUpdates/gameLoopUtils';
 import {
     BOARD_WIDTH, BOARD_HEIGHT, BASE_BALL_SPEED_FACTOR, POWER_UP_COLORS,
-    TARGET_FPS // Import TARGET_FPS
+    TARGET_FPS
 } from './constants';
 import { drawPaddle, drawBalls, drawBricks, drawGameInfo, drawPowerUps, drawLasers, drawSafetyNet, drawCollectionFieldRect } from './drawFunctions';
 
@@ -33,13 +34,13 @@ const countActiveBricks = (bricks: Brick[][], columns: number, rows: number): nu
 const updatePaddleShrinkTimer = (
     refs: GameStateRefs,
     callbacks: GameLoopCallbacks,
-    elapsedTime: number // Use elapsed time in ms
+    elapsedTime: number
 ) => {
     if (refs.paddleShrinkCountdownRef?.current !== null) {
-        refs.paddleShrinkCountdownRef.current -= elapsedTime; // Decrease by elapsed time
+        refs.paddleShrinkCountdownRef.current -= elapsedTime;
         if (refs.paddleShrinkCountdownRef.current <= 0) {
-            refs.paddleShrinkCountdownRef.current = null; // Reset timer before executing
-            callbacks.executePaddleShrink(); // Call the logic to shrink the paddle
+            refs.paddleShrinkCountdownRef.current = null;
+            callbacks.executePaddleShrink();
         }
     }
 };
@@ -48,7 +49,7 @@ export const gameUpdate = (
     ctx: CanvasRenderingContext2D,
     refs: GameStateRefs,
     callbacks: GameLoopCallbacks,
-    elapsedTime: number // Receive elapsed time in ms
+    elapsedTime: number
 ) => {
     const currentGameState = refs.gameOverStateRef.current;
     if (currentGameState !== 'playing') {
@@ -59,10 +60,8 @@ export const gameUpdate = (
 
     const currentTime = Date.now();
     const gameSpeedFactor = refs.gameSpeedFactorRef.current;
-
-    // Calculate scaledDeltaTime factor for physics based on target FPS
     const targetFrameTime = 1000 / TARGET_FPS;
-    const scaledDeltaTime = elapsedTime / targetFrameTime; // Keep this for physics scaling
+    const scaledDeltaTime = elapsedTime / targetFrameTime;
 
     let spawnRequests: PowerUpSpawnEvent[] = [];
     const previousBallCount = refs.ballsRef.current.length + refs.stuckBallsRef.current.length;
@@ -73,13 +72,11 @@ export const gameUpdate = (
     const isTestMode = gameMode === 'test';
 
     // --- UPDATES --- 
-    // Pass raw elapsedTime (ms) to the timer function
     updatePaddleShrinkTimer(refs, callbacks, elapsedTime);
-    // Pass scaledDeltaTime to physics updates
     updateBalls(refs, callbacks, spawnRequests, currentTime, gameSpeedFactor, scaledDeltaTime, columns, rows);
 
-    // If game hasn't started, only draw static + info and return
     if (!refs.isGameStartedRef.current) {
+        // ... (Drawing logic for pre-game state remains the same)
         const currentScore = refs.scoreRef.current;
         const targetScore = refs.targetScoreRef.current;
         const currentGold = refs.goldRef.current;
@@ -95,32 +92,30 @@ export const gameUpdate = (
 
     // --- Game Started Updates --- 
     let collectedPowerUpTypes: PowerUpType[] = [];
-    // Pass scaledDeltaTime to physics updates
     updateLasers(refs, callbacks, spawnRequests, currentTime, scaledDeltaTime, columns, rows);
 
-    // Process spawn requests
-    let newlySpawnedPowerUps: PowerUp[] = [];
+    // *** MODIFIED: Use handleSpawnEvents ***
     const currentFallingPowerUpCount = refs.powerUpsRef.current.filter(p => p.status === 'falling').length;
     const availablePowerUpsForSpawning = gameMode === 'main'
         ? refs.spawnablePowerUpsRef.current
         : refs.enabledPowerUpsRef.current;
 
-    spawnRequests.forEach(request => {
-        trySpawnPowerUp(
-            request.brickX,
-            request.brickY,
-            request.brickWidth,
-            request.marker === 'SPAWN_SPECIAL',
-            currentFallingPowerUpCount,
-            newlySpawnedPowerUps,
-            availablePowerUpsForSpawning,
-            gameMode,
-            currentTime
-        );
-    });
+    const { newPowerUps, newBalls } = handleSpawnEvents(
+        spawnRequests,
+        currentFallingPowerUpCount,
+        availablePowerUpsForSpawning,
+        gameMode,
+        currentTime,
+        gameSpeedFactor // Pass gameSpeedFactor for ball creation
+    );
 
-    // Pass scaledDeltaTime to physics updates
-    refs.powerUpsRef.current = updatePowerUps( refs, gameSpeedFactor, newlySpawnedPowerUps, collectedPowerUpTypes, scaledDeltaTime );
+    // Add newly spawned balls to the main balls array
+    refs.ballsRef.current.push(...newBalls);
+
+    // Pass newly spawned power-ups to updatePowerUps
+    refs.powerUpsRef.current = updatePowerUps( refs, gameSpeedFactor, newPowerUps, collectedPowerUpTypes, scaledDeltaTime );
+    // *** END MODIFICATION ***
+
     applyPowerUpEffects(refs, callbacks, collectedPowerUpTypes, currentTime, gameSpeedFactor);
 
     // --- Drawing --- 

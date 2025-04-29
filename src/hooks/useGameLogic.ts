@@ -18,8 +18,17 @@ const MAX_UPGRADE_LEVEL = 3;
 const getPowerUpTypeForLevel = (baseType: PowerUpType, level: number): PowerUpType | null => {
     if (level < 1 || level > MAX_UPGRADE_LEVEL) return null;
     if (level === 1) return baseType;
-    return `${baseType}_L${level}` as PowerUpType; 
+    return `${baseType}_L${level}` as PowerUpType;
 };
+
+// *** Define UPGRADABLE_POWER_UPS here, visible to the entire hook scope ***
+const UPGRADABLE_POWER_UPS: PowerUpType[] = [
+    'MULTI_BALL', 'WIDEN_PADDLE', 'LASER_PADDLE', 'STICKY_PADDLE',
+    'REGEN_BRICK', 'SAFETY_NET', 'REINFORCE_BRICK', 'MAKE_SPECIAL', 'BLACK_BALL',
+    'PIERCE_BALL', 'UPGRADE_BRICK', 'BUILDER_BALL', 'BIG_BALL', 'SPLITTING_BALL',
+    'COLLECTION_FIELD', 'HOMING_BALL', 'BOMB_BRICK',
+    'BALL_BRICK' // Added BALL_BRICK here
+];
 
 export function useGameLogic() {
     // --- Core Game State Refs ---
@@ -31,16 +40,16 @@ export function useGameLogic() {
     const spawnablePowerUpsRef = useRef<Set<PowerUpType>>(new Set());
     const gameIsRunningRef = useRef(false);
     const paddleWidthRef = useRef(INITIAL_PADDLE_WIDTH);
-    const widenLevelRef = useRef(0); 
+    const widenLevelRef = useRef(0);
     const paddleShrinkCountdownRef = useRef<number | null>(null);
-    const laserShotsRef = useRef(0); 
+    const laserShotsRef = useRef(0);
     const lasersRef = useRef<Laser[]>([]);
     const safetyNetCountRef = useRef(0);
     const gameSpeedFactorRef = useRef<number>(BASE_BALL_SPEED_FACTOR);
     const collectionFieldHeightRef = useRef<number>(FIELD_INITIAL_HEIGHT_OFFSET);
     const collectionFieldWidthOffsetRef = useRef<number>(FIELD_INITIAL_WIDTH_OFFSET);
     const collectionFieldShrinkTimerRef = useRef<NodeJS.Timeout | null>(null);
-    const stickyPaddleChargesRef = useRef(0); 
+    const stickyPaddleChargesRef = useRef(0);
     const stuckBallsRef = useRef<Ball[]>([]);
     const enabledPowerUpsRef = useRef<Set<PowerUpType>>(new Set(ALL_TOGGLEABLE_POWER_UPS));
     const isGameStartedRef = useRef(false);
@@ -63,7 +72,7 @@ export function useGameLogic() {
     } = usePaddleLogic({
         paddleXRef,
         paddleWidthRef,
-        widenLevelRef, 
+        widenLevelRef,
         paddleShrinkCountdownRef,
     });
 
@@ -97,7 +106,7 @@ export function useGameLogic() {
         goldRef,
         powerUpsRef,
         lasersRef,
-        widenLevelRef, 
+        widenLevelRef,
         laserShotsRef,
         safetyNetCountRef,
         gameSpeedFactorRef,
@@ -191,7 +200,7 @@ export function useGameLogic() {
         gameModeRef.current = null;
 
         resetLevel(null, true);
-        resetPaddle(); 
+        resetPaddle();
 
         setGameOverState('menu');
         setShowSidebar(false);
@@ -240,7 +249,7 @@ export function useGameLogic() {
             scoreRef.current = 0;
             goldRef.current = 0;
             if (mode === 'main') {
-                 spawnablePowerUpsRef.current = new Set(); 
+                 spawnablePowerUpsRef.current = new Set();
              } else {
                  spawnablePowerUpsRef.current = new Set(ALL_TOGGLEABLE_POWER_UPS);
              }
@@ -250,8 +259,8 @@ export function useGameLogic() {
             resetLevel(mode, false);
 
             setShowSidebar(mode === 'test');
-            setEnabledPowerUps(new Set(ALL_TOGGLEABLE_POWER_UPS)); 
-           
+            setEnabledPowerUps(new Set(ALL_TOGGLEABLE_POWER_UPS));
+
             setGameOverState('playing');
         }
     }, [resetLevel]);
@@ -260,17 +269,17 @@ export function useGameLogic() {
         if (gameOverStateRef.current === 'shop') {
             scoreRef.current = 0;
             currentLevelRef.current++;
-            const nextMode: GameMode = 'main'; 
+            const nextMode: GameMode = 'main';
             gameModeRef.current = nextMode;
 
-            resetLevel(nextMode, false); 
+            resetLevel(nextMode, false);
 
             setShowSidebar(false);
             setGameOverState('playing');
         }
     }, [resetLevel]);
 
-    // --- MODIFIED addSpawnablePowerUp --- 
+    // --- Corrected addSpawnablePowerUp --- 
     const addSpawnablePowerUp = useCallback((typeToAdd: PowerUpType) => {
         const currentSpawnables = spawnablePowerUpsRef.current;
         currentSpawnables.add(typeToAdd);
@@ -285,11 +294,10 @@ export function useGameLogic() {
                     const match = typeToAdd.match(/_L(\d+)$/);
                     if (match) levelAdded = parseInt(match[1], 10);
                 }
-                
+
                 // Remove levels lower than the one just added
                 if (levelAdded > 0 && levelAdded <= MAX_UPGRADE_LEVEL) {
                     for (let levelToRemove = 1; levelToRemove < levelAdded; levelToRemove++) {
-                         // Need to use the generic getPowerUpTypeForLevel here
                         const lowerLevelType = getPowerUpTypeForLevel(baseType as PowerUpType, levelToRemove);
                         if (lowerLevelType) {
                             currentSpawnables.delete(lowerLevelType);
@@ -299,10 +307,15 @@ export function useGameLogic() {
             }
         };
 
-        // Apply handler for ALL upgradable base types
+        // Apply handler for ALL upgradable base types (using the array defined at the hook level)
         UPGRADABLE_POWER_UPS.forEach(baseType => {
             handleUpgrade(baseType);
         });
+
+        // Optional: Force UI update if spawnablePowerUpsRef changes need to reflect immediately
+        // This depends on how ShopScreen consumes this state. If it reads directly from the ref
+        // on re-render, this might not be needed. If it relies on state, you might need:
+        // setSpawnablePowerUps(new Set(currentSpawnables)); // Assuming a state setter exists
 
     }, []);
 
@@ -331,18 +344,12 @@ export function useGameLogic() {
     return {
         gameOverState, enabledPowerUps, showSidebar, currentLevel: currentLevelRef.current,
         setGameOverState, updateScoreCallback, handleResetGame, launchStuckBalls, handlePowerUpToggle,
-        schedulePaddleShrink, 
+        schedulePaddleShrink,
         scheduleFieldShrink,
         startGame, startNextLevel, addSpawnablePowerUp,
-        executePaddleShrink, 
+        executePaddleShrink,
         gameStateRefs,
     };
 }
 
-// Need to define UPGRADABLE_POWER_UPS here as it's used in addSpawnablePowerUp
-const UPGRADABLE_POWER_UPS: PowerUpType[] = [
-    'MULTI_BALL', 'WIDEN_PADDLE', 'LASER_PADDLE', 'STICKY_PADDLE',
-    'REGEN_BRICK', 'SAFETY_NET', 'REINFORCE_BRICK', 'MAKE_SPECIAL', 'BLACK_BALL',
-    'PIERCE_BALL', 'UPGRADE_BRICK', 'BUILDER_BALL', 'BIG_BALL', 'SPLITTING_BALL',
-    'COLLECTION_FIELD', 'HOMING_BALL', 'BOMB_BRICK'
-];
+// Removed the redundant definition of UPGRADABLE_POWER_UPS at the bottom

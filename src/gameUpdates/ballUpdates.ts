@@ -3,10 +3,10 @@ import { Ball, PowerUp, Brick, PowerUpSpawnEvent } from '../interfaces';
 import { GameStateRefs, GameLoopCallbacks } from '../interfaces';
 import { checkBrickCollision } from '../gameLogic';
 // Import the updated findClosestBrick signature if necessary (it's used here)
-import { createNewBall, findClosestBrick } from './gameLoopUtils'; 
+import { createNewBall, findClosestBrick } from './gameLoopUtils';
 import {
-    BOARD_WIDTH, BOARD_HEIGHT, PADDLE_Y, BALL_SIZE, MAX_BALL_SPEED_X, SAFETY_NET_HEIGHT, 
-    BIG_BALL_SIZE_INCREASE, BRICK_WIDTH, BRICK_HEIGHT, PADDLE_HEIGHT
+    BOARD_WIDTH, BOARD_HEIGHT, PADDLE_Y, BALL_SIZE, MAX_BALL_SPEED_X, SAFETY_NET_HEIGHT,
+    BIG_BALL_SIZE_INCREASE, BRICK_WIDTH, BRICK_HEIGHT, PADDLE_HEIGHT, BASE_BALL_SPEED_FACTOR // Added PADDLE_HEIGHT and BASE_BALL_SPEED_FACTOR
 } from '../constants';
 
 export const updateBalls = (
@@ -15,9 +15,9 @@ export const updateBalls = (
     spawnRequests: PowerUpSpawnEvent[],
     currentTime: number,
     gameSpeedFactor: number,
-    deltaTime: number, 
-    columns: number, 
-    rows: number     
+    deltaTime: number,
+    columns: number,
+    rows: number
 ): Ball[] => {
     const currentMaxBallSpeedX = MAX_BALL_SPEED_X * gameSpeedFactor;
     let ballsToAdd: Ball[] = [];
@@ -32,12 +32,12 @@ export const updateBalls = (
     });
 
     // Update Active Balls
-    if (refs.isGameStartedRef.current) { 
+    if (refs.isGameStartedRef.current) {
         refs.ballsRef.current.forEach(ball => {
             let processBallUpdate = true;
 
             // Effect Expiration Check
-            if (ball.stuckOffset === undefined) { 
+            if (ball.stuckOffset === undefined) {
                 if (ball.isBlack && ball.blackEndTime && currentTime >= ball.blackEndTime) { ball.isBlack = false; ball.blackEndTime = undefined; }
                 if (ball.isBlue && ball.blueEndTime && currentTime >= ball.blueEndTime) { ball.isBlue = false; ball.blueEndTime = undefined; }
                 if (ball.isBig && ball.bigEndTime && currentTime >= ball.bigEndTime) { ball.isBig = false; ball.bigEndTime = undefined; }
@@ -56,10 +56,10 @@ export const updateBalls = (
                 if (brickCollisionResult.pierceOccurred) {
                     // Speed doesn't change
                 } else if (ball.isSplitting && brickCollisionResult.brickHit) {
-                     const newBall = createNewBall(ball.x, ball.y, -brickCollisionResult.newSpeedX, -brickCollisionResult.newSpeedY, 1.0); 
+                     const newBall = createNewBall(ball.x, ball.y, -brickCollisionResult.newSpeedX, -brickCollisionResult.newSpeedY, 1.0);
                      const speedMagnitude = Math.sqrt(brickCollisionResult.newSpeedX*brickCollisionResult.newSpeedX + brickCollisionResult.newSpeedY*brickCollisionResult.newSpeedY);
                      if (speedMagnitude > 0) {
-                         newBall.x -= (brickCollisionResult.newSpeedX / speedMagnitude) * 2; 
+                         newBall.x -= (brickCollisionResult.newSpeedX / speedMagnitude) * 2;
                          newBall.y -= (brickCollisionResult.newSpeedY / speedMagnitude) * 2;
                      }
                      ballsToAdd.push(newBall);
@@ -80,32 +80,32 @@ export const updateBalls = (
                 const overshoot = nextX > BOARD_WIDTH - currentBallSize ?
                                     (nextX - (BOARD_WIDTH - currentBallSize)) :
                                     (currentBallSize - nextX);
-                currentSpeedX = -currentSpeedX; 
+                currentSpeedX = -currentSpeedX;
                 nextX = (nextX > BOARD_WIDTH - currentBallSize) ?
                         (BOARD_WIDTH - currentBallSize) - overshoot :
                         currentBallSize + overshoot;
             }
              if (nextY < currentBallSize) {
                  const overshoot = currentBallSize - nextY;
-                 currentSpeedY = -currentSpeedY; 
+                 currentSpeedY = -currentSpeedY;
                  nextY = currentBallSize + overshoot;
              }
             // Bottom collision
             else if (nextY + currentBallSize > BOARD_HEIGHT) {
                 if (refs.safetyNetCountRef.current > 0) {
-                    currentSpeedY = -Math.abs(currentSpeedY); 
-                    ball.y = BOARD_HEIGHT - currentBallSize - refs.safetyNetCountRef.current * SAFETY_NET_HEIGHT; 
+                    currentSpeedY = -Math.abs(currentSpeedY);
+                    ball.y = BOARD_HEIGHT - currentBallSize - refs.safetyNetCountRef.current * SAFETY_NET_HEIGHT;
                     refs.safetyNetCountRef.current--;
-                    nextY = ball.y + currentSpeedY * deltaTime; 
+                    nextY = ball.y + currentSpeedY * deltaTime;
                 } else {
                     ballsToRemoveIds.push(ball.id);
                     processBallUpdate = false;
                 }
             }
             // Paddle collision check
-            else if (currentSpeedY > 0 && 
-                     ball.y + currentBallSize <= PADDLE_Y && 
-                     nextY + currentBallSize > PADDLE_Y) 
+            else if (currentSpeedY > 0 &&
+                     ball.y + currentBallSize <= PADDLE_Y &&
+                     nextY + currentBallSize > PADDLE_Y)
              {
                 const paddleLeft = refs.paddleXRef.current;
                 const paddleRight = paddleLeft + refs.paddleWidthRef.current;
@@ -116,9 +116,9 @@ export const updateBalls = (
                     if (refs.stickyPaddleChargesRef.current > 0 && !ball.isBig) {
                         // Sticky Catch
                         refs.stickyPaddleChargesRef.current--;
-                        ball.stuckOffset = collisionX - paddleLeft; 
+                        ball.stuckOffset = collisionX - paddleLeft;
                         ball.speedX = 0; ball.speedY = 0;
-                        ball.y = PADDLE_Y - currentBallSize; 
+                        ball.y = PADDLE_Y - currentBallSize;
                         ball.x = paddleLeft + ball.stuckOffset;
                         if (ball.isHoming) { ball.isHoming = false; }
                         if (ball.isBlack && ball.blackEndTime) { ball.blackPausedDuration = ball.blackEndTime - currentTime; ball.blackEndTime = undefined; }
@@ -127,15 +127,15 @@ export const updateBalls = (
                         if (ball.isSplitting && ball.splittingEndTime) { ball.splittingPausedDuration = ball.splittingEndTime - currentTime; ball.splittingEndTime = undefined; }
                         refs.stuckBallsRef.current.push(ball);
                         ballsToRemoveIds.push(ball.id);
-                        processBallUpdate = false; 
-                        currentSpeedX = 0; 
+                        processBallUpdate = false;
+                        currentSpeedX = 0;
                         currentSpeedY = 0;
                     } else {
                         // Normal Bounce
-                        ball.y = PADDLE_Y - currentBallSize; 
-                        currentSpeedY = -Math.abs(currentSpeedY); 
+                        ball.y = PADDLE_Y - currentBallSize;
+                        currentSpeedY = -Math.abs(currentSpeedY);
                         let deltaX = collisionX - (paddleLeft + refs.paddleWidthRef.current / 2);
-                        let speedAdjustment = deltaX * 0.1; 
+                        let speedAdjustment = deltaX * 0.1;
                         currentSpeedX = Math.max(-currentMaxBallSpeedX, Math.min(currentMaxBallSpeedX, currentSpeedX + speedAdjustment));
 
                         if (ball.isHoming) {
@@ -144,18 +144,33 @@ export const updateBalls = (
                             if (closestBrick) {
                                const targetX = closestBrick.x + BRICK_WIDTH / 2;
                                const targetY = closestBrick.y + BRICK_HEIGHT / 2;
-                               const vectorX = targetX - ball.x; const vectorY = targetY - ball.y; 
+                               const vectorX = targetX - ball.x; const vectorY = targetY - ball.y;
                                const magnitude = Math.sqrt(vectorX * vectorX + vectorY * vectorY);
                                const currentSpeedMagnitude = Math.sqrt(currentSpeedX * currentSpeedX + currentSpeedY * currentSpeedY);
                                if (magnitude > 0) {
                                    currentSpeedX = (vectorX / magnitude) * currentSpeedMagnitude;
                                    currentSpeedY = (vectorY / magnitude) * currentSpeedMagnitude;
-                                   currentSpeedY = -Math.abs(currentSpeedY); 
+                                   currentSpeedY = -Math.abs(currentSpeedY);
                                }
                             }
                            ball.isHoming = false;
                         }
-                        const remainingTimeFactor = Math.max(0, 1 - timeToPaddleY); 
+
+                        // *** START: Big Ball Spawn Logic ***
+                        if (ball.isBig) {
+                            // Spawn a new ball similar to MULTI_BALL power-up
+                            let sx = (Math.random() - 0.5) * 6;
+                            let sy = -3 - Math.random() * 2;
+                            const newBall = createNewBall(
+                                collisionX, // Spawn at the collision point
+                                PADDLE_Y - BALL_SIZE - 5, // Spawn just above the paddle
+                                sx, sy, BASE_BALL_SPEED_FACTOR
+                            );
+                            ballsToAdd.push(newBall);
+                        }
+                        // *** END: Big Ball Spawn Logic ***
+
+                        const remainingTimeFactor = Math.max(0, 1 - timeToPaddleY);
                         nextX = collisionX + currentSpeedX * remainingTimeFactor * deltaTime;
                         nextY = ball.y + currentSpeedY * remainingTimeFactor * deltaTime;
                     }
@@ -169,7 +184,7 @@ export const updateBalls = (
                 ball.speedY = currentSpeedY;
             }
         });
-    } 
+    }
 
     const nextActiveBalls = refs.ballsRef.current.filter(ball => !ballsToRemoveIds.includes(ball.id));
     nextActiveBalls.push(...ballsToAdd);

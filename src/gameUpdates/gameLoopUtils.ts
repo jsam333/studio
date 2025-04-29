@@ -1,8 +1,11 @@
 // src/gameUpdates/gameLoopUtils.ts
-import { Ball, Brick, PowerUp, PowerUpType, GameMode } from '../interfaces';
+import { Ball, Brick, PowerUp, PowerUpType, GameMode, SpawnMarker, PowerUpSpawnEvent } from '../interfaces'; // Added SpawnMarker, PowerUpSpawnEvent
 import {
-    POWER_UP_SIZE, 
-    ALL_TOGGLEABLE_POWER_UPS // Used for test mode
+    POWER_UP_SIZE,
+    ALL_TOGGLEABLE_POWER_UPS, // Used for test mode
+    INITIAL_BALL_SPEED_X, // Added for new ball spawn
+    INITIAL_BALL_SPEED_Y, // Added for new ball spawn
+    BALL_SIZE // Added for new ball spawn
 } from '../constants';
 
 // Constants for spawn logic
@@ -13,17 +16,17 @@ export const POWER_UP_SPAWN_THRESHOLD = 20; // Limit before chance reduction sta
 export const POWER_UP_CHANCE_REDUCTION_PER_EXTRA = 0.02; // Reduction factor per extra power-up
 
 export const createPowerUp = (x: number, y: number, brickWidth: number, type: PowerUpType, timeCreated?: number): PowerUp => ({
-    x: x + brickWidth / 2 - POWER_UP_SIZE / 2, 
+    x: x + brickWidth / 2 - POWER_UP_SIZE / 2,
     y: y + 5, // Spawn slightly below the brick
-    type, 
-    status: 'falling', 
+    type,
+    status: 'falling',
     id: Date.now() + Math.random() * 10, // Unique ID
     timeCreated
 });
 
 // Exported function to calculate the initial spawn chance before reductions
 export const calculateBaseSpawnChance = (
-    availablePowerUps: Set<PowerUpType>, 
+    availablePowerUps: Set<PowerUpType>,
     gameMode: GameMode | null
 ): number => {
     const possibleTypesCount = availablePowerUps.size;
@@ -44,47 +47,64 @@ export const calculateBaseSpawnChance = (
     return baseChance;
 };
 
-// trySpawnPowerUp now uses the exported calculation function
-export const trySpawnPowerUp = (
-    brickX: number,
-    brickY: number,
-    brickWidth: number, 
-    wasSpecial: boolean,
+// --- MODIFIED: handleSpawnEvents function ---
+export const handleSpawnEvents = (
+    spawnRequests: PowerUpSpawnEvent[],
     currentFallingPowerUpCount: number,
-    newlySpawnedPowerUps: PowerUp[],
-    availablePowerUps: Set<PowerUpType>, 
-    gameMode: GameMode | null, 
-    currentTime?: number
-): void => {
-    if (wasSpecial) {
-        newlySpawnedPowerUps.push(createPowerUp(brickX, brickY, brickWidth, 'ALL_IN_ONE', currentTime));
-        return; 
-    }
+    availablePowerUps: Set<PowerUpType>,
+    gameMode: GameMode | null,
+    currentTime: number,
+    currentSpeedFactor: number
+): { newPowerUps: PowerUp[], newBalls: Ball[] } => {
+    const newlySpawnedPowerUps: PowerUp[] = [];
+    const newlySpawnedBalls: Ball[] = [];
 
-    // Get the initial spawn chance using the calculation function
-    let spawnChance = calculateBaseSpawnChance(availablePowerUps, gameMode);
+    spawnRequests.forEach(event => {
+        if (event.marker === 'SPAWN_SPECIAL') {
+            newlySpawnedPowerUps.push(createPowerUp(event.brickX, event.brickY, event.brickWidth, 'ALL_IN_ONE', currentTime));
+        } else if (event.marker === 'SPAWN_BALL') {
+            // Calculate center of the destroyed brick
+            const brickCenterX = event.brickX + event.brickWidth / 2;
+            const brickCenterY = event.brickY + event.brickHeight / 2;
+            // Spawn a basic ball at the center
+            const newBall = createNewBall(
+                brickCenterX,
+                brickCenterY - BALL_SIZE, // Position slightly above center to avoid immediate collision
+                (Math.random() - 0.5) * 4, // Give it a slight random horizontal speed
+                -INITIAL_BALL_SPEED_Y, // Launch upwards
+                currentSpeedFactor
+            );
+            newlySpawnedBalls.push(newBall);
+        } else if (event.marker === 'PENDING') {
+             // Get the initial spawn chance using the calculation function
+            let spawnChance = calculateBaseSpawnChance(availablePowerUps, gameMode);
 
-    if (spawnChance <= 0) {
-        return; // No chance to spawn
-    }
+            if (spawnChance > 0) {
+                // Apply reduction based on falling power-ups
+                const totalEffectivePowerUpCount = currentFallingPowerUpCount + newlySpawnedPowerUps.length;
+                if (totalEffectivePowerUpCount > POWER_UP_SPAWN_THRESHOLD) {
+                    const excessPowerUps = totalEffectivePowerUpCount - POWER_UP_SPAWN_THRESHOLD;
+                    spawnChance -= excessPowerUps * POWER_UP_CHANCE_REDUCTION_PER_EXTRA;
+                    spawnChance = Math.max(0, spawnChance); // Clamp final chance at 0%
+                }
 
-    // Apply reduction based on falling power-ups
-    const totalEffectivePowerUpCount = currentFallingPowerUpCount + newlySpawnedPowerUps.length;
-    if (totalEffectivePowerUpCount > POWER_UP_SPAWN_THRESHOLD) {
-        const excessPowerUps = totalEffectivePowerUpCount - POWER_UP_SPAWN_THRESHOLD;
-        spawnChance -= excessPowerUps * POWER_UP_CHANCE_REDUCTION_PER_EXTRA;
-        spawnChance = Math.max(0, spawnChance); // Clamp final chance at 0%
-    }
+                // Roll for spawn
+                if (Math.random() < spawnChance) {
+                    const possibleTypes = Array.from(availablePowerUps);
+                    if (possibleTypes.length > 0) { // Ensure there are types to choose from
+                        const type = possibleTypes[Math.floor(Math.random() * possibleTypes.length)];
+                        newlySpawnedPowerUps.push(createPowerUp(event.brickX, event.brickY, event.brickWidth, type, currentTime));
+                    }
+                }
+            }
+        }
+    });
 
-    // Roll for spawn
-    if (Math.random() < spawnChance) {
-        const possibleTypes = Array.from(availablePowerUps);
-        const type = possibleTypes[Math.floor(Math.random() * possibleTypes.length)];
-        newlySpawnedPowerUps.push(createPowerUp(brickX, brickY, brickWidth, type, currentTime));
-    }
+    return { newPowerUps: newlySpawnedPowerUps, newBalls: newlySpawnedBalls };
 };
+// --- END MODIFICATION ---
 
-// --- Other Utility Functions (Unchanged) ---
+// --- Other Utility Functions ---
 
 export const createNewBall = (x: number, y: number, speedX: number, speedY: number, currentSpeedFactor: number): Ball => ({
     x, y,

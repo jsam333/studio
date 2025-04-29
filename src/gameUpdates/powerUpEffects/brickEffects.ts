@@ -21,22 +21,24 @@ export const applyBrickEffects = (
     gameSpeedFactor: number
 ) => {
     let numToAffect = 1;
+    // *** MODIFIED: Determine numToAffect based on _L2 or _L3 suffix for all relevant types ***
     if (type.endsWith('_L2')) {
         numToAffect = 2;
     } else if (type.endsWith('_L3')) {
         numToAffect = 3;
     }
 
-    switch (type) {
-        case 'REINFORCE_BRICK':
-        case 'REINFORCE_BRICK_L2':
-        case 'REINFORCE_BRICK_L3': {
+    // Extract the base type for the switch statement
+    const baseType = type.replace('_L2', '').replace('_L3', '');
+
+    switch (baseType) { // Use baseType in switch
+        case 'REINFORCE_BRICK': {
             const candidates: { c: number; r: number }[] = [];
             for (let c = 0; c < BRICK_COLUMNS; c++) {
                 for (let r = 0; r < BRICK_ROWS; r++) {
                     const brick = refs.bricksRef.current[c]?.[r];
-                    // Eligible: Active, not special, not bomb, level < 2
-                    if (brick && brick.status === 1 && !brick.isSpecial && !brick.isBomb && (!brick.upgradeLevel || brick.upgradeLevel < 2)) {
+                    // Eligible: Active, not special, not bomb, not holdsBall, level < 2
+                    if (brick && brick.status === 1 && !brick.isSpecial && !brick.isBomb && !brick.holdsBall && (!brick.upgradeLevel || brick.upgradeLevel < 2)) {
                         candidates.push({ c, r });
                     }
                 }
@@ -51,20 +53,19 @@ export const applyBrickEffects = (
                     brick.upgradeLevel = 2; // Reinforce sets level to 2
                     brick.isSpecial = false;
                     brick.isBomb = false;
+                    brick.holdsBall = false; // Ensure mutually exclusive
                 }
             });
             break;
         }
 
-        case 'BOMB_BRICK':
-        case 'BOMB_BRICK_L2':
-        case 'BOMB_BRICK_L3': {
+        case 'BOMB_BRICK': {
              const candidates: { c: number; r: number }[] = [];
             for (let c = 0; c < BRICK_COLUMNS; c++) {
                 for (let r = 0; r < BRICK_ROWS; r++) {
                     const brick = refs.bricksRef.current[c]?.[r];
-                    // Eligible: Active, not special, not bomb
-                    if (brick && brick.status === 1 && !brick.isBomb && !brick.isSpecial) {
+                    // Eligible: Active, not special, not bomb, not holdsBall
+                    if (brick && brick.status === 1 && !brick.isBomb && !brick.isSpecial && !brick.holdsBall) {
                         candidates.push({ c, r });
                     }
                 }
@@ -78,21 +79,20 @@ export const applyBrickEffects = (
                 if (brick) {
                     brick.isBomb = true;
                     brick.isSpecial = false; // Ensure mutually exclusive
+                    brick.holdsBall = false; // Ensure mutually exclusive
                     brick.upgradeLevel = 0; // Bombs don't have levels
                 }
             });
             break;
         }
 
-        case 'MAKE_SPECIAL':
-        case 'MAKE_SPECIAL_L2':
-        case 'MAKE_SPECIAL_L3': {
+        case 'MAKE_SPECIAL': {
              const candidates: { c: number; r: number }[] = [];
             for (let c = 0; c < BRICK_COLUMNS; c++) {
                 for (let r = 0; r < BRICK_ROWS; r++) {
                     const brick = refs.bricksRef.current[c]?.[r];
-                     // Eligible: Active, not special, not bomb
-                    if (brick && brick.status === 1 && !brick.isSpecial && !brick.isBomb) {
+                     // Eligible: Active, not special, not bomb, not holdsBall
+                    if (brick && brick.status === 1 && !brick.isSpecial && !brick.isBomb && !brick.holdsBall) {
                         candidates.push({ c, r });
                     }
                 }
@@ -106,22 +106,20 @@ export const applyBrickEffects = (
                  if (brick) {
                     brick.isSpecial = true;
                     brick.isBomb = false; // Ensure mutually exclusive
+                    brick.holdsBall = false; // Ensure mutually exclusive
                     brick.upgradeLevel = 0; // Special bricks don't have levels
                  }
             });
             break;
         }
 
-        case 'UPGRADE_BRICK':
-        case 'UPGRADE_BRICK_L2':
-        case 'UPGRADE_BRICK_L3': {
+        case 'UPGRADE_BRICK': {
             const candidates: { c: number; r: number }[] = [];
             for (let c = 0; c < BRICK_COLUMNS; c++) {
                 for (let r = 0; r < BRICK_ROWS; r++) {
                     const brick = refs.bricksRef.current[c]?.[r];
-                    // *** CHANGE: Target basic bricks (level 0 or undefined) ***
-                    // Eligible: Active, not special, not bomb, level is 0 or undefined
-                    if (brick && brick.status === 1 && !brick.isSpecial && !brick.isBomb && (!brick.upgradeLevel || brick.upgradeLevel === 0) ) {
+                    // Eligible: Active, not special, not bomb, level is 0 or undefined, not holdsBall
+                    if (brick && brick.status === 1 && !brick.isSpecial && !brick.isBomb && !brick.holdsBall && (!brick.upgradeLevel || brick.upgradeLevel === 0) ) {
                         candidates.push({ c, r });
                     }
                 }
@@ -133,18 +131,16 @@ export const applyBrickEffects = (
             bricksToModify.forEach(coords => {
                 const brick = refs.bricksRef.current[coords.c]?.[coords.r];
                 if (brick) {
-                    // *** CHANGE: Upgrade basic bricks to level 3 ***
                     brick.upgradeLevel = 3;
                     brick.isSpecial = false;
                     brick.isBomb = false;
+                    brick.holdsBall = false; // Ensure mutually exclusive
                 }
             });
             break;
         }
 
-        case 'REGEN_BRICK':
-        case 'REGEN_BRICK_L2':
-        case 'REGEN_BRICK_L3': {
+        case 'REGEN_BRICK': {
             const candidates: { c: number; r: number }[] = [];
             for (let c = 0; c < BRICK_COLUMNS; c++) {
                 for (let r = 0; r < BRICK_ROWS; r++) {
@@ -166,6 +162,7 @@ export const applyBrickEffects = (
                     // Reset other properties
                     brick.isSpecial = false;
                     brick.isBomb = false;
+                    brick.holdsBall = false;
                     brick.upgradeLevel = 0;
                     // TODO: Consider if regen should restore original strength/properties?
                     // Currently resets to a basic brick.
@@ -173,6 +170,36 @@ export const applyBrickEffects = (
             });
             break;
         }
+
+        // *** MODIFIED CASE FOR BALL_BRICK (handles L1, L2, L3) ***
+        case 'BALL_BRICK': {
+            const candidates: { c: number; r: number }[] = [];
+            for (let c = 0; c < BRICK_COLUMNS; c++) {
+                for (let r = 0; r < BRICK_ROWS; r++) {
+                    const brick = refs.bricksRef.current[c]?.[r];
+                    // Eligible: Active, not special, not bomb, not already holding a ball, upgrade level 0 or undefined
+                    if (brick && brick.status === 1 && !brick.isSpecial && !brick.isBomb && !brick.holdsBall && (!brick.upgradeLevel || brick.upgradeLevel === 0)) {
+                        candidates.push({ c, r });
+                    }
+                }
+            }
+
+            shuffleArray(candidates);
+            // Use numToAffect determined earlier based on the original type (L1, L2, L3)
+            const bricksToModify = candidates.slice(0, numToAffect);
+
+            bricksToModify.forEach(coords => {
+                const brick = refs.bricksRef.current[coords.c]?.[coords.r];
+                if (brick) {
+                    brick.holdsBall = true;
+                    brick.isSpecial = false; // Ensure mutually exclusive
+                    brick.isBomb = false; // Ensure mutually exclusive
+                    brick.upgradeLevel = 0; // Reset level if it was somehow defined but 0
+                }
+            });
+            break;
+        }
+        // *** END MODIFICATION ***
 
         default:
             // Handle cases not related to bricks or do nothing

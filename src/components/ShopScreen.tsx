@@ -23,7 +23,7 @@ const getPowerUpTypeForLevel = (baseType: PowerUpType, level: number): PowerUpTy
     if (level === 1) return baseType;
     // Construct the level type string (e.g., "MULTI_BALL_L2")
     // Type assertion needed as TS doesn't know all combinations exist in PowerUpType
-    return `${baseType}_L${level}` as PowerUpType; 
+    return `${baseType}_L${level}` as PowerUpType;
 };
 
 // Identify which base types are upgradable
@@ -31,7 +31,8 @@ const UPGRADABLE_POWER_UPS: PowerUpType[] = [
     'MULTI_BALL', 'WIDEN_PADDLE', 'LASER_PADDLE', 'STICKY_PADDLE',
     'REGEN_BRICK', 'SAFETY_NET', 'REINFORCE_BRICK', 'MAKE_SPECIAL', 'BLACK_BALL',
     'PIERCE_BALL', 'UPGRADE_BRICK', 'BUILDER_BALL', 'BIG_BALL', 'SPLITTING_BALL',
-    'COLLECTION_FIELD', 'HOMING_BALL', 'BOMB_BRICK'
+    'COLLECTION_FIELD', 'HOMING_BALL', 'BOMB_BRICK',
+    'BALL_BRICK' // Added BALL_BRICK as upgradable
 ];
 
 interface ShopScreenProps {
@@ -65,7 +66,7 @@ export const ShopScreen: React.FC<ShopScreenProps> = ({
     setShopItems(currentShopSelection);
 
     // Reset session purchase tracking
-    setPurchasedInSession(new Map()); 
+    setPurchasedInSession(new Map());
     setGoldDisplay(gameStateRefs.goldRef.current);
     const chance = calculateBaseSpawnChance(ownedPowerUps, 'main');
     setCurrentSpawnChance(chance);
@@ -84,19 +85,19 @@ export const ShopScreen: React.FC<ShopScreenProps> = ({
         isUpgradePurchase = true;
         baseTypeOfUpgrade = itemToPurchase;
         const currentOwnedLevel = getCurrentLevel(ownedPowerUps, baseTypeOfUpgrade);
-        
+
         if (currentOwnedLevel >= MAX_LEVEL) {
             console.warn("Attempted to purchase max level item:", baseTypeOfUpgrade);
-            return; 
+            return;
         }
         const nextLevel = currentOwnedLevel + 1;
         actualItemToAdd = getPowerUpTypeForLevel(baseTypeOfUpgrade, nextLevel);
         if (!actualItemToAdd) {
              console.error("Could not determine next level type for:", baseTypeOfUpgrade);
-             return; 
+             return;
         }
-    } 
-    
+    }
+
     // This should not happen if logic is correct, but safety check
     if (!actualItemToAdd) {
          console.error("actualItemToAdd is null, cannot proceed with purchase.");
@@ -106,7 +107,7 @@ export const ShopScreen: React.FC<ShopScreenProps> = ({
     cost = POWER_UP_COSTS[actualItemToAdd as keyof typeof POWER_UP_COSTS] ?? 999;
 
     // Prevent purchasing if already owned OR if this base type was bought this session
-    if (ownedPowerUps.has(actualItemToAdd) || 
+    if (ownedPowerUps.has(actualItemToAdd) ||
         (isUpgradePurchase && baseTypeOfUpgrade && purchasedInSession.get(baseTypeOfUpgrade))
     ) {
          console.warn("Attempted to purchase already owned or session-purchased item:", actualItemToAdd);
@@ -150,13 +151,13 @@ export const ShopScreen: React.FC<ShopScreenProps> = ({
         {shopItems.length > 0 ? (
           shopItems.map(item => {
             const ownedPowerUps = gameStateRefs.spawnablePowerUpsRef.current;
-            let itemKey = item; 
+            let itemKey = item;
             let displayName = item.replace(/_/g, ' ');
             let displayCost = POWER_UP_COSTS[item as keyof typeof POWER_UP_COSTS] ?? 999;
             let isDisabled = false;
             let buttonText = `Cost: ${displayCost}`;
             let buttonStyle = 'bg-blue-600 hover:bg-blue-700';
-            let itemToPurchaseOnClick = item; 
+            let itemToPurchaseOnClick = item;
             const isBaseUpgradable = UPGRADABLE_POWER_UPS.includes(item);
 
             if (isBaseUpgradable) {
@@ -179,7 +180,7 @@ export const ShopScreen: React.FC<ShopScreenProps> = ({
                          displayName = `${baseName} Lvl ${nextLevel}`;
                          displayCost = POWER_UP_COSTS[nextLevelType as keyof typeof POWER_UP_COSTS] ?? 999;
                          buttonText = `Cost: ${displayCost}`;
-                         itemToPurchaseOnClick = item; 
+                         itemToPurchaseOnClick = item; // Keep the base type for the purchase handler
                          isDisabled = goldDisplay < displayCost || hasPurchasedThisSession;
                          if (isDisabled) {
                               buttonStyle = hasPurchasedThisSession ? 'bg-gray-500 opacity-70' : 'bg-red-800 opacity-50';
@@ -195,7 +196,7 @@ export const ShopScreen: React.FC<ShopScreenProps> = ({
                 // Check if it *was* upgradable but isn't the base type (e.g. MULTI_BALL_L2 showing up randomly)
                 const wasUpgraded = UPGRADABLE_POWER_UPS.some(up => item.startsWith(up) && item !== up);
                 isDisabled = goldDisplay < displayCost || isGloballyOwned || wasUpgraded;
-                
+
                 if(isGloballyOwned || wasUpgraded) { // Treat already upgraded items appearing as 'Owned'
                      buttonText = '(Owned)';
                      buttonStyle = 'bg-gray-500 opacity-70';
@@ -207,12 +208,12 @@ export const ShopScreen: React.FC<ShopScreenProps> = ({
             return (
               <Button
                 key={itemKey}
-                onClick={() => handlePurchase(itemToPurchaseOnClick)} 
+                onClick={() => handlePurchase(itemToPurchaseOnClick)} // Use the correct item type for purchase
                 disabled={isDisabled}
                 className={`py-3 px-2 text-sm flex flex-col h-24 justify-center items-center ${buttonStyle}`}
               >
-                <span className="mb-1">{displayName}</span> 
-                <span className="text-xs mt-1">{buttonText}</span> 
+                <span className="mb-1">{displayName}</span>
+                <span className="text-xs mt-1">{buttonText}</span>
               </Button>
             );
           })
@@ -222,17 +223,17 @@ export const ShopScreen: React.FC<ShopScreenProps> = ({
       </div>
 
       {/* Navigation Buttons */}
-      <Button 
-        onClick={startNextLevel} 
+      <Button
+        onClick={startNextLevel}
         className="mb-4 px-6 py-3 text-lg bg-purple-600 hover:bg-purple-700"
       >
         Start Level {currentLevel + 1}
       </Button>
-      <Button 
-        onClick={handleResetGame} 
+      <Button
+        onClick={handleResetGame}
         className="px-6 py-3 text-lg bg-yellow-600 hover:bg-yellow-700"
       >
-        Back to Menu 
+        Back to Menu
       </Button>
     </div>
   );
