@@ -265,7 +265,7 @@ export const drawPowerUpPreviews = (ctx: CanvasRenderingContext2D, spawnablePowe
     if (totalSpawnable === 0) return;
 
     const spacing = (BOARD_WIDTH - (totalSpawnable * POWER_UP_SIZE)) / (totalSpawnable + 1);
-    const startY = BOARD_HEIGHT / 2; // Spawn halfway down the screen
+    const startY = (BOARD_HEIGHT * 3) / 5; // Spawn 3/5 down the screen
     let currentX = spacing;
     const previewAlpha = '80'; // Hex alpha for ~50% transparency
 
