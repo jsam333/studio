@@ -128,7 +128,7 @@ export function useLevelLogic({
                  else if (level === 17) { cols = 45; rows = 18; } 
                  else if (level === 18) { cols = 50; rows = 19; } 
                  else if (level === 19) { cols = 55; rows = 20; } 
-                 else if (level === 20) { cols = 60; rows = 23; } 
+                 else if (level === 20) { cols = 60; rows = 21; } 
                  else { rows = 7; } // Default rows if level > 20 (adjust as needed)
                  
                  if (rows > 0) {
@@ -167,16 +167,16 @@ export function useLevelLogic({
         if (currentMode === 'main' && level === 8) { scoreGoal += 40; } 
         if (currentMode === 'main' && level === 9) { scoreGoal += 80; } 
         if (currentMode === 'main' && level === 10) { scoreGoal += 160; } 
-        if (currentMode === 'main' && level === 11) { scoreGoal += 350; } 
-        if (currentMode === 'main' && level === 12) { scoreGoal += 600; } 
-        if (currentMode === 'main' && level === 13) { scoreGoal += 800; } 
-        if (currentMode === 'main' && level === 14) { scoreGoal += 1000; } 
-        if (currentMode === 'main' && level === 15) { scoreGoal += 1300; } 
-        if (currentMode === 'main' && level === 16) { scoreGoal += 1600; } 
-        if (currentMode === 'main' && level === 17) { scoreGoal += 2000; } 
-        if (currentMode === 'main' && level === 18) { scoreGoal += 3000; } 
-        if (currentMode === 'main' && level === 19) { scoreGoal += 4000; } 
-        if (currentMode === 'main' && level === 20) { scoreGoal += 5000; } 
+        if (currentMode === 'main' && level === 11) { scoreGoal += 300; } 
+        if (currentMode === 'main' && level === 12) { scoreGoal += 500; } 
+        if (currentMode === 'main' && level === 13) { scoreGoal += 700; } 
+        if (currentMode === 'main' && level === 14) { scoreGoal += 900; } 
+        if (currentMode === 'main' && level === 15) { scoreGoal += 1200; } 
+        if (currentMode === 'main' && level === 16) { scoreGoal += 1500; } 
+        if (currentMode === 'main' && level === 17) { scoreGoal += 1900; } 
+        if (currentMode === 'main' && level === 18) { scoreGoal += 2300; } 
+        if (currentMode === 'main' && level === 19) { scoreGoal += 2700; } 
+        if (currentMode === 'main' && level === 20) { scoreGoal += 3200; } 
         targetScoreRef.current = scoreGoal;
 
         // --- Reset other game state elements --- (Using constants)
