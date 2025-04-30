@@ -92,12 +92,12 @@ export const BONUS_GOLD_DECREMENT_INTERVAL = 1000; // Added this export
 // Collection Field
 export const FIELD_INITIAL_HEIGHT_OFFSET = 0;
 export const FIELD_HEIGHT_INCREMENT = 6;
-export const FIELD_MAX_HEIGHT_OFFSET = 75;
+export const FIELD_MAX_HEIGHT_OFFSET = 45;
 export const FIELD_INITIAL_WIDTH_OFFSET = 0;
 export const FIELD_WIDTH_INCREMENT = 8;
-export const FIELD_MAX_WIDTH_OFFSET = 80;
-export const FIELD_SHRINK_RATE_H = 0.08;
-export const FIELD_SHRINK_RATE_W = 0.07;
+export const FIELD_MAX_WIDTH_OFFSET = 60;
+export const FIELD_SHRINK_RATE_H = 0.09;
+export const FIELD_SHRINK_RATE_W = 0.08;
 export const FIELD_SHRINK_INTERVAL = 16;
 
 // *** All potentially spawnable power-ups (for UI and logic) ***
@@ -188,7 +188,7 @@ export const POWER_UP_COSTS: { [key in PowerUpType]?: number } = {
 export const PADDLE_WIDEN_INCREMENT = INITIAL_PADDLE_WIDTH * 0.1;
 export const MAX_PADDLE_WIDEN_DURATION = 5000;
 export const MIN_PADDLE_WIDEN_DURATION = 100;
-export const MAX_PADDLE_WIDTH = INITIAL_PADDLE_WIDTH * 5;
+export const MAX_PADDLE_WIDTH = INITIAL_PADDLE_WIDTH * 4; // Changed from 5 to 4
 export const LASER_SPEED = 5;
 export const LASER_WIDTH = 5;
 export const LASER_HEIGHT = 15;
