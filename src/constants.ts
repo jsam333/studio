@@ -87,6 +87,9 @@ export const BONUS_GOLD_START_DELAY_EXTENDED = 15000;
 export const BONUS_GOLD_START_DELAY_HIGH = 20000;
 export const BONUS_GOLD_START_DELAY_MAX = 30000;
 export const BONUS_GOLD_DECREMENT_INTERVAL = 1000; // Added this export
+// *** ADDED: Constants for the new timer ***
+export const BONUS_GOLD_TARGET = 5; // Target bonus gold to trigger the timer
+export const BONUS_GOLD_TIMER_DURATION = 20000; // 20 seconds in milliseconds
 
 
 // Collection Field

@@ -1,3 +1,4 @@
+// src/interfaces.ts
 import React from 'react'; // Required for MutableRefObject
 
 export interface Brick {
@@ -132,15 +133,15 @@ export interface GameStateRefsBase {
     brickColumnsRef: React.MutableRefObject<number>;
     brickRowsRef: React.MutableRefObject<number>;
     gameModeRef: React.MutableRefObject<GameMode | null>;
-    // Add livesRef
     livesRef: React.MutableRefObject<number>;
+    bonusGoldTimerCountdownRef: React.MutableRefObject<number | null>;
+    // *** ADDED: Flag for initial bonus gold decrement completion ***
+    initialBonusGoldDecrementCompleteRef: React.MutableRefObject<boolean>;
 }
 
 export interface GameStateRefs extends GameStateRefsBase {
     paddleShrinkCountdownRef?: React.MutableRefObject<number | null>;
     collectionFieldShrinkTimerRef?: React.MutableRefObject<NodeJS.Timeout | null>;
-    bonusGoldTimerRef?: React.MutableRefObject<NodeJS.Timeout | null>;
-    bonusGoldDecrementIntervalRef?: React.MutableRefObject<NodeJS.Timeout | null>;
     animationFrameIdRef?: React.MutableRefObject<number | null>;
     lastTimeRef?: React.MutableRefObject<number>;
     currentLevelRef: React.MutableRefObject<number>;
@@ -153,7 +154,6 @@ export interface GameLoopCallbacks {
     executePaddleShrink: () => void;
     scheduleFieldShrink: () => void;
     drawEndMessage: (context: CanvasRenderingContext2D, state: GameState, finalScore: number) => void;
-    // Add resetLevelCallback
     resetLevelCallback: (mode: GameMode | null, resetScoreAndGold: boolean) => void;
+    resetBonusGoldCallback: () => void;
 }
-

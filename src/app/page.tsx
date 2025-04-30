@@ -1,3 +1,4 @@
+// src/app/page.tsx
 'use client'
 
 import React, { useRef, useEffect, useCallback } from 'react';
@@ -25,31 +26,29 @@ export default function Home() {
     const lastTimeRef = useRef<number>(0);
     const isMobile = useIsMobile();
 
-    // --- MODIFIED: Destructure gameLoopCallbacksPartial and necessary state/refs ---
+    // --- MODIFIED: Destructure gameLoopCallbacks (not partial) ---
     const {
         gameOverState,
         enabledPowerUps,
         showSidebar,
         currentLevel,
-        lives, // Get lives for potential display or logic if needed here
-        score, // Get score for potential display or logic if needed here
-        gold, // Get gold for potential display or logic if needed here
-        setGameOverState, // Keep this separate as it's UI state setter
+        lives,
+        score,
+        gold,
+        setGameOverState,
         handleResetGame,
         launchStuckBalls,
         handlePowerUpToggle,
         startGame,
         startNextLevel,
         addSpawnablePowerUp,
-        gameStateRefs, // Contains all refs
-        gameLoopCallbacksPartial, // Contains most callbacks
+        gameStateRefs,
+        gameLoopCallbacks, // <<< Destructure the correct object name
     } = useGameLogic();
     // --- END MODIFICATION ---
 
     // Draw end message callback (remains the same)
     const drawEndMessageCallback = useCallback((context: CanvasRenderingContext2D, state: GameState, finalScore: number) => {
-        // Allow 'shop' state through, as GameView handles rendering for it
-        // Only draw end message for 'won' or 'lost'
         if (state !== 'won' && state !== 'lost') return;
 
         const message = state === 'won' ? `You Win! Score: ${finalScore}` : 'Game Over!';
@@ -75,9 +74,8 @@ export default function Home() {
         const gameLoop = (timestamp: number) => {
             const currentGameState = gameStateRefs.gameOverStateRef.current;
 
-            // Check if we should stop the loop (terminal states)
             if (currentGameState === 'menu' || currentGameState === 'shop') {
-                 lastTimeRef.current = 0; // Reset time for next play session
+                 lastTimeRef.current = 0;
                  if (animationFrameIdRef.current) {
                      cancelAnimationFrame(animationFrameIdRef.current);
                      animationFrameIdRef.current = null;
@@ -85,14 +83,11 @@ export default function Home() {
                  return;
              }
 
-            // Draw End Message only for 'won' or 'lost' states and stop the loop
             if (currentGameState === 'won' || currentGameState === 'lost') {
                  lastTimeRef.current = 0;
                  const canvas = canvasRef.current;
                  const ctx = canvas?.getContext('2d');
                  if (ctx && gameLoopCallbacksRef.current) {
-                     // Ensure drawEndMessage is called only once per state transition if needed,
-                     // but calling it here ensures it's drawn if the state persists.
                      gameLoopCallbacksRef.current.drawEndMessage(ctx, currentGameState, gameStateRefs.scoreRef.current);
                  }
                  if (animationFrameIdRef.current) {
@@ -102,24 +97,25 @@ export default function Home() {
                  return;
              }
 
-            // Proceed with game update for 'playing' and 'level_reset' states
             if (!lastTimeRef.current) lastTimeRef.current = timestamp;
             const elapsed = timestamp - lastTimeRef.current;
             lastTimeRef.current = timestamp;
 
-            const clampedElapsed = Math.min(elapsed, 100); // Limit elapsed time
+            const clampedElapsed = Math.min(elapsed, 100);
 
             const canvas = canvasRef.current;
             const ctx = canvas?.getContext('2d');
+            // *** Ensure gameLoopCallbacksRef.current is populated before calling gameUpdate ***
             if (ctx && gameLoopCallbacksRef.current) {
                 gameUpdate(ctx, gameStateRefs, gameLoopCallbacksRef.current, clampedElapsed);
             }
 
-            // Request next frame only if the state is still playing or resetting
             if (gameStateRefs.gameOverStateRef.current === 'playing' || gameStateRefs.gameOverStateRef.current === 'level_reset') {
-               animationFrameIdRef.current = requestAnimationFrame(gameLoopRef.current!); 
+               // Check if gameLoopRef.current is defined before requesting frame
+               if(gameLoopRef.current) {
+                   animationFrameIdRef.current = requestAnimationFrame(gameLoopRef.current);
+               }
             } else {
-                // If state changed to something else (e.g., won/lost/shop) during the update, ensure loop stops
                 if (animationFrameIdRef.current) {
                     cancelAnimationFrame(animationFrameIdRef.current);
                     animationFrameIdRef.current = null;
@@ -127,30 +123,27 @@ export default function Home() {
             }
         };
         gameLoopRef.current = gameLoop;
-        // Re-run effect if gameStateRefs changes (shouldn't often) or draw callback changes
-    }, [gameStateRefs, drawEndMessageCallback]);
+    }, [gameStateRefs]); // Removed drawEndMessageCallback from dependencies as it's stable via useCallback
 
     // Game loop callbacks ref
     const gameLoopCallbacksRef = useRef<GameLoopCallbacks>();
 
-    // --- MODIFIED: Create the full callbacks object --- 
+    // --- MODIFIED: Create the full callbacks object using the correct variable ---
     useEffect(() => {
-        // Combine the partial object from the hook with the locally defined draw function
+        // Combine the object from the hook with the locally defined draw function
         gameLoopCallbacksRef.current = {
-            ...gameLoopCallbacksPartial, // Spread the callbacks from the hook
-            drawEndMessage: drawEndMessageCallback, // Add the draw function
+            ...gameLoopCallbacks, // <<< Use the correct variable name here
+            drawEndMessage: drawEndMessageCallback,
         };
-        // Update if the partial object or the draw function changes
-    }, [gameLoopCallbacksPartial, drawEndMessageCallback]);
+    // Update if the object from the hook or the draw function changes
+    }, [gameLoopCallbacks, drawEndMessageCallback]); // <<< Update dependency array
     // --- END MODIFICATION ---
 
     // Effect to setup canvas, handle game state transitions, and add cheat code
     useEffect(() => {
-        // Cheat code listener
         const handleKeyDown = (event: KeyboardEvent) => {
             if (event.key === 'c' && gameStateRefs.gameOverStateRef.current === 'playing' && gameLoopCallbacksRef.current?.updateScoreCallback) {
                 console.log("Cheat code activated: +1,000,000 points");
-                // Access updateScoreCallback via the ref now
                 gameLoopCallbacksRef.current.updateScoreCallback(1000000);
             }
         };
@@ -182,6 +175,7 @@ export default function Home() {
 
         // Ensure gameLoopCallbacksRef.current is defined before passing
         if (!gameLoopCallbacksRef.current) {
+             console.warn("gameLoopCallbacksRef not ready for setupGameCanvas");
              return () => {
                 window.removeEventListener('keydown', handleKeyDown);
             };
@@ -215,7 +209,6 @@ export default function Home() {
             containerElement.addEventListener('contextmenu', handleContextMenu);
         }
 
-        // Start the loop if state is playing and it's not already running
         if (gameOverState === 'playing' && !animationFrameIdRef.current) {
            lastTimeRef.current = performance.now();
            if (gameLoopRef.current) {
@@ -242,9 +235,9 @@ export default function Home() {
             }
              window.removeEventListener('keydown', handleKeyDown);
         };
-        // --- MODIFIED: Update dependencies --- 
-        // Add gameLoopCallbacksPartial to dependencies, remove individual callbacks
-    }, [gameOverState, handleResetGame, launchStuckBalls, gameStateRefs, showSidebar, isMobile, drawEndMessageCallback, gameLoopCallbacksPartial]); 
+        // --- MODIFIED: Update dependencies ---
+        // Use gameLoopCallbacks instead of gameLoopCallbacksPartial
+    }, [gameOverState, handleResetGame, launchStuckBalls, gameStateRefs, showSidebar, isMobile, drawEndMessageCallback, gameLoopCallbacks]);
     // --- END MODIFICATION ---
 
     // --- Render Logic ---
@@ -273,7 +266,7 @@ export default function Home() {
             showSidebar={showSidebar}
             enabledPowerUps={enabledPowerUps}
             onTogglePowerUp={handlePowerUpToggle}
-            handleResetGame={handleResetGame} 
+            handleResetGame={handleResetGame}
         />
     );
 }

@@ -12,10 +12,11 @@ import {
     BIG_BALL_SIZE_INCREASE,
     BOMB_BRICK_COLOR,
     GOLD_COLOR,
-    BALL_BRICK_COLOR // Added import for the new brick color
+    BALL_BRICK_COLOR, // Added import for the new brick color
+    BONUS_GOLD_TIMER_DURATION // Import for timer color logic
 } from './constants';
 
-// Draw Paddle
+// Draw Paddle (Unchanged)
 export const drawPaddle = (
     ctx: CanvasRenderingContext2D,
     paddleX: number,
@@ -59,7 +60,7 @@ export const drawPaddle = (
   }
 };
 
-// Draw Collection Field
+// Draw Collection Field (Unchanged)
 export const drawCollectionFieldRect = (
     ctx: CanvasRenderingContext2D,
     paddleX: number,
@@ -105,7 +106,7 @@ export const drawCollectionFieldRect = (
 };
 
 
-// Draw Balls
+// Draw Balls (Unchanged)
 export const drawBalls = (ctx: CanvasRenderingContext2D, allBalls: Ball[]) => {
     allBalls.forEach(ball => {
     ctx.save();
@@ -148,7 +149,7 @@ export const drawBalls = (ctx: CanvasRenderingContext2D, allBalls: Ball[]) => {
   });
 };
 
-// Draw Bricks
+// Draw Bricks (Unchanged)
 export const drawBricks = (ctx: CanvasRenderingContext2D, bricks: Brick[][], columns: number, rows: number) => {
     if (!bricks) return;
     for (let c = 0; c < columns; c++) {
@@ -196,7 +197,7 @@ export const drawBricks = (ctx: CanvasRenderingContext2D, bricks: Brick[][], col
     }
 };
 
-// --- MODIFIED: drawGameInfo --- 
+// --- MODIFIED: drawGameInfo ---
 export const drawGameInfo = (
     ctx: CanvasRenderingContext2D,
     currentScore: number,
@@ -204,7 +205,9 @@ export const drawGameInfo = (
     gold: number,
     bonusGold: number,
     isTestMode: boolean,
-    lives: number // Add lives parameter
+    lives: number,
+    // *** ADDED: Bonus gold timer parameter ***
+    bonusGoldTimerCountdown: number | null
 ) => {
   ctx.font = "16px Arial";
   ctx.textBaseline = 'top';
@@ -231,7 +234,24 @@ export const drawGameInfo = (
         const bonusText = `(+${bonusGold})`;
         ctx.fillStyle = '#90EE90'; // Light green for bonus
         ctx.fillText(bonusText, currentX, yPos);
-        currentX += ctx.measureText(bonusText).width + padding; // Add padding after bonus
+        currentX += ctx.measureText(bonusText).width; // Remove padding here, add after timer if drawn
+
+        // *** ADDED: Draw Bonus Gold Timer if active ***
+        if (bonusGoldTimerCountdown !== null && bonusGoldTimerCountdown > 0) {
+            const secondsLeft = Math.ceil(bonusGoldTimerCountdown / 1000);
+            const timerText = ` [${secondsLeft}s]`;
+
+            // Make timer color fade from green to red
+            const ratio = Math.max(0, Math.min(1, bonusGoldTimerCountdown / BONUS_GOLD_TIMER_DURATION));
+            const red = Math.round(255 * (1 - ratio));
+            const green = Math.round(255 * ratio);
+            ctx.fillStyle = `rgb(${red},${green},0)`; // Fade from green to red
+
+            ctx.fillText(timerText, currentX, yPos);
+            currentX += ctx.measureText(timerText).width;
+        }
+         // Add padding after bonus gold section (including timer if present)
+        currentX += padding;
     }
   }
 
@@ -240,9 +260,9 @@ export const drawGameInfo = (
   ctx.fillStyle = "#ff6347"; // Tomato color for lives
   ctx.fillText(livesText, currentX, yPos);
 };
-// --- END MODIFICATION --- 
+// --- END MODIFICATION ---
 
-// Draw PowerUps
+// Draw PowerUps (Unchanged)
 export const drawPowerUps = (ctx: CanvasRenderingContext2D, powerUps: PowerUp[]) => {
     const currentTime = Date.now();
   powerUps.forEach(powerUp => {
@@ -265,7 +285,7 @@ export const drawPowerUps = (ctx: CanvasRenderingContext2D, powerUps: PowerUp[])
   });
 };
 
-// Draw PowerUp Previews
+// Draw PowerUp Previews (Unchanged)
 export const drawPowerUpPreviews = (ctx: CanvasRenderingContext2D, spawnablePowerUpTypes: Set<PowerUpType>) => {
     const typesArray = Array.from(spawnablePowerUpTypes);
     const totalSpawnable = typesArray.length;
@@ -294,13 +314,13 @@ export const drawPowerUpPreviews = (ctx: CanvasRenderingContext2D, spawnablePowe
     ctx.restore(); // Restore context state
 };
 
-// Draw Lasers
+// Draw Lasers (Unchanged)
 export const drawLasers = (ctx: CanvasRenderingContext2D, lasers: Laser[]) => {
     lasers.forEach(laser => { ctx.beginPath(); ctx.rect(laser.x, laser.y, laser.width, laser.height); ctx.fillStyle = "#e74c3c"; ctx.fill(); ctx.closePath(); });
 };
 
 
-// Draw Safety Net
+// Draw Safety Net (Unchanged)
 export const drawSafetyNet = (ctx: CanvasRenderingContext2D, count: number) => {
     if (count > 0) {
       ctx.save();
@@ -327,7 +347,7 @@ export const drawSafetyNet = (ctx: CanvasRenderingContext2D, count: number) => {
     }
 };
 
-// Draw End Message (Added state parameter)
+// Draw End Message (Unchanged)
 export const drawEndMessage = (
     ctx: CanvasRenderingContext2D,
     state: GameState, // Use GameState type
