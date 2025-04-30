@@ -183,6 +183,66 @@ export const POWER_UP_COSTS: { [key in PowerUpType]?: number } = {
     NONE: 0
 };
 
+// *** Power-up Descriptions ***
+export const POWER_UP_DESCRIPTIONS: { [key in PowerUpType | string]?: string } = {
+    MULTI_BALL: "Spawns a new ball at the paddle.",
+    MULTI_BALL_L2: "Spawns 2 new balls.",
+    MULTI_BALL_L3: "Spawns 3 new balls.",
+    WIDEN_PADDLE: "Increases paddle width.",
+    WIDEN_PADDLE_L2: "Increases paddle width 2x.",
+    WIDEN_PADDLE_L3: "Increases paddle width 3x.",
+    LASER_PADDLE: "Left click to fire a laser from the paddle. Loads 2 shots",
+    LASER_PADDLE_L2: "Loads 4 laser shots.",
+    LASER_PADDLE_L3: "Loads 6 laser shots.",
+    REGEN_BRICK: "Respawns one broken brick.",
+    REGEN_BRICK_L2: "Respawns 2 bricks.",
+    REGEN_BRICK_L3: "Respawns 3 bricks.",
+    SAFETY_NET: "Adds 1 safety net. Saves 1 ball from falling off screen.",
+    SAFETY_NET_L2: "Adds 2 safety nets.",
+    SAFETY_NET_L3: "Adds 3 safety nets.",
+    REINFORCE_BRICK: "Turns a basic brick into a reinforced brick that takes 3 hits to destroy.",
+    REINFORCE_BRICK_L2: "Turns 2 basic bricks into reinforced bricks.",
+    REINFORCE_BRICK_L3: "Turns 2 bacic bricks into reinforced bricks.",
+    MAKE_SPECIAL: "Turns a basic brick into a special brick. Break it for a special powerup!",
+    MAKE_SPECIAL_L2: "Turns 2 basic bricks into special bricks.",
+    MAKE_SPECIAL_L3: "Turns 3 basic bricks into special bricks.",
+    BLACK_BALL: "Temporarily upgrades a ball. It destroys 2 bricks per hit",
+    BLACK_BALL_L2: "Temporarily upgrades 2 balls.",
+    BLACK_BALL_L3: "Temporarily upgrades 3 balls.",
+    PIERCE_BALL: "Makes 1 ball pierce through the next 3 bricks.",
+    PIERCE_BALL_L2: "Makes 2 balls piercing.",
+    PIERCE_BALL_L3: "Makes 3 balls piercing.",
+    UPGRADE_BRICK: "Turns a basic brick into an upgraded brick that takes 4 hits to destroy.",
+    UPGRADE_BRICK_L2: "Turns 2 basic bricks into upgraded bricks.",
+    UPGRADE_BRICK_L3: "Turns 2 basic bricks into upgraded bricks.",
+    BUILDER_BALL: "Temporarily transforms a ball. It transforms bricks to upgraded bricks on hit that take 4 hits to destroy",
+    BUILDER_BALL_L2: "Temporarily transforms 2 balls.",
+    BUILDER_BALL_L3: "Temporarily transforms 3 balls.",
+    BIG_BALL: "Temporarily increases the size of 1 ball. it creates new balls on paddle collision",
+    BIG_BALL_L2: "Temporarily increases the size of 2 balls.",
+    BIG_BALL_L3: "Temporarily increases the size of 3 balls.",
+    SPLITTING_BALL: "Temporarily transforms a ball. It creates more balls on brick impact",
+    SPLITTING_BALL_L2: "Temporarily transforms 2 balls.",
+    SPLITTING_BALL_L3: "Temporarily transforms 3 balls.",
+    COLLECTION_FIELD: "Increases field around paddle that collects powerups.",
+    COLLECTION_FIELD_L2: "Increases powerup collection field 2x.",
+    COLLECTION_FIELD_L3: "Increases powerup collection field 3x.",
+    HOMING_BALL: "Makes 1 ball target the nearest brick on its next paddle hit.",
+    HOMING_BALL_L2: "Makes 2 balls target the nearest brick on next paddle hit.",
+    HOMING_BALL_L3: "Makes 3 balls target the nearest brick on next paddle hit.",
+    BOMB_BRICK: "Turns 1 brick into bombs that explode when hit and break neighbor bricks.",
+    BOMB_BRICK_L2: "Turns 2 bricks into bomb bricks.",
+    BOMB_BRICK_L3: "Turns 3 bricks into bomb bricks.",
+    STICKY_PADDLE: "Makes balls stick to the paddle when nearby. Left click to release. Loads 2 sticky charges to paddle.",
+    STICKY_PADDLE_L2: "Loads 4 sticky charges to paddle.",
+    STICKY_PADDLE_L3: "Loads 6 sticky charges to paddle.",
+    BALL_BRICK: "Turns 1 brick into a brick that releases a ball when broken.",
+    BALL_BRICK_L2: "Turns 2 bricks into ball-holding bricks.",
+    BALL_BRICK_L3: "Turns 3 bricks into ball-holding bricks.",
+    ALL_IN_ONE: "Grants a random selection of powerful effects.", // Placeholder, adjust if needed
+    NONE: "No power-up."
+};
+
 
 // Power-up specific constants
 export const PADDLE_WIDEN_INCREMENT = INITIAL_PADDLE_WIDTH * 0.1;
