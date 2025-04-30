@@ -10,6 +10,7 @@ import {
     TooltipProvider,
     TooltipTrigger,
 } from './ui/tooltip'; // Import Tooltip components
+import { Badge } from './ui/badge'; // Import Badge for displaying power-ups
 
 const SHOP_ITEMS_COUNT = 5;
 const MAX_LEVEL = 3; // Universal max level for upgradable power-ups
@@ -61,6 +62,7 @@ export const ShopScreen: React.FC<ShopScreenProps> = ({
   const [purchasedInSession, setPurchasedInSession] = useState<Map<PowerUpType, boolean>>(new Map());
   const [goldDisplay, setGoldDisplay] = useState(gameStateRefs.goldRef.current);
   const [currentSpawnChance, setCurrentSpawnChance] = useState(0);
+  const [displaySpawnablePowerUps, setDisplaySpawnablePowerUps] = useState<PowerUpType[]>([]); // State for currently spawnable power-ups
 
   useEffect(() => {
     const ownedPowerUps = gameStateRefs.spawnablePowerUpsRef.current;
@@ -76,6 +78,9 @@ export const ShopScreen: React.FC<ShopScreenProps> = ({
     setGoldDisplay(gameStateRefs.goldRef.current);
     const chance = calculateBaseSpawnChance(ownedPowerUps, 'main');
     setCurrentSpawnChance(chance);
+
+    // Set the list of currently owned/spawnable power-ups for display
+    setDisplaySpawnablePowerUps(Array.from(ownedPowerUps).sort()); // Convert Set to sorted array
 
   }, [gameStateRefs.goldRef, gameStateRefs.spawnablePowerUpsRef]);
 
@@ -134,22 +139,41 @@ export const ShopScreen: React.FC<ShopScreenProps> = ({
     const newChance = calculateBaseSpawnChance(gameStateRefs.spawnablePowerUpsRef.current, 'main');
     setCurrentSpawnChance(newChance);
 
+    // Update the display of spawnable power-ups immediately after purchase
+    setDisplaySpawnablePowerUps(Array.from(gameStateRefs.spawnablePowerUpsRef.current).sort());
+
     console.log(`Purchased ${actualItemToAdd} for ${cost} gold. Remaining: ${gameStateRefs.goldRef.current}. New Spawn Chance: ${newChance * 100}%`);
   };
 
   // --- Render Function --- 
   return (
     <TooltipProvider>
-        <div className="flex flex-col items-center justify-center h-screen bg-gray-800 text-white">
+        <div className="flex flex-col items-center justify-center min-h-screen bg-gray-800 text-white py-8">
             <h1 className="text-4xl font-bold mb-6">Level Complete!</h1>
             {/* Gold & Spawn Chance Display */}
-            <div className="flex items-center space-x-6 mb-10">
+            <div className="flex items-center space-x-6 mb-6">
                 <p className="text-3xl" style={{ color: GOLD_COLOR || '#FFD700' }}>
                     Gold: {goldDisplay}
                 </p>
                 <p className="text-xl text-blue-300">
                     Spawn Chance: {(currentSpawnChance * 100).toFixed(0)}%
                 </p>
+            </div>
+
+            {/* Currently Spawnable Power-ups Display */}
+            <div className="mb-8 px-4 w-full max-w-4xl">
+                <h3 className="text-xl font-semibold mb-3 text-center">Currently Active Power-ups</h3>
+                {displaySpawnablePowerUps.length > 0 ? (
+                    <div className="flex flex-wrap justify-center gap-2">
+                        {displaySpawnablePowerUps.map(powerUp => (
+                            <Badge key={powerUp} variant="secondary" className="text-sm whitespace-nowrap">
+                                {powerUp.replace(/_/g, ' ')}
+                            </Badge>
+                        ))}
+                    </div>
+                ) : (
+                    <p className="text-center text-gray-400 italic">No power-ups active yet.</p>
+                )}
             </div>
 
             <h2 className="text-2xl font-semibold mb-4">Power-up Shop</h2>
@@ -243,18 +267,20 @@ export const ShopScreen: React.FC<ShopScreenProps> = ({
             </div>
 
             {/* Navigation Buttons */}
-            <Button
-                onClick={startNextLevel}
-                className="mb-4 px-6 py-3 text-lg bg-purple-600 hover:bg-purple-700"
-            >
-                Start Level {currentLevel + 1}
-            </Button>
-            <Button
-                onClick={handleResetGame}
-                className="px-6 py-3 text-lg bg-yellow-600 hover:bg-yellow-700"
-            >
-                Back to Menu
-            </Button>
+            <div className="flex flex-col items-center">
+                <Button
+                    onClick={startNextLevel}
+                    className="mb-4 px-6 py-3 text-lg bg-purple-600 hover:bg-purple-700"
+                >
+                    Start Level {currentLevel + 1}
+                </Button>
+                <Button
+                    onClick={handleResetGame}
+                    className="px-6 py-3 text-lg bg-yellow-600 hover:bg-yellow-700"
+                >
+                    Back to Menu
+                </Button>
+            </div>
         </div>
     </TooltipProvider>
   );
