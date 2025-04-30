@@ -1,4 +1,4 @@
-import { Brick, PowerUp, Ball, Laser, PowerUpType } from './interfaces';
+import { Brick, PowerUp, Ball, Laser, PowerUpType, GameState } from './interfaces'; // Added GameState
 import {
     BOARD_WIDTH, BOARD_HEIGHT, PADDLE_HEIGHT, BALL_SIZE, PADDLE_Y,
     BRICK_PADDING, BRICK_OFFSET_LEFT, BRICK_OFFSET_TOP, POWER_UP_SIZE,
@@ -148,7 +148,7 @@ export const drawBalls = (ctx: CanvasRenderingContext2D, allBalls: Ball[]) => {
   });
 };
 
-// *** MODIFIED: drawBricks function ***
+// Draw Bricks
 export const drawBricks = (ctx: CanvasRenderingContext2D, bricks: Brick[][], columns: number, rows: number) => {
     if (!bricks) return;
     for (let c = 0; c < columns; c++) {
@@ -195,16 +195,16 @@ export const drawBricks = (ctx: CanvasRenderingContext2D, bricks: Brick[][], col
         }
     }
 };
-// *** END MODIFICATION ***
 
-// Draw Game Info
+// --- MODIFIED: drawGameInfo --- 
 export const drawGameInfo = (
     ctx: CanvasRenderingContext2D,
     currentScore: number,
     targetScore: number,
     gold: number,
     bonusGold: number,
-    isTestMode: boolean
+    isTestMode: boolean,
+    lives: number // Add lives parameter
 ) => {
   ctx.font = "16px Arial";
   ctx.textBaseline = 'top';
@@ -231,9 +231,16 @@ export const drawGameInfo = (
         const bonusText = `(+${bonusGold})`;
         ctx.fillStyle = '#90EE90'; // Light green for bonus
         ctx.fillText(bonusText, currentX, yPos);
+        currentX += ctx.measureText(bonusText).width + padding; // Add padding after bonus
     }
   }
+
+  // 4. Draw Lives
+  const livesText = `Lives: ${lives}`;
+  ctx.fillStyle = "#ff6347"; // Tomato color for lives
+  ctx.fillText(livesText, currentX, yPos);
 };
+// --- END MODIFICATION --- 
 
 // Draw PowerUps
 export const drawPowerUps = (ctx: CanvasRenderingContext2D, powerUps: PowerUp[]) => {
@@ -258,7 +265,7 @@ export const drawPowerUps = (ctx: CanvasRenderingContext2D, powerUps: PowerUp[])
   });
 };
 
-// *** NEW FUNCTION: Draw PowerUp Previews ***
+// Draw PowerUp Previews
 export const drawPowerUpPreviews = (ctx: CanvasRenderingContext2D, spawnablePowerUpTypes: Set<PowerUpType>) => {
     const typesArray = Array.from(spawnablePowerUpTypes);
     const totalSpawnable = typesArray.length;
@@ -286,8 +293,6 @@ export const drawPowerUpPreviews = (ctx: CanvasRenderingContext2D, spawnablePowe
     });
     ctx.restore(); // Restore context state
 };
-// *** END NEW FUNCTION ***
-
 
 // Draw Lasers
 export const drawLasers = (ctx: CanvasRenderingContext2D, lasers: Laser[]) => {
@@ -320,4 +325,27 @@ export const drawSafetyNet = (ctx: CanvasRenderingContext2D, count: number) => {
       }
       ctx.restore();
     }
+};
+
+// Draw End Message (Added state parameter)
+export const drawEndMessage = (
+    ctx: CanvasRenderingContext2D,
+    state: GameState, // Use GameState type
+    finalScore: number
+) => {
+    ctx.font = "48px Arial";
+    ctx.fillStyle = "#ffffff";
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    let message = "";
+    if (state === 'won') {
+        message = "You Won!";
+    } else if (state === 'lost') {
+        message = "Game Over";
+    }
+    ctx.fillText(message, BOARD_WIDTH / 2, BOARD_HEIGHT / 2 - 40);
+
+    // Draw final score below the message
+    ctx.font = "24px Arial";
+    ctx.fillText(`Final Score: ${finalScore}`, BOARD_WIDTH / 2, BOARD_HEIGHT / 2 + 20);
 };

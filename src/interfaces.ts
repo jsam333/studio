@@ -99,7 +99,8 @@ export interface Laser {
     id: number;
 }
 
-export type GameState = 'menu' | 'playing' | 'won' | 'lost' | 'shop';
+// Add 'level_reset' to GameState
+export type GameState = 'menu' | 'playing' | 'won' | 'lost' | 'shop' | 'level_reset';
 export type GameMode = 'main' | 'test';
 
 export interface GameStateRefsBase {
@@ -131,6 +132,8 @@ export interface GameStateRefsBase {
     brickColumnsRef: React.MutableRefObject<number>;
     brickRowsRef: React.MutableRefObject<number>;
     gameModeRef: React.MutableRefObject<GameMode | null>;
+    // Add livesRef
+    livesRef: React.MutableRefObject<number>;
 }
 
 export interface GameStateRefs extends GameStateRefsBase {
@@ -150,4 +153,7 @@ export interface GameLoopCallbacks {
     executePaddleShrink: () => void;
     scheduleFieldShrink: () => void;
     drawEndMessage: (context: CanvasRenderingContext2D, state: GameState, finalScore: number) => void;
+    // Add resetLevelCallback
+    resetLevelCallback: (mode: GameMode | null, resetScoreAndGold: boolean) => void;
 }
+

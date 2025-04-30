@@ -1,4 +1,4 @@
-// src/gameLoop.ts (Corrected)
+// src/gameLoop.ts
 import React from 'react';
 import { Ball, PowerUp, Laser, PowerUpType, PowerUpSpawnEvent, GameMode, Brick, GameState } from './interfaces';
 import { GameStateRefs, GameLoopCallbacks } from './interfaces';
@@ -7,29 +7,12 @@ import { updateBalls } from './gameUpdates/ballUpdates';
 import { updatePowerUps } from './gameUpdates/powerUpUpdates';
 import { applyPowerUpEffects } from './gameUpdates/powerUpEffects';
 import { checkGameStatus } from './gameUpdates/gameStatus';
-// *** MODIFIED: Import handleSpawnEvents instead of trySpawnPowerUp ***
 import { handleSpawnEvents } from './gameUpdates/gameLoopUtils';
 import {
     BOARD_WIDTH, BOARD_HEIGHT, BASE_BALL_SPEED_FACTOR, POWER_UP_COLORS,
     TARGET_FPS
 } from './constants';
-// *** MODIFIED: Import drawPowerUpPreviews ***
 import { drawPaddle, drawBalls, drawBricks, drawGameInfo, drawPowerUps, drawLasers, drawSafetyNet, drawCollectionFieldRect, drawPowerUpPreviews } from './drawFunctions';
-
-// Helper function to count active bricks (Kept for drawGameInfo)
-const countActiveBricks = (bricks: Brick[][], columns: number, rows: number): number => {
-    let count = 0;
-    for (let c = 0; c < columns; c++) {
-        if (bricks[c]) {
-            for (let r = 0; r < rows; r++) {
-                if (bricks[c][r] && bricks[c][r].status === 1) {
-                    count++;
-                }
-            }
-        }
-    }
-    return count;
-};
 
 // Function to handle paddle shrink countdown
 const updatePaddleShrinkTimer = (
@@ -53,11 +36,20 @@ export const gameUpdate = (
     elapsedTime: number
 ) => {
     const currentGameState = refs.gameOverStateRef.current;
-    if (currentGameState !== 'playing') {
+
+    // --- Draw End Message if applicable --- 
+    // Note: This check is moved up because 'level_reset' is technically not playing, 
+    // but we don't want to draw the end message for it.
+    if (currentGameState === 'won' || currentGameState === 'lost' || currentGameState === 'shop' || currentGameState === 'menu') {
         ctx.clearRect(0, 0, BOARD_WIDTH, BOARD_HEIGHT);
         callbacks.drawEndMessage(ctx, currentGameState, refs.scoreRef.current);
-        return;
+        return; // Stop further processing for these states
     }
+    
+    // If the state is level_reset, we still want the loop to proceed once to handle the reset
+    // but we might not want to update/draw everything normally.
+    // However, the state change in useGameLogic is quick, so this might not be strictly necessary.
+    // We proceed with updates and drawing for 'playing' and 'level_reset' states.
 
     const currentTime = Date.now();
     const gameSpeedFactor = refs.gameSpeedFactorRef.current;
@@ -72,16 +64,18 @@ export const gameUpdate = (
     const gameMode = refs.gameModeRef.current;
     const isTestMode = gameMode === 'test';
 
-    // --- UPDATES --- 
+    // --- UPDATES (Only if playing or resetting) --- 
     updatePaddleShrinkTimer(refs, callbacks, elapsedTime);
     updateBalls(refs, callbacks, spawnRequests, currentTime, gameSpeedFactor, scaledDeltaTime, columns, rows);
 
-    // --- DRAWING --- (Moved drawing before game started updates for preview)
+    // --- DRAWING --- 
     ctx.save();
     ctx.clearRect(0, 0, BOARD_WIDTH, BOARD_HEIGHT);
     drawBricks(ctx, refs.bricksRef.current, columns, rows);
     drawPaddle( ctx, refs.paddleXRef.current, refs.paddleWidthRef.current, refs.laserShotsRef.current, refs.stickyPaddleChargesRef.current );
-    drawGameInfo(ctx, refs.scoreRef.current, refs.targetScoreRef.current, refs.goldRef.current, refs.bonusGoldRef.current, isTestMode);
+    // *** MODIFIED: Pass livesRef.current to drawGameInfo ***
+    drawGameInfo(ctx, refs.scoreRef.current, refs.targetScoreRef.current, refs.goldRef.current, refs.bonusGoldRef.current, isTestMode, refs.livesRef.current);
+    // *** END MODIFICATION ***
     drawSafetyNet(ctx, refs.safetyNetCountRef.current);
     if (refs.collectionFieldHeightRef.current > 0 || refs.collectionFieldWidthOffsetRef.current > 0) {
         drawCollectionFieldRect(ctx, refs.paddleXRef.current, refs.paddleWidthRef.current, refs.collectionFieldHeightRef.current, refs.collectionFieldWidthOffsetRef.current);
@@ -91,19 +85,17 @@ export const gameUpdate = (
     if (!refs.isGameStartedRef.current) {
         // Draw stuck balls
         drawBalls(ctx, refs.stuckBallsRef.current);
-        // *** NEW: Draw power-up previews if in main mode and not started ***
         if (gameMode === 'main') {
             drawPowerUpPreviews(ctx, refs.spawnablePowerUpsRef.current);
         }
-        ctx.restore(); // Restore context after drawing everything for pre-game
+        ctx.restore();
         return; // Exit early, no further updates needed
     }
 
-    // --- GAME STARTED UPDATES & DRAWING --- 
+    // --- GAME STARTED UPDATES & DRAWING (Only if playing or resetting) --- 
     let collectedPowerUpTypes: PowerUpType[] = [];
     updateLasers(refs, callbacks, spawnRequests, currentTime, scaledDeltaTime, columns, rows);
 
-    // *** MODIFIED: Use handleSpawnEvents ***
     const currentFallingPowerUpCount = refs.powerUpsRef.current.filter(p => p.status === 'falling').length;
     const availablePowerUpsForSpawning = gameMode === 'main'
         ? refs.spawnablePowerUpsRef.current
@@ -115,20 +107,16 @@ export const gameUpdate = (
         availablePowerUpsForSpawning,
         gameMode,
         currentTime,
-        gameSpeedFactor // Pass gameSpeedFactor for ball creation
+        gameSpeedFactor
     );
 
-    // Add newly spawned balls to the main balls array
     refs.ballsRef.current.push(...newBalls);
-
-    // Pass newly spawned power-ups to updatePowerUps
     refs.powerUpsRef.current = updatePowerUps( refs, gameSpeedFactor, newPowerUps, collectedPowerUpTypes, scaledDeltaTime );
-    // *** END MODIFICATION ***
 
     applyPowerUpEffects(refs, callbacks, collectedPowerUpTypes, currentTime, gameSpeedFactor);
 
     // --- Draw Active Game Elements --- 
-    const allBallsToDraw = [...refs.ballsRef.current, ...refs.stuckBallsRef.current]; // Make sure stuck balls are still drawn if any remain for some reason
+    const allBallsToDraw = [...refs.ballsRef.current, ...refs.stuckBallsRef.current];
     drawBalls(ctx, allBallsToDraw);
     drawPowerUps(ctx, refs.powerUpsRef.current);
     drawLasers(ctx, refs.lasersRef.current);
@@ -140,11 +128,13 @@ export const gameUpdate = (
     ctx.restore(); // Restore context after all drawing
 
     // --- Check Game Status --- 
-    const finalStatus = checkGameStatus(refs, callbacks, previousBallCount);
+    // Note: checkGameStatus now handles setting the gameOverState via callbacks
+    // It returns the *next* state, but the actual state change might be asynchronous.
+    // We rely on the useEffect in useGameLogic to handle the consequences of the state change.
+    checkGameStatus(refs, callbacks, previousBallCount);
 
-    if (finalStatus !== 'playing' && refs.gameOverStateRef.current === 'playing') {
-        callbacks.setGameOverState(finalStatus);
-        ctx.clearRect(0, 0, BOARD_WIDTH, BOARD_HEIGHT);
-        callbacks.drawEndMessage(ctx, finalStatus, refs.scoreRef.current);
-    }
+    // No need to manually set the state here or draw end message again,
+    // as checkGameStatus calls callbacks.setGameOverState,
+    // and the useEffect in useGameLogic handles the 'level_reset' logic,
+    // and the top of this function handles drawing for terminal states.
 };

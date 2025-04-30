@@ -7,12 +7,14 @@ import {
     FIELD_SHRINK_RATE_H, FIELD_SHRINK_RATE_W, FIELD_SHRINK_INTERVAL,
     ALL_TOGGLEABLE_POWER_UPS, PADDLE_HEIGHT, BOARD_HEIGHT // Added BOARD_HEIGHT
 } from '../constants';
-import { Ball, PowerUp, Laser, PowerUpType, GameState, GameMode, GameStateRefs as IGameStateRefs } from '../interfaces';
+// MODIFIED: Import GameLoopCallbacks definition
+import { Ball, PowerUp, Laser, PowerUpType, GameState, GameMode, GameStateRefs as IGameStateRefs, GameLoopCallbacks } from '../interfaces';
 import { initialBallState } from '../gameLogic';
 import { useLevelLogic } from './useLevelLogic';
 import { usePaddleLogic } from './usePaddleLogic';
 
 const MAX_UPGRADE_LEVEL = 3;
+const INITIAL_LIVES = 3; // Define initial lives
 
 // Generic function to get PowerUpType for a given level
 const getPowerUpTypeForLevel = (baseType: PowerUpType, level: number): PowerUpType | null => {
@@ -37,7 +39,6 @@ export function useGameLogic() {
     const powerUpsRef = useRef<PowerUp[]>([]);
     const scoreRef = useRef(0);
     const goldRef = useRef<number>(0);
-    // *** Initialize spawnablePowerUpsRef for main game (empty initially) ***
     const spawnablePowerUpsRef = useRef<Set<PowerUpType>>(new Set());
     const gameIsRunningRef = useRef(false);
     const paddleWidthRef = useRef(INITIAL_PADDLE_WIDTH);
@@ -58,6 +59,8 @@ export function useGameLogic() {
     const currentLevelRef = useRef<number>(1);
     const animationFrameIdRef = useRef<number | null>(null);
     const lastTimeRef = useRef<number>(0);
+    // *** NEW: Add livesRef ***
+    const livesRef = useRef<number>(INITIAL_LIVES);
 
     // --- UI State ---
     const [gameOverState, setGameOverState] = useState<GameState>('menu');
@@ -98,7 +101,7 @@ export function useGameLogic() {
         bonusCountdownStartedRef,
         clearBonusGoldTimers,
         startBonusGoldCountdown,
-        resetLevel,
+        resetLevel, // Use resetLevel directly from useLevelLogic
     } = useLevelLogic({
         gameModeRef,
         gameOverStateRef,
@@ -117,7 +120,7 @@ export function useGameLogic() {
         paddleShrinkCountdownRef,
         setupInitialBall,
         isGameStartedRef,
-        spawnablePowerUpsRef // Pass the ref here
+        spawnablePowerUpsRef
     });
 
     // --- Effects ---
@@ -125,17 +128,27 @@ export function useGameLogic() {
         enabledPowerUpsRef.current = enabledPowerUps;
     }, [enabledPowerUps]);
 
+    // Effect to handle game state changes, including level reset
     useEffect(() => {
         gameOverStateRef.current = gameOverState;
         gameIsRunningRef.current = gameOverState === 'playing';
-        if (gameOverState !== 'playing') {
+
+        if (gameOverState === 'level_reset') {
+            livesRef.current--;
+            console.log(`Life lost! Lives remaining: ${livesRef.current}`);
+            // --- MODIFIED: Reset score and gold when resetting level after losing a life --- 
+            resetLevel(gameModeRef.current, true); 
+            // --- END MODIFICATION ---
+            setGameOverState('playing'); // Immediately go back to playing state
+        } else if (gameOverState !== 'playing') {
+            // Handle other non-playing states
             clearBonusGoldTimers();
             paddleShrinkCountdownRef.current = null;
             if (gameSpeedFactorRef.current !== BASE_BALL_SPEED_FACTOR) {
                  gameSpeedFactorRef.current = BASE_BALL_SPEED_FACTOR;
             }
         }
-    }, [gameOverState, clearBonusGoldTimers]);
+    }, [gameOverState, clearBonusGoldTimers, resetLevel]);
 
     // Keyboard Listeners
     useEffect(() => {
@@ -200,8 +213,9 @@ export function useGameLogic() {
         spawnablePowerUpsRef.current = new Set(); // Reset spawnables on full game reset
         currentLevelRef.current = 1;
         gameModeRef.current = null;
+        livesRef.current = INITIAL_LIVES;
 
-        resetLevel(null, true);
+        resetLevel(null, true); // Reset level state, including score/gold
         resetPaddle();
 
         setGameOverState('menu');
@@ -220,28 +234,21 @@ export function useGameLogic() {
         const launchedBalls = stuckBallsRef.current.map(ball => {
             const currentBallSize = ball.isBig ? BALL_SIZE + BIG_BALL_SIZE_INCREASE : BALL_SIZE;
             let launchX = 0, launchY = 0;
-            // Set launchSpeedX conditionally based on initial launch
             const launchSpeedX = isInitialLaunch ? 3 : 0;
             const launchSpeedY = -Math.abs(INITIAL_BALL_SPEED_Y);
 
             if (ball.stuckSide) {
-                 // Launching from side
                  const sideOffset = currentBallSize;
                  launchX = ball.stuckSide === 'left'
                      ? currentPaddleX - sideOffset
                      : currentPaddleX + currentPaddleWidth + sideOffset;
-                 // Use the stored vertical offset relative to paddle center
                  launchY = PADDLE_Y + PADDLE_HEIGHT / 2 + (ball.stuckSideOffset ?? 0);
-                 // Ensure ball is slightly outside paddle bounds visually
                  launchY = Math.min(BOARD_HEIGHT - currentBallSize -1, Math.max(currentBallSize + 1, launchY))
-
             } else {
-                 // Launching from top
                  launchX = currentPaddleX + (ball.stuckOffset ?? currentPaddleWidth / 2);
-                 launchY = PADDLE_Y - currentBallSize - 1; // Position just above the paddle
+                 launchY = PADDLE_Y - currentBallSize - 1;
             }
 
-            // Common launch logic
             if (isInitialLaunch && !isGameStartedRef.current) {
                 isGameStartedRef.current = true;
                 startBonusGoldCountdown();
@@ -256,7 +263,7 @@ export function useGameLogic() {
                 ...ball,
                 x: launchX,
                 y: launchY,
-                speedX: launchSpeedX, // Now conditional
+                speedX: launchSpeedX,
                 speedY: launchSpeedY,
                 stuckOffset: undefined,
                 stuckSide: null,
@@ -287,17 +294,16 @@ export function useGameLogic() {
          if (gameOverStateRef.current === 'menu') {
             scoreRef.current = 0;
             goldRef.current = 0;
+            livesRef.current = INITIAL_LIVES;
             if (mode === 'main') {
-                 // Main game starts with NO spawnable power-ups (must be bought)
                  spawnablePowerUpsRef.current = new Set();
              } else {
-                 // Test mode starts with ALL spawnable power-ups
                  spawnablePowerUpsRef.current = new Set(ALL_TOGGLEABLE_POWER_UPS);
              }
             currentLevelRef.current = 1;
             gameModeRef.current = mode;
 
-            resetLevel(mode, false); // Pass mode to resetLevel
+            resetLevel(mode, true); // Reset level state, including score/gold
 
             setShowSidebar(mode === 'test');
             setEnabledPowerUps(new Set(ALL_TOGGLEABLE_POWER_UPS));
@@ -308,26 +314,23 @@ export function useGameLogic() {
 
     const startNextLevel = useCallback(() => {
         if (gameOverStateRef.current === 'shop') {
-            scoreRef.current = 0;
+            scoreRef.current = 0; // Reset score for the new level
             currentLevelRef.current++;
             const nextMode: GameMode = 'main';
             gameModeRef.current = nextMode;
 
-            resetLevel(nextMode, false); // Pass mode to resetLevel
+            resetLevel(nextMode, false); // Reset level state, keep gold/powerups
 
             setShowSidebar(false);
             setGameOverState('playing');
         }
     }, [resetLevel]);
 
-    // --- Corrected addSpawnablePowerUp --- 
     const addSpawnablePowerUp = useCallback((typeToAdd: PowerUpType) => {
         const currentSpawnables = spawnablePowerUpsRef.current;
         currentSpawnables.add(typeToAdd);
 
-        // Generic handler for removing lower levels of upgradable power-ups
         const handleUpgrade = (baseType: string) => {
-            // Check if the added type belongs to this upgrade family
             if (typeToAdd.startsWith(baseType)) {
                 let levelAdded = 0;
                 if (typeToAdd === baseType) levelAdded = 1;
@@ -335,8 +338,6 @@ export function useGameLogic() {
                     const match = typeToAdd.match(/_L(\d+)$/);
                     if (match) levelAdded = parseInt(match[1], 10);
                 }
-
-                // Remove levels lower than the one just added
                 if (levelAdded > 0 && levelAdded <= MAX_UPGRADE_LEVEL) {
                     for (let levelToRemove = 1; levelToRemove < levelAdded; levelToRemove++) {
                         const lowerLevelType = getPowerUpTypeForLevel(baseType as PowerUpType, levelToRemove);
@@ -347,18 +348,14 @@ export function useGameLogic() {
                 }
             }
         };
-
-        // Apply handler for ALL upgradable base types (using the array defined at the hook level)
         UPGRADABLE_POWER_UPS.forEach(baseType => {
             handleUpgrade(baseType);
         });
-
-        // Optional: Force UI update if spawnablePowerUpsRef changes need to reflect immediately
-        // This depends on how ShopScreen consumes this state. If it reads directly from the ref
-        // on re-render, this might not be needed. If it relies on state, you might need:
-        // setSpawnablePowerUps(new Set(currentSpawnables)); // Assuming a state setter exists
-
     }, []);
+
+    const resetLevelCallback = useCallback((mode: GameMode | null, resetScoreAndGold: boolean) => {
+        resetLevel(mode, resetScoreAndGold);
+    }, [resetLevel]);
 
 
     // --- GameStateRefs (Updated) ---
@@ -380,17 +377,35 @@ export function useGameLogic() {
         brickRowsRef,
         bonusGoldRef,
         bonusCountdownStartedRef,
+        livesRef,
+    };
+
+    // --- Define GameLoopCallbacks object (partial) --- 
+    const gameLoopCallbacksPartial = {
+        updateScoreCallback,
+        setGameOverState,
+        schedulePaddleShrink,
+        executePaddleShrink,
+        scheduleFieldShrink,
+        resetLevelCallback,
     };
 
     return {
-        gameOverState, enabledPowerUps, showSidebar, currentLevel: currentLevelRef.current,
-        setGameOverState, updateScoreCallback, handleResetGame, launchStuckBalls, handlePowerUpToggle,
-        schedulePaddleShrink,
-        scheduleFieldShrink,
-        startGame, startNextLevel, addSpawnablePowerUp,
-        executePaddleShrink,
+        gameOverState,
+        enabledPowerUps,
+        showSidebar,
+        currentLevel: currentLevelRef.current,
+        setGameOverState,
+        handleResetGame,
+        launchStuckBalls,
+        handlePowerUpToggle,
+        startGame,
+        startNextLevel,
+        addSpawnablePowerUp,
         gameStateRefs,
+        gameLoopCallbacksPartial,
+        lives: livesRef.current,
+        score: scoreRef.current,
+        gold: goldRef.current,
     };
 }
-
-// Removed the redundant definition of UPGRADABLE_POWER_UPS at the bottom
