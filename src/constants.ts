@@ -114,13 +114,13 @@ export const ALL_TOGGLEABLE_POWER_UPS: PowerUpType[] = [
     'PIERCE_BALL', //linear
     'UPGRADE_BRICK', //points
     'BUILDER_BALL', //points
-    'BIG_BALL', //safety?
+    'BIG_BALL', //safety and exponential
     'SPLITTING_BALL', //exponential
     'COLLECTION_FIELD', //powerup
     'HOMING_BALL', //safety
     'BOMB_BRICK', //linear
     'STICKY_PADDLE', //safety
-    'BALL_BRICK', // Added new power-up
+    'BALL_BRICK', // exponential
 ];
 
 // *** Individual Power-up Costs ***

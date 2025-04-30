@@ -113,7 +113,7 @@ export const drawBalls = (ctx: CanvasRenderingContext2D, allBalls: Ball[]) => {
     ctx.beginPath();
     ctx.arc(ball.x, ball.y, currentRadius, 0, Math.PI * 2);
 
-    if (ball.stuckOffset !== undefined) {
+    if (ball.stuckOffset !== undefined || ball.stuckSide) { // Check both top and side stuck
         ctx.fillStyle = "#cccccc";
     } else if (ball.isHoming) {
         ctx.fillStyle = POWER_UP_COLORS['HOMING_BALL'] || '#f1c40f';
@@ -130,11 +130,16 @@ export const drawBalls = (ctx: CanvasRenderingContext2D, allBalls: Ball[]) => {
     }
     ctx.fill();
 
-    if (ball.isBlack || ball.isSplitting || ball.isHoming || ball.stuckOffset !== undefined) {
-        ctx.strokeStyle = '#ffffff';
-        if ((ball.isSplitting || ball.isHoming || (ball.stuckOffset !== undefined && !ball.isBlack)) && !ball.isBlack) {
-            ctx.strokeStyle = '#000000';
-        }
+    // Adjust stroke logic for clarity
+    if (ball.stuckOffset !== undefined || ball.stuckSide) {
+        ctx.strokeStyle = '#000000'; // Black stroke for stuck balls
+    } else if (ball.isBlack) {
+        ctx.strokeStyle = '#ffffff'; // White stroke for black ball
+    } else if (ball.isSplitting || ball.isHoming) {
+        ctx.strokeStyle = '#000000'; // Black stroke for splitting/homing
+    }
+    // Apply stroke if a strokeStyle was set
+    if (ctx.strokeStyle) {
         ctx.lineWidth = 1;
         ctx.stroke();
     }
@@ -253,6 +258,36 @@ export const drawPowerUps = (ctx: CanvasRenderingContext2D, powerUps: PowerUp[])
   });
 };
 
+// *** NEW FUNCTION: Draw PowerUp Previews ***
+export const drawPowerUpPreviews = (ctx: CanvasRenderingContext2D, spawnablePowerUpTypes: Set<PowerUpType>) => {
+    const typesArray = Array.from(spawnablePowerUpTypes);
+    const totalSpawnable = typesArray.length;
+    if (totalSpawnable === 0) return;
+
+    const spacing = (BOARD_WIDTH - (totalSpawnable * POWER_UP_SIZE)) / (totalSpawnable + 1);
+    const startY = BOARD_HEIGHT / 2; // Spawn halfway down the screen
+    let currentX = spacing;
+    const previewAlpha = '80'; // Hex alpha for ~50% transparency
+
+    ctx.save(); // Save context state
+    typesArray.forEach((type) => {
+        const color = POWER_UP_COLORS[type] || POWER_UP_COLORS['NONE']!;
+        ctx.fillStyle = color + previewAlpha; // Apply base color with alpha
+        ctx.strokeStyle = color; // Use full color for outline
+        ctx.lineWidth = 1;
+
+        ctx.beginPath();
+        ctx.rect(currentX, startY, POWER_UP_SIZE, POWER_UP_SIZE);
+        ctx.fill();
+        ctx.stroke(); // Draw outline
+        ctx.closePath();
+
+        currentX += POWER_UP_SIZE + spacing;
+    });
+    ctx.restore(); // Restore context state
+};
+// *** END NEW FUNCTION ***
+
 
 // Draw Lasers
 export const drawLasers = (ctx: CanvasRenderingContext2D, lasers: Laser[]) => {
@@ -264,13 +299,23 @@ export const drawLasers = (ctx: CanvasRenderingContext2D, lasers: Laser[]) => {
 export const drawSafetyNet = (ctx: CanvasRenderingContext2D, count: number) => {
     if (count > 0) {
       ctx.save();
-      ctx.fillStyle = POWER_UP_COLORS['SAFETY_NET'] + 'CC';
+      ctx.fillStyle = POWER_UP_COLORS['SAFETY_NET'] + 'CC'; // Apply transparency
       for (let i = 0; i < count; i++) {
          ctx.beginPath();
+         // Stack nets from the bottom up
          const yPosition = BOARD_HEIGHT - (i + 1) * SAFETY_NET_HEIGHT;
-         if (yPosition < 0) continue;
+         if (yPosition < 0) continue; // Don't draw off-screen nets
          ctx.rect(0, yPosition, BOARD_WIDTH, SAFETY_NET_HEIGHT);
          ctx.fill();
+         // Add a subtle border between stacked nets for visual clarity
+         if (i > 0) {
+             ctx.strokeStyle = 'rgba(255, 255, 255, 0.2)'; // Faint white line
+             ctx.lineWidth = 0.5;
+             ctx.beginPath();
+             ctx.moveTo(0, yPosition + SAFETY_NET_HEIGHT);
+             ctx.lineTo(BOARD_WIDTH, yPosition + SAFETY_NET_HEIGHT);
+             ctx.stroke();
+         }
          ctx.closePath();
       }
       ctx.restore();

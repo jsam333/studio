@@ -7,9 +7,12 @@ import {
     BONUS_GOLD_START_DELAY_HIGH, BONUS_GOLD_START_DELAY_MAX, BONUS_GOLD_DECREMENT_INTERVAL,
     FIELD_INITIAL_HEIGHT_OFFSET, // Added for resetting
     FIELD_INITIAL_WIDTH_OFFSET, // Added for resetting
-    BASE_BALL_SPEED_FACTOR // Added for resetting
+    BASE_BALL_SPEED_FACTOR, // Added for resetting
+    BOARD_WIDTH, // Needed for spawning power-ups
+    POWER_UP_SIZE, // Needed for spawning power-ups
+    BOARD_HEIGHT, // Needed for spawning power-ups lower
 } from '../constants';
-import { Brick, GameMode, Ball, PowerUp, Laser } from '../interfaces';
+import { Brick, GameMode, Ball, PowerUp, Laser, PowerUpType } from '../interfaces';
 import { initializeBricks } from '../gameLogic';
 
 // Constants for Bonus Gold moved here for clarity
@@ -35,13 +38,15 @@ interface UseLevelLogicProps {
     paddleShrinkCountdownRef: MutableRefObject<number | null>;
     setupInitialBall: () => void; // Function from the main hook
     isGameStartedRef: MutableRefObject<boolean>;
+    spawnablePowerUpsRef: MutableRefObject<Set<PowerUpType>>; // Added for spawning logic
 }
 
 export function useLevelLogic({
     gameModeRef, gameOverStateRef, currentLevelRef, scoreRef, goldRef,
     powerUpsRef, lasersRef, widenLevelRef, laserShotsRef, safetyNetCountRef,
     gameSpeedFactorRef, collectionFieldHeightRef, collectionFieldWidthOffsetRef,
-    stickyPaddleChargesRef, paddleShrinkCountdownRef, setupInitialBall, isGameStartedRef
+    stickyPaddleChargesRef, paddleShrinkCountdownRef, setupInitialBall, isGameStartedRef,
+    spawnablePowerUpsRef // Added spawnablePowerUpsRef
 }: UseLevelLogicProps) {
     const bricksRef = useRef<Brick[][]>([]);
     const targetScoreRef = useRef(0);
@@ -179,7 +184,7 @@ export function useLevelLogic({
             scoreRef.current = 0;
             goldRef.current = 0;
         }
-        powerUpsRef.current = [];
+        powerUpsRef.current = []; // Clear existing power-ups first
         lasersRef.current = [];
         widenLevelRef.current = 0;
         laserShotsRef.current = 0;
@@ -196,12 +201,37 @@ export function useLevelLogic({
         bonusCountdownStartedRef.current = false;
         clearBonusGoldTimers();
 
+        // *** START: Spawn initial power-ups ***
+        if (currentMode === 'main') { // Only in main game mode
+            const spawnableTypes = Array.from(spawnablePowerUpsRef.current);
+            const totalSpawnable = spawnableTypes.length;
+            if (totalSpawnable > 0) {
+                const spacing = (BOARD_WIDTH - (totalSpawnable * POWER_UP_SIZE)) / (totalSpawnable + 1);
+                const startY = BOARD_HEIGHT / 2; // Spawn halfway down the screen
+                let currentX = spacing;
+
+                spawnableTypes.forEach((type) => {
+                    const newPowerUp: PowerUp = {
+                        x: currentX,
+                        y: startY,
+                        type: type,
+                        status: 'falling',
+                        id: Date.now() + Math.random(), // Ensure unique ID
+                    };
+                    powerUpsRef.current.push(newPowerUp);
+                    currentX += POWER_UP_SIZE + spacing;
+                });
+            }
+        }
+        // *** END: Spawn initial power-ups ***
+
     }, [ // Dependencies now include props refs and callbacks
         gameModeRef, currentLevelRef, scoreRef, goldRef, powerUpsRef, lasersRef,
         widenLevelRef, laserShotsRef, safetyNetCountRef, gameSpeedFactorRef,
         collectionFieldHeightRef, collectionFieldWidthOffsetRef,
         stickyPaddleChargesRef, paddleShrinkCountdownRef,
-        setupInitialBall, isGameStartedRef, clearBonusGoldTimers
+        setupInitialBall, isGameStartedRef, clearBonusGoldTimers,
+        spawnablePowerUpsRef // Added dependency
     ]);
 
     return {

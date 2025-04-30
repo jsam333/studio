@@ -37,6 +37,7 @@ export function useGameLogic() {
     const powerUpsRef = useRef<PowerUp[]>([]);
     const scoreRef = useRef(0);
     const goldRef = useRef<number>(0);
+    // *** Initialize spawnablePowerUpsRef for main game (empty initially) ***
     const spawnablePowerUpsRef = useRef<Set<PowerUpType>>(new Set());
     const gameIsRunningRef = useRef(false);
     const paddleWidthRef = useRef(INITIAL_PADDLE_WIDTH);
@@ -115,7 +116,8 @@ export function useGameLogic() {
         stickyPaddleChargesRef,
         paddleShrinkCountdownRef,
         setupInitialBall,
-        isGameStartedRef
+        isGameStartedRef,
+        spawnablePowerUpsRef // Pass the ref here
     });
 
     // --- Effects ---
@@ -195,7 +197,7 @@ export function useGameLogic() {
 
         scoreRef.current = 0;
         goldRef.current = 0;
-        spawnablePowerUpsRef.current = new Set();
+        spawnablePowerUpsRef.current = new Set(); // Reset spawnables on full game reset
         currentLevelRef.current = 1;
         gameModeRef.current = null;
 
@@ -286,14 +288,16 @@ export function useGameLogic() {
             scoreRef.current = 0;
             goldRef.current = 0;
             if (mode === 'main') {
+                 // Main game starts with NO spawnable power-ups (must be bought)
                  spawnablePowerUpsRef.current = new Set();
              } else {
+                 // Test mode starts with ALL spawnable power-ups
                  spawnablePowerUpsRef.current = new Set(ALL_TOGGLEABLE_POWER_UPS);
              }
             currentLevelRef.current = 1;
             gameModeRef.current = mode;
 
-            resetLevel(mode, false);
+            resetLevel(mode, false); // Pass mode to resetLevel
 
             setShowSidebar(mode === 'test');
             setEnabledPowerUps(new Set(ALL_TOGGLEABLE_POWER_UPS));
@@ -309,7 +313,7 @@ export function useGameLogic() {
             const nextMode: GameMode = 'main';
             gameModeRef.current = nextMode;
 
-            resetLevel(nextMode, false);
+            resetLevel(nextMode, false); // Pass mode to resetLevel
 
             setShowSidebar(false);
             setGameOverState('playing');

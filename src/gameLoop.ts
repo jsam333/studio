@@ -13,7 +13,8 @@ import {
     BOARD_WIDTH, BOARD_HEIGHT, BASE_BALL_SPEED_FACTOR, POWER_UP_COLORS,
     TARGET_FPS
 } from './constants';
-import { drawPaddle, drawBalls, drawBricks, drawGameInfo, drawPowerUps, drawLasers, drawSafetyNet, drawCollectionFieldRect } from './drawFunctions';
+// *** MODIFIED: Import drawPowerUpPreviews ***
+import { drawPaddle, drawBalls, drawBricks, drawGameInfo, drawPowerUps, drawLasers, drawSafetyNet, drawCollectionFieldRect, drawPowerUpPreviews } from './drawFunctions';
 
 // Helper function to count active bricks (Kept for drawGameInfo)
 const countActiveBricks = (bricks: Brick[][], columns: number, rows: number): number => {
@@ -75,22 +76,30 @@ export const gameUpdate = (
     updatePaddleShrinkTimer(refs, callbacks, elapsedTime);
     updateBalls(refs, callbacks, spawnRequests, currentTime, gameSpeedFactor, scaledDeltaTime, columns, rows);
 
-    if (!refs.isGameStartedRef.current) {
-        // ... (Drawing logic for pre-game state remains the same)
-        const currentScore = refs.scoreRef.current;
-        const targetScore = refs.targetScoreRef.current;
-        const currentGold = refs.goldRef.current;
-        const currentBonusGold = refs.bonusGoldRef.current;
-
-        ctx.clearRect(0, 0, BOARD_WIDTH, BOARD_HEIGHT);
-        drawBricks(ctx, refs.bricksRef.current, columns, rows);
-        drawPaddle(ctx, refs.paddleXRef.current, refs.paddleWidthRef.current, 0, 0);
-        drawBalls(ctx, refs.stuckBallsRef.current);
-        drawGameInfo(ctx, currentScore, targetScore, currentGold, currentBonusGold, isTestMode);
-        return;
+    // --- DRAWING --- (Moved drawing before game started updates for preview)
+    ctx.save();
+    ctx.clearRect(0, 0, BOARD_WIDTH, BOARD_HEIGHT);
+    drawBricks(ctx, refs.bricksRef.current, columns, rows);
+    drawPaddle( ctx, refs.paddleXRef.current, refs.paddleWidthRef.current, refs.laserShotsRef.current, refs.stickyPaddleChargesRef.current );
+    drawGameInfo(ctx, refs.scoreRef.current, refs.targetScoreRef.current, refs.goldRef.current, refs.bonusGoldRef.current, isTestMode);
+    drawSafetyNet(ctx, refs.safetyNetCountRef.current);
+    if (refs.collectionFieldHeightRef.current > 0 || refs.collectionFieldWidthOffsetRef.current > 0) {
+        drawCollectionFieldRect(ctx, refs.paddleXRef.current, refs.paddleWidthRef.current, refs.collectionFieldHeightRef.current, refs.collectionFieldWidthOffsetRef.current);
     }
 
-    // --- Game Started Updates --- 
+    // --- PRE-GAME STATE DRAWING --- 
+    if (!refs.isGameStartedRef.current) {
+        // Draw stuck balls
+        drawBalls(ctx, refs.stuckBallsRef.current);
+        // *** NEW: Draw power-up previews if in main mode and not started ***
+        if (gameMode === 'main') {
+            drawPowerUpPreviews(ctx, refs.spawnablePowerUpsRef.current);
+        }
+        ctx.restore(); // Restore context after drawing everything for pre-game
+        return; // Exit early, no further updates needed
+    }
+
+    // --- GAME STARTED UPDATES & DRAWING --- 
     let collectedPowerUpTypes: PowerUpType[] = [];
     updateLasers(refs, callbacks, spawnRequests, currentTime, scaledDeltaTime, columns, rows);
 
@@ -118,30 +127,17 @@ export const gameUpdate = (
 
     applyPowerUpEffects(refs, callbacks, collectedPowerUpTypes, currentTime, gameSpeedFactor);
 
-    // --- Drawing --- 
-    const currentScore = refs.scoreRef.current;
-    const targetScore = refs.targetScoreRef.current;
-    const currentGold = refs.goldRef.current;
-    const currentBonusGold = refs.bonusGoldRef.current;
-
-    ctx.save();
-    ctx.clearRect(0, 0, BOARD_WIDTH, BOARD_HEIGHT);
-    drawBricks(ctx, refs.bricksRef.current, columns, rows);
-    const allBallsToDraw = [...refs.ballsRef.current, ...refs.stuckBallsRef.current];
+    // --- Draw Active Game Elements --- 
+    const allBallsToDraw = [...refs.ballsRef.current, ...refs.stuckBallsRef.current]; // Make sure stuck balls are still drawn if any remain for some reason
     drawBalls(ctx, allBallsToDraw);
-    if (refs.collectionFieldHeightRef.current > 0 || refs.collectionFieldWidthOffsetRef.current > 0) {
-        drawCollectionFieldRect(ctx, refs.paddleXRef.current, refs.paddleWidthRef.current, refs.collectionFieldHeightRef.current, refs.collectionFieldWidthOffsetRef.current);
-    }
-    drawPaddle( ctx, refs.paddleXRef.current, refs.paddleWidthRef.current, refs.laserShotsRef.current, refs.stickyPaddleChargesRef.current );
     drawPowerUps(ctx, refs.powerUpsRef.current);
     drawLasers(ctx, refs.lasersRef.current);
-    drawGameInfo(ctx, currentScore, targetScore, currentGold, currentBonusGold, isTestMode);
-    drawSafetyNet(ctx, refs.safetyNetCountRef.current);
+
     if (gameSpeedFactor !== BASE_BALL_SPEED_FACTOR) {
         ctx.font = "12px Arial"; ctx.fillStyle = POWER_UP_COLORS['SPEED_UP'] || '#e74c3c'; ctx.textAlign = 'right';
         ctx.fillText(`Speed: x${gameSpeedFactor.toFixed(1)}`, BOARD_WIDTH - 10, 20);
     }
-    ctx.restore();
+    ctx.restore(); // Restore context after all drawing
 
     // --- Check Game Status --- 
     const finalStatus = checkGameStatus(refs, callbacks, previousBallCount);
