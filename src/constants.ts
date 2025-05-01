@@ -205,7 +205,7 @@ export const POWER_UP_DESCRIPTIONS: { [key in PowerUpType | string]?: string } =
     SAFETY_NET_L3: "Adds 3 safety nets.",
     REINFORCE_BRICK: "Turns a basic brick into a reinforced brick that takes 3 hits to destroy.",
     REINFORCE_BRICK_L2: "Turns 2 basic bricks into reinforced bricks.",
-    REINFORCE_BRICK_L3: "Turns 2 bacic bricks into reinforced bricks.",
+    REINFORCE_BRICK_L3: "Turns 3 basic bricks into reinforced bricks.",
     MAKE_SPECIAL: "Turns a basic brick into a special brick. Break it for a special powerup!",
     MAKE_SPECIAL_L2: "Turns 2 basic bricks into special bricks.",
     MAKE_SPECIAL_L3: "Turns 3 basic bricks into special bricks.",
@@ -272,59 +272,59 @@ export const RAINBOW_FLASH_INTERVAL = 100;
 
 export const POWER_UP_COLORS: { [key in PowerUpType | 'NONE']?: string } = {
     MULTI_BALL: '#32CD32',
-    MULTI_BALL_L2: '#228B22',
-    MULTI_BALL_L3: '#006400',
+    MULTI_BALL_L2: '#32CD32',
+    MULTI_BALL_L3: '#32CD32',
     WIDEN_PADDLE: '#FF69B4',
-    WIDEN_PADDLE_L2: '#FF1493',
-    WIDEN_PADDLE_L3: '#C71585',
+    WIDEN_PADDLE_L2: '#FF69B4',
+    WIDEN_PADDLE_L3: '#FF69B4',
     LASER_PADDLE: '#FF4500',
-    LASER_PADDLE_L2: '#FF0000',
-    LASER_PADDLE_L3: '#DC143C',
-    REGEN_BRICK: '#ADFF2F',         // GreenYellow
-    REGEN_BRICK_L2: '#9ACD32',     // YellowGreen
-    REGEN_BRICK_L3: '#556B2F',     // DarkOliveGreen
-    SAFETY_NET: '#1E90FF',         // DodgerBlue
-    SAFETY_NET_L2: '#4169E1',     // RoyalBlue
-    SAFETY_NET_L3: '#0000CD',     // MediumBlue
-    REINFORCE_BRICK: '#708090',   // SlateGray
-    REINFORCE_BRICK_L2: '#778899', // LightSlateGray
-    REINFORCE_BRICK_L3: '#2F4F4F', // DarkSlateGray
-    MAKE_SPECIAL: '#FFD700',      // Gold (Base)
-    MAKE_SPECIAL_L2: '#FFA500',  // Orange
-    MAKE_SPECIAL_L3: '#FF8C00',  // DarkOrange
-    BLACK_BALL: '#000000',         // Black
-    BLACK_BALL_L2: '#444444',     // Darker Gray
-    BLACK_BALL_L3: '#888888',     // Gray
-    PIERCE_BALL: '#DC143C',      // Crimson (Base)
-    PIERCE_BALL_L2: '#B22222',  // Firebrick
-    PIERCE_BALL_L3: '#8B0000',  // DarkRed
-    UPGRADE_BRICK: '#8A2BE2',    // BlueViolet
-    UPGRADE_BRICK_L2: '#9932CC', // DarkOrchid
-    UPGRADE_BRICK_L3: '#8B008B', // DarkMagenta
-    BUILDER_BALL: '#4682B4',     // SteelBlue
-    BUILDER_BALL_L2: '#5F9EA0',  // CadetBlue
-    BUILDER_BALL_L3: '#008B8B', // DarkCyan
-    BIG_BALL: '#F08080',         // LightCoral
-    BIG_BALL_L2: '#CD5C5C',     // IndianRed
-    BIG_BALL_L3: '#A52A2A',     // Brown (Same as Bomb Brick L1)
-    SPLITTING_BALL: '#9370DB',   // MediumPurple
-    SPLITTING_BALL_L2: '#8A2BE2', // BlueViolet (Same as Upgrade L1)
-    SPLITTING_BALL_L3: '#4B0082', // Indigo
-    COLLECTION_FIELD: '#20B2AA', // LightSeaGreen
-    COLLECTION_FIELD_L2: '#008B8B',// DarkCyan (Same as Builder L3)
-    COLLECTION_FIELD_L3: '#008080',// Teal
-    HOMING_BALL: '#DAA520',      // Goldenrod (Same as Sticky L2)
-    HOMING_BALL_L2: '#B8860B',  // DarkGoldenrod (Same as Sticky L1)
-    HOMING_BALL_L3: '#8B4513',  // SaddleBrown
-    BOMB_BRICK: '#A52A2A',       // Brown (Same as Big Ball L3)
-    BOMB_BRICK_L2: '#8B0000',   // DarkRed (Same as Pierce L3)
-    BOMB_BRICK_L3: '#800000',   // Maroon
+    LASER_PADDLE_L2: '#FF4500',
+    LASER_PADDLE_L3: '#FF4500',
+    REGEN_BRICK: '#ADFF2F',
+    REGEN_BRICK_L2: '#ADFF2F',
+    REGEN_BRICK_L3: '#ADFF2F',
+    SAFETY_NET: '#1E90FF',
+    SAFETY_NET_L2: '#1E90FF',
+    SAFETY_NET_L3: '#1E90FF',
+    REINFORCE_BRICK: '#708090',
+    REINFORCE_BRICK_L2: '#708090',
+    REINFORCE_BRICK_L3: '#708090',
+    MAKE_SPECIAL: '#FFD700',
+    MAKE_SPECIAL_L2: '#FFD700',
+    MAKE_SPECIAL_L3: '#FFD700',
+    BLACK_BALL: '#000000',
+    BLACK_BALL_L2: '#000000',
+    BLACK_BALL_L3: '#000000',
+    PIERCE_BALL: '#DC143C',
+    PIERCE_BALL_L2: '#DC143C',
+    PIERCE_BALL_L3: '#DC143C',
+    UPGRADE_BRICK: '#8A2BE2',
+    UPGRADE_BRICK_L2: '#8A2BE2',
+    UPGRADE_BRICK_L3: '#8A2BE2',
+    BUILDER_BALL: '#4682B4',
+    BUILDER_BALL_L2: '#4682B4',
+    BUILDER_BALL_L3: '#4682B4',
+    BIG_BALL: '#F08080',
+    BIG_BALL_L2: '#F08080',
+    BIG_BALL_L3: '#F08080',
+    SPLITTING_BALL: '#9370DB',
+    SPLITTING_BALL_L2: '#9370DB',
+    SPLITTING_BALL_L3: '#9370DB',
+    COLLECTION_FIELD: '#20B2AA',
+    COLLECTION_FIELD_L2: '#20B2AA',
+    COLLECTION_FIELD_L3: '#20B2AA',
+    HOMING_BALL: '#DAA520',
+    HOMING_BALL_L2: '#DAA520',
+    HOMING_BALL_L3: '#DAA520',
+    BOMB_BRICK: '#A52A2A',
+    BOMB_BRICK_L2: '#A52A2A',
+    BOMB_BRICK_L3: '#A52A2A',
     STICKY_PADDLE: '#B8860B',
-    STICKY_PADDLE_L2: '#DAA520',
-    STICKY_PADDLE_L3: '#FFD700',
-    BALL_BRICK: '#40E0D0', // Turquoise
-    BALL_BRICK_L2: '#00CED1', // DarkTurquoise
-    BALL_BRICK_L3: '#20B2AA', // LightSeaGreen (Same as Collection L1)
+    STICKY_PADDLE_L2: '#B8860B',
+    STICKY_PADDLE_L3: '#B8860B',
+    BALL_BRICK: '#40E0D0',
+    BALL_BRICK_L2: '#40E0D0',
+    BALL_BRICK_L3: '#40E0D0',
     ALL_IN_ONE: '#FFFFFF',
     NONE: '#888888'
 };

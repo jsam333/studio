@@ -19,7 +19,7 @@ export const applyPowerUpEffects = (
             const allTypes: PowerUpType[] = [
                 'HOMING_BALL', 'COLLECTION_FIELD', 'SPLITTING_BALL', 'BIG_BALL',
                 'MULTI_BALL', 'BUILDER_BALL', 'BLACK_BALL', 'PIERCE_BALL',
-                'WIDEN_PADDLE', 'LASER_PADDLE', 'REGEN_BRICK', 'SAFETY_NET',
+                'WIDEN_PADDLE', 'LASER_PADDLE', 'SAFETY_NET',
                 'MAKE_SPECIAL', 'BOMB_BRICK', 'STICKY_PADDLE',
                 'REINFORCE_BRICK', 'UPGRADE_BRICK',
                 'BALL_BRICK' // Added BALL_BRICK to ALL_IN_ONE effects

@@ -206,7 +206,6 @@ export const drawGameInfo = (
     bonusGold: number,
     isTestMode: boolean,
     lives: number,
-    // *** ADDED: Bonus gold timer parameter ***
     bonusGoldTimerCountdown: number | null
 ) => {
   ctx.font = "16px Arial";
@@ -239,7 +238,8 @@ export const drawGameInfo = (
         // *** ADDED: Draw Bonus Gold Timer if active ***
         if (bonusGoldTimerCountdown !== null && bonusGoldTimerCountdown > 0) {
             const secondsLeft = Math.ceil(bonusGoldTimerCountdown / 1000);
-            const timerText = ` [${secondsLeft}s]`;
+            // --- MODIFIED: Changed timer text format --- 
+            const timerText = ` ${secondsLeft} seconds left!`; // Changed text format
 
             // Make timer color fade from green to red
             const ratio = Math.max(0, Math.min(1, bonusGoldTimerCountdown / BONUS_GOLD_TIMER_DURATION));
