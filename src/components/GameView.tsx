@@ -22,10 +22,12 @@ export const GameView: React.FC<GameViewProps> = ({
   handleResetGame
 }) => {
   return (
-    <div className="flex items-center justify-center h-screen bg-gray-900 p-4">
+    // Removed background class from outermost container to let body background show
+    <div className="flex items-center justify-center h-screen p-4">
+      {/* Keep blue background for the container holding the canvas and sidebar */}
       <div 
         ref={gameContainerRef} 
-        className="flex flex-row items-start border border-white relative"
+        className="flex flex-row items-start border border-white relative bg-background"
       >
         <canvas 
           ref={canvasRef} 

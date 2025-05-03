@@ -21,9 +21,6 @@ body {
 canvas {
   touch-action: none; /* Specifically disable touch actions on the canvas */
   display: block; /* Prevent potential extra space below canvas */
-  /* Removed width: 100% and height: 100% */
-  /* The actual width/height attributes set by JS will control the size and aspect ratio */
-  /* The flex container in page.tsx will handle centering */
   max-width: 100%; /* Ensure canvas doesn't overflow its container horizontally */
   max-height: 100%; /* Ensure canvas doesn't overflow its container vertically */
 }
@@ -31,14 +28,15 @@ canvas {
 
 @layer base {
   :root {
-    --background: 205 58% 55%; /* Blue (#3498db) */
+    --background: 218 39% 11%; /* Dark Gray (#111827) - For game area */
+    --page-background: 34 33% 78%; /* Tan - Fallback color */
     --foreground: 0 0% 100%; /* White (#ffffff) */
-    --card: 205 58% 55%;
-    --card-foreground: 0 0% 100%;
+    --card: 218 39% 11%; /* Match game area */
+    --card-foreground: 0 0% 100%; /* White */
     --popover: 0 0% 100%;
     --popover-foreground: 0 0% 3.9%;
     --primary: 0 0% 100%; /* White (#ffffff) */
-    --primary-foreground: 205 58% 55%; /* Blue (#3498db) */
+    --primary-foreground: 218 39% 11%; /* Dark Gray for contrast */
     --secondary: 0 0% 96.1%;
     --secondary-foreground: 0 0% 9%;
     --muted: 0 0% 96.1%;
@@ -61,10 +59,11 @@ canvas {
     --sidebar-ring: 217.2 91.2% 59.8%;
   }
   .dark {
-    --background: 205 58% 55%; /* Blue (#3498db) */
+    --background: 218 39% 11%; /* Dark Gray (#111827) - For game area */
+    --page-background: 34 33% 78%; /* Tan - Fallback color */
     --foreground: 0 0% 100%; /* White (#ffffff) */
-    --card: 205 58% 55%;
-    --card-foreground: 0 0% 100%;
+    --card: 218 39% 11%; /* Match game area */
+    --card-foreground: 0 0% 100%; /* White */
     --popover: 0 0% 3.9%;
     --popover-foreground: 0 0% 98%;
     --primary: 0 0% 98%;
@@ -96,6 +95,10 @@ canvas {
     @apply border-border;
   }
   body {
-    @apply bg-background text-foreground;
+    /* Corrected path to image in public/images */
+    background-image: url('/images/bbubg2.png');
+    background-repeat: repeat;
+    background-color: hsl(var(--page-background)); /* Fallback color */
+    @apply text-foreground;
   }
 }
