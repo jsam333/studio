@@ -6,14 +6,15 @@ import {
     BOARD_WIDTH, BOARD_HEIGHT,
 } from '../constants';
 // MODIFIED: Import GameLoopCallbacks type
-import { GameLoopCallbacks, GameState } from '../interfaces';
+import { GameLoopCallbacks, GameState, GameStateRefs } from '../interfaces'; // Added GameStateRefs
 import { gameUpdate } from '../gameLoop';
 import { setupGameCanvas } from '../gameCanvas';
 import { useGameLogic } from '../hooks/useGameLogic';
 import { useIsMobile } from '../hooks/use-mobile';
 import { GameMenu } from '../components/GameMenu';
-import { ShopScreen } from '../components/ShopScreen';
+// import { ShopScreen } from '../components/ShopScreen'; // ShopScreen is now part of GameView
 import { GameView } from '../components/GameView';
+import { PowerUpType } from '../interfaces'; // For ShopScreen props
 
 const SIDEBAR_WIDTH_PX = 192;
 const MAX_DELTA_TIME_FACTOR = 3; // Retained for potential future use or reference
@@ -149,6 +150,7 @@ export default function Home() {
         };
         window.addEventListener('keydown', handleKeyDown);
 
+        // If game state is menu or shop, don't setup game canvas, just clear it
         if (gameOverState === 'menu' || gameOverState === 'shop') {
             if (animationFrameIdRef.current) {
                 cancelAnimationFrame(animationFrameIdRef.current);
@@ -245,19 +247,20 @@ export default function Home() {
         return <GameMenu onStartGame={startGame} />;
     }
 
-    if (gameOverState === 'shop') {
-        return (
-            <ShopScreen
-                gameStateRefs={gameStateRefs}
-                currentLevel={currentLevel}
-                addSpawnablePowerUp={addSpawnablePowerUp}
-                startNextLevel={startNextLevel}
-                handleResetGame={handleResetGame}
-            />
-        );
-    }
+    // Shop is now rendered inside GameView
+    // if (gameOverState === 'shop') {
+    //     return (
+    //         <ShopScreen
+    //             gameStateRefs={gameStateRefs}
+    //             currentLevel={currentLevel}
+    //             addSpawnablePowerUp={addSpawnablePowerUp}
+    //             startNextLevel={startNextLevel}
+    //             handleResetGame={handleResetGame}
+    //         />
+    //     );
+    // }
 
-    // Render Game View (Playing, Won, Lost)
+    // Render Game View (Playing, Won, Lost, Shop)
     return (
         <GameView
             gameContainerRef={gameContainerRef}
@@ -267,6 +270,12 @@ export default function Home() {
             enabledPowerUps={enabledPowerUps}
             onTogglePowerUp={handlePowerUpToggle}
             handleResetGame={handleResetGame}
+            // Props for ShopScreen
+            gameStateRefs={gameStateRefs} // Pass gameStateRefs
+            currentLevel={currentLevel}
+            addSpawnablePowerUp={addSpawnablePowerUp}
+            startNextLevel={startNextLevel}
+            // Removed gold and lives as they are in gameStateRefs
         />
     );
 }
