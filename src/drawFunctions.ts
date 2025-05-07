@@ -262,30 +262,49 @@ export const drawGameInfo = (
 };
 // --- END MODIFICATION ---
 
-// Draw PowerUps (Unchanged)
+// Draw PowerUps
+const multiBallImage = new Image();
+multiBallImage.src = '/images/multiball.png';
+const widenPaddleImage = new Image();
+widenPaddleImage.src = '/images/widen paddle.png';
+const laserPaddleImage = new Image();
+laserPaddleImage.src = '/images/laser paddle.png';
+const regenBrickImage = new Image();
+regenBrickImage.src = '/images/regen brick.png';
+
 export const drawPowerUps = (ctx: CanvasRenderingContext2D, powerUps: PowerUp[]) => {
     const currentTime = Date.now();
   powerUps.forEach(powerUp => {
     if (powerUp.status === 'falling') {
-      ctx.beginPath(); ctx.rect(powerUp.x, powerUp.y, POWER_UP_SIZE, POWER_UP_SIZE);
-      if (powerUp.type === 'ALL_IN_ONE' && powerUp.timeCreated) {
-          const timeElapsed = currentTime - powerUp.timeCreated; const colorIndex = Math.floor(timeElapsed / RAINBOW_FLASH_INTERVAL) % RAINBOW_COLORS.length;
-          ctx.fillStyle = RAINBOW_COLORS[colorIndex];
+      if (powerUp.type === 'MULTI_BALL') {
+        ctx.drawImage(multiBallImage, powerUp.x, powerUp.y, POWER_UP_SIZE, POWER_UP_SIZE);
+      } else if (powerUp.type === 'WIDEN_PADDLE') {
+        ctx.drawImage(widenPaddleImage, powerUp.x, powerUp.y, POWER_UP_SIZE, POWER_UP_SIZE);
+      } else if (powerUp.type === 'LASER_PADDLE') {
+        ctx.drawImage(laserPaddleImage, powerUp.x, powerUp.y, POWER_UP_SIZE, POWER_UP_SIZE);
+      } else if (powerUp.type === 'REGEN_BRICK') {
+        ctx.drawImage(regenBrickImage, powerUp.x, powerUp.y, POWER_UP_SIZE, POWER_UP_SIZE);
       } else {
-          ctx.fillStyle = POWER_UP_COLORS[powerUp.type as PowerUpType] || POWER_UP_COLORS['NONE']!;
+        ctx.beginPath(); ctx.rect(powerUp.x, powerUp.y, POWER_UP_SIZE, POWER_UP_SIZE);
+        if (powerUp.type === 'ALL_IN_ONE' && powerUp.timeCreated) {
+            const timeElapsed = currentTime - powerUp.timeCreated; const colorIndex = Math.floor(timeElapsed / RAINBOW_FLASH_INTERVAL) % RAINBOW_COLORS.length;
+            ctx.fillStyle = RAINBOW_COLORS[colorIndex];
+        } else {
+            ctx.fillStyle = POWER_UP_COLORS[powerUp.type as PowerUpType] || POWER_UP_COLORS['NONE']!;
+        }
+        ctx.fill();
+        if (powerUp.type === 'BLACK_BALL' || powerUp.type === 'BOMB_BRICK' || powerUp.type === 'ALL_IN_ONE' || powerUp.type === 'STICKY_PADDLE') {
+             ctx.strokeStyle = (powerUp.type === 'ALL_IN_ONE') ? '#000000' : '#ffffff';
+             ctx.lineWidth = 1;
+             ctx.stroke();
+        }
+        ctx.closePath();
       }
-      ctx.fill();
-      if (powerUp.type === 'BLACK_BALL' || powerUp.type === 'BOMB_BRICK' || powerUp.type === 'ALL_IN_ONE' || powerUp.type === 'STICKY_PADDLE') {
-           ctx.strokeStyle = (powerUp.type === 'ALL_IN_ONE') ? '#000000' : '#ffffff';
-           ctx.lineWidth = 1;
-           ctx.stroke();
-      }
-      ctx.closePath();
     }
   });
 };
 
-// Draw PowerUp Previews (Unchanged)
+// Draw PowerUp Previews
 export const drawPowerUpPreviews = (ctx: CanvasRenderingContext2D, spawnablePowerUpTypes: Set<PowerUpType>) => {
     const typesArray = Array.from(spawnablePowerUpTypes);
     const totalSpawnable = typesArray.length;
@@ -298,17 +317,34 @@ export const drawPowerUpPreviews = (ctx: CanvasRenderingContext2D, spawnablePowe
 
     ctx.save(); // Save context state
     typesArray.forEach((type) => {
-        const color = POWER_UP_COLORS[type] || POWER_UP_COLORS['NONE']!;
-        ctx.fillStyle = color + previewAlpha; // Apply base color with alpha
-        ctx.strokeStyle = color; // Use full color for outline
-        ctx.lineWidth = 1;
+        if (type === 'MULTI_BALL') {
+            ctx.globalAlpha = parseFloat((parseInt(previewAlpha, 16) / 255).toFixed(2));
+            ctx.drawImage(multiBallImage, currentX, startY, POWER_UP_SIZE, POWER_UP_SIZE);
+            ctx.globalAlpha = 1.0;
+        } else if (type === 'WIDEN_PADDLE') {
+            ctx.globalAlpha = parseFloat((parseInt(previewAlpha, 16) / 255).toFixed(2));
+            ctx.drawImage(widenPaddleImage, currentX, startY, POWER_UP_SIZE, POWER_UP_SIZE);
+            ctx.globalAlpha = 1.0;
+        } else if (type === 'LASER_PADDLE') {
+            ctx.globalAlpha = parseFloat((parseInt(previewAlpha, 16) / 255).toFixed(2));
+            ctx.drawImage(laserPaddleImage, currentX, startY, POWER_UP_SIZE, POWER_UP_SIZE);
+            ctx.globalAlpha = 1.0;
+        } else if (type === 'REGEN_BRICK') {
+            ctx.globalAlpha = parseFloat((parseInt(previewAlpha, 16) / 255).toFixed(2));
+            ctx.drawImage(regenBrickImage, currentX, startY, POWER_UP_SIZE, POWER_UP_SIZE);
+            ctx.globalAlpha = 1.0;
+        } else {
+            const color = POWER_UP_COLORS[type] || POWER_UP_COLORS['NONE']!;
+            ctx.fillStyle = color + previewAlpha;
+            ctx.strokeStyle = color;
+            ctx.lineWidth = 1;
 
-        ctx.beginPath();
-        ctx.rect(currentX, startY, POWER_UP_SIZE, POWER_UP_SIZE);
-        ctx.fill();
-        ctx.stroke(); // Draw outline
-        ctx.closePath();
-
+            ctx.beginPath();
+            ctx.rect(currentX, startY, POWER_UP_SIZE, POWER_UP_SIZE);
+            ctx.fill();
+            ctx.stroke();
+            ctx.closePath();
+        }
         currentX += POWER_UP_SIZE + spacing;
     });
     ctx.restore(); // Restore context state
