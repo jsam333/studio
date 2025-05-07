@@ -114,7 +114,7 @@ export const ALL_TOGGLEABLE_POWER_UPS: PowerUpType[] = [
     'REINFORCE_BRICK', //points
     'MAKE_SPECIAL', //exponential
     'BLACK_BALL', //linear
-    'PIERCE_BALL', //linear
+    'PIERCE_BALL', //linear                                                                                               
     'UPGRADE_BRICK', //points
     'BUILDER_BALL', //points
     'BIG_BALL', //safety and exponential

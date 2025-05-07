@@ -277,6 +277,16 @@ const reinforceBrickImage = new Image();
 reinforceBrickImage.src = '/images/reinforce brick.png';
 const safetyNetImage = new Image();
 safetyNetImage.src = '/images/safety net.png';
+const makeSpecialImage = new Image();
+makeSpecialImage.src = '/images/make special.png';
+const stickyPaddleImage = new Image();
+stickyPaddleImage.src = '/images/sticky paddle.png';
+const bombBrickImage = new Image();
+bombBrickImage.src = '/images/bomb brick.png';
+const ballBrickImage = new Image();
+ballBrickImage.src = '/images/ball brick.png';
+const collectionFieldImage = new Image();
+collectionFieldImage.src = '/images/collection field.png';
 
 export const drawPowerUps = (ctx: CanvasRenderingContext2D, powerUps: PowerUp[]) => {
     const currentTime = Date.now();
@@ -296,6 +306,16 @@ export const drawPowerUps = (ctx: CanvasRenderingContext2D, powerUps: PowerUp[])
         ctx.drawImage(reinforceBrickImage, powerUp.x, powerUp.y, POWER_UP_SIZE, POWER_UP_SIZE);
       } else if (powerUp.type === 'SAFETY_NET') {
         ctx.drawImage(safetyNetImage, powerUp.x, powerUp.y, POWER_UP_SIZE, POWER_UP_SIZE);
+      } else if (powerUp.type === 'MAKE_SPECIAL') {
+        ctx.drawImage(makeSpecialImage, powerUp.x, powerUp.y, POWER_UP_SIZE, POWER_UP_SIZE);
+      } else if (powerUp.type === 'STICKY_PADDLE') {
+        ctx.drawImage(stickyPaddleImage, powerUp.x, powerUp.y, POWER_UP_SIZE, POWER_UP_SIZE);
+      } else if (powerUp.type === 'BOMB_BRICK') {
+        ctx.drawImage(bombBrickImage, powerUp.x, powerUp.y, POWER_UP_SIZE, POWER_UP_SIZE);
+      } else if (powerUp.type === 'BALL_BRICK') {
+        ctx.drawImage(ballBrickImage, powerUp.x, powerUp.y, POWER_UP_SIZE, POWER_UP_SIZE);
+      } else if (powerUp.type === 'COLLECTION_FIELD') {
+        ctx.drawImage(collectionFieldImage, powerUp.x, powerUp.y, POWER_UP_SIZE, POWER_UP_SIZE);
       } else {
         ctx.beginPath(); ctx.rect(powerUp.x, powerUp.y, POWER_UP_SIZE, POWER_UP_SIZE);
         if (powerUp.type === 'ALL_IN_ONE' && powerUp.timeCreated) {
@@ -344,6 +364,16 @@ export const drawPowerUpPreviews = (ctx: CanvasRenderingContext2D, spawnablePowe
             ctx.drawImage(reinforceBrickImage, currentX, startY, POWER_UP_SIZE, POWER_UP_SIZE);
         } else if (type === 'SAFETY_NET') {
             ctx.drawImage(safetyNetImage, currentX, startY, POWER_UP_SIZE, POWER_UP_SIZE);
+        } else if (type === 'MAKE_SPECIAL') {
+            ctx.drawImage(makeSpecialImage, currentX, startY, POWER_UP_SIZE, POWER_UP_SIZE);
+        } else if (type === 'STICKY_PADDLE') {
+            ctx.drawImage(stickyPaddleImage, currentX, startY, POWER_UP_SIZE, POWER_UP_SIZE);
+        } else if (type === 'BOMB_BRICK') {
+            ctx.drawImage(bombBrickImage, currentX, startY, POWER_UP_SIZE, POWER_UP_SIZE);
+        } else if (type === 'BALL_BRICK') {
+            ctx.drawImage(ballBrickImage, currentX, startY, POWER_UP_SIZE, POWER_UP_SIZE);
+        } else if (type === 'COLLECTION_FIELD') {
+            ctx.drawImage(collectionFieldImage, currentX, startY, POWER_UP_SIZE, POWER_UP_SIZE);
         } else {
             ctx.globalAlpha = 1.0; // Reset alpha for non-image power-ups before applying color alpha
             const color = POWER_UP_COLORS[type] || POWER_UP_COLORS['NONE']!;
@@ -357,8 +387,9 @@ export const drawPowerUpPreviews = (ctx: CanvasRenderingContext2D, spawnablePowe
             ctx.stroke();
             ctx.closePath();
         }
-        if (type === 'MULTI_BALL' || type === 'WIDEN_PADDLE' || type === 'LASER_PADDLE' || type === 'REGEN_BRICK' || type === 'UPGRADE_BRICK' || type === 'REINFORCE_BRICK' || type === 'SAFETY_NET') {
-            ctx.globalAlpha = 1.0; // Reset alpha after drawing image
+        // Reset alpha after drawing any image that uses globalAlpha
+        if (['MULTI_BALL', 'WIDEN_PADDLE', 'LASER_PADDLE', 'REGEN_BRICK', 'UPGRADE_BRICK', 'REINFORCE_BRICK', 'SAFETY_NET', 'MAKE_SPECIAL', 'STICKY_PADDLE', 'BOMB_BRICK', 'BALL_BRICK', 'COLLECTION_FIELD'].includes(type)) {
+            ctx.globalAlpha = 1.0;
         }
         currentX += POWER_UP_SIZE + spacing;
     });
