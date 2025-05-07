@@ -271,6 +271,12 @@ const laserPaddleImage = new Image();
 laserPaddleImage.src = '/images/laser paddle.png';
 const regenBrickImage = new Image();
 regenBrickImage.src = '/images/regen brick.png';
+const upgradeBrickImage = new Image();
+upgradeBrickImage.src = '/images/upgrade brick.png';
+const reinforceBrickImage = new Image();
+reinforceBrickImage.src = '/images/reinforce brick.png';
+const safetyNetImage = new Image();
+safetyNetImage.src = '/images/safety net.png';
 
 export const drawPowerUps = (ctx: CanvasRenderingContext2D, powerUps: PowerUp[]) => {
     const currentTime = Date.now();
@@ -284,6 +290,12 @@ export const drawPowerUps = (ctx: CanvasRenderingContext2D, powerUps: PowerUp[])
         ctx.drawImage(laserPaddleImage, powerUp.x, powerUp.y, POWER_UP_SIZE, POWER_UP_SIZE);
       } else if (powerUp.type === 'REGEN_BRICK') {
         ctx.drawImage(regenBrickImage, powerUp.x, powerUp.y, POWER_UP_SIZE, POWER_UP_SIZE);
+      } else if (powerUp.type === 'UPGRADE_BRICK') {
+        ctx.drawImage(upgradeBrickImage, powerUp.x, powerUp.y, POWER_UP_SIZE, POWER_UP_SIZE);
+      } else if (powerUp.type === 'REINFORCE_BRICK') {
+        ctx.drawImage(reinforceBrickImage, powerUp.x, powerUp.y, POWER_UP_SIZE, POWER_UP_SIZE);
+      } else if (powerUp.type === 'SAFETY_NET') {
+        ctx.drawImage(safetyNetImage, powerUp.x, powerUp.y, POWER_UP_SIZE, POWER_UP_SIZE);
       } else {
         ctx.beginPath(); ctx.rect(powerUp.x, powerUp.y, POWER_UP_SIZE, POWER_UP_SIZE);
         if (powerUp.type === 'ALL_IN_ONE' && powerUp.timeCreated) {
@@ -317,23 +329,23 @@ export const drawPowerUpPreviews = (ctx: CanvasRenderingContext2D, spawnablePowe
 
     ctx.save(); // Save context state
     typesArray.forEach((type) => {
+        ctx.globalAlpha = parseFloat((parseInt(previewAlpha, 16) / 255).toFixed(2));
         if (type === 'MULTI_BALL') {
-            ctx.globalAlpha = parseFloat((parseInt(previewAlpha, 16) / 255).toFixed(2));
             ctx.drawImage(multiBallImage, currentX, startY, POWER_UP_SIZE, POWER_UP_SIZE);
-            ctx.globalAlpha = 1.0;
         } else if (type === 'WIDEN_PADDLE') {
-            ctx.globalAlpha = parseFloat((parseInt(previewAlpha, 16) / 255).toFixed(2));
             ctx.drawImage(widenPaddleImage, currentX, startY, POWER_UP_SIZE, POWER_UP_SIZE);
-            ctx.globalAlpha = 1.0;
         } else if (type === 'LASER_PADDLE') {
-            ctx.globalAlpha = parseFloat((parseInt(previewAlpha, 16) / 255).toFixed(2));
             ctx.drawImage(laserPaddleImage, currentX, startY, POWER_UP_SIZE, POWER_UP_SIZE);
-            ctx.globalAlpha = 1.0;
         } else if (type === 'REGEN_BRICK') {
-            ctx.globalAlpha = parseFloat((parseInt(previewAlpha, 16) / 255).toFixed(2));
             ctx.drawImage(regenBrickImage, currentX, startY, POWER_UP_SIZE, POWER_UP_SIZE);
-            ctx.globalAlpha = 1.0;
+        } else if (type === 'UPGRADE_BRICK') {
+            ctx.drawImage(upgradeBrickImage, currentX, startY, POWER_UP_SIZE, POWER_UP_SIZE);
+        } else if (type === 'REINFORCE_BRICK') {
+            ctx.drawImage(reinforceBrickImage, currentX, startY, POWER_UP_SIZE, POWER_UP_SIZE);
+        } else if (type === 'SAFETY_NET') {
+            ctx.drawImage(safetyNetImage, currentX, startY, POWER_UP_SIZE, POWER_UP_SIZE);
         } else {
+            ctx.globalAlpha = 1.0; // Reset alpha for non-image power-ups before applying color alpha
             const color = POWER_UP_COLORS[type] || POWER_UP_COLORS['NONE']!;
             ctx.fillStyle = color + previewAlpha;
             ctx.strokeStyle = color;
@@ -344,6 +356,9 @@ export const drawPowerUpPreviews = (ctx: CanvasRenderingContext2D, spawnablePowe
             ctx.fill();
             ctx.stroke();
             ctx.closePath();
+        }
+        if (type === 'MULTI_BALL' || type === 'WIDEN_PADDLE' || type === 'LASER_PADDLE' || type === 'REGEN_BRICK' || type === 'UPGRADE_BRICK' || type === 'REINFORCE_BRICK' || type === 'SAFETY_NET') {
+            ctx.globalAlpha = 1.0; // Reset alpha after drawing image
         }
         currentX += POWER_UP_SIZE + spacing;
     });

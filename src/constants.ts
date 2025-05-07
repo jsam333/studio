@@ -261,9 +261,9 @@ export const LASER_STRIPE_WIDTH_PER_SHOT = 4;
 // Colors
 export const GOLD_COLOR = '#FFD700';
 export const NORMAL_BRICK_COLOR = '#e67e22';
-export const REINFORCED_BRICK_COLOR = '#0077AA';
-export const UPGRADED_BRICK_COLOR = '#005588';
-export const BUILDER_BRICK_COLOR = '#44AAFF';
+export const REINFORCED_BRICK_COLOR = '#A0522D'; // Level 1: Orange-Brown (Sienna)
+export const UPGRADED_BRICK_COLOR = '#8B4513';   // Level 2: Brown (SaddleBrown)
+export const BUILDER_BRICK_COLOR = '#654321';    // Level 3: Dark Brown
 export const SPECIAL_BRICK_COLOR = '#FFD700';
 export const BOMB_BRICK_COLOR = '#8B0000';
 export const BALL_BRICK_COLOR = '#FFFFFF'; // Added color for the ball-holding brick
