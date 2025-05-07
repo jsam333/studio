@@ -1,5 +1,4 @@
 import React from 'react';
-import { Button } from './ui/button';
 
 interface GameMenuProps {
   onStartGame: (mode: 'main' | 'test') => void;
@@ -7,21 +6,82 @@ interface GameMenuProps {
 
 export const GameMenu: React.FC<GameMenuProps> = ({ onStartGame }) => {
   return (
-    <div className="flex flex-col items-center justify-center h-screen bg-gray-900 text-white">
-      <h1 className="text-4xl font-bold mb-4">Brick Blast Ultimate</h1>
-      <p className="text-lg mb-8 text-gray-400 text-center px-4">Destroy all the bricks using your paddle and ball. Collect power-ups to help! Gain more gold for beating levels faster, and beware of the level time limit.</p>
-      <Button
-        onClick={() => onStartGame('main')} 
-        className="px-8 py-4 text-xl bg-green-600 hover:bg-green-700 mb-4"
-      >
-        Main Game
-      </Button>
-      <Button 
-        onClick={() => onStartGame('test')} 
-        className="px-8 py-4 text-xl bg-blue-600 hover:bg-blue-700"
-      >
-        Test Level
-      </Button>
+    <div style={{
+      fontFamily: 'Arial, sans-serif',
+      color: '#000000',
+      minHeight: '100vh',
+      padding: '20px',
+      backgroundImage: 'url(/images/bbubg2.png)',
+      backgroundRepeat: 'repeat'
+    }}>
+      <header style={{ textAlign: 'center', marginBottom: '20px', borderBottom: '2px solid #000000', paddingBottom: '20px' }}>
+        <h1 style={{ fontSize: '36px', fontWeight: 'bold', margin: '0' }}>Free Fun Games - Welcome!</h1>
+        <p style={{ fontSize: '14px', marginTop: '5px' }}>Your #1 source for brick-blasting action!</p>
+      </header>
+      
+      <div style={{ display: 'flex', justifyContent: 'space-around', alignItems: 'flex-start', maxWidth: '1000px', margin: '0 auto' }}>
+        <nav style={{ textAlign: 'left', marginTop: '10px', padding: '15px', borderRadius: '5px', maxWidth: '600px' }}>
+          <ul style={{ listStyleType: 'none', padding: '0', margin: '0' }}>
+            <li style={{ marginBottom: '10px' }}>
+              <a 
+                href="#" 
+                onClick={(e) => { e.preventDefault(); /* Dead link */ }}
+                style={{ fontSize: '20px', color: '#000000', textDecoration: 'underline', fontWeight: 'bold', display: 'inline-block' }}
+              >
+                Brick Blast
+              </a>
+            </li>
+            <li style={{ marginBottom: '10px' }}>
+              <a 
+                href="#" 
+                onClick={(e) => { e.preventDefault(); /* Dead link */ }}
+                style={{ fontSize: '20px', color: '#000000', textDecoration: 'underline', fontWeight: 'bold', display: 'inline-block' }}
+              >
+                Brick Blast 2
+              </a>
+            </li>
+            <li style={{ marginBottom: '10px' }}>
+              <a 
+                href="#" 
+                onClick={(e) => { e.preventDefault(); /* Dead link */ }}
+                style={{ fontSize: '20px', color: '#000000', textDecoration: 'underline', fontWeight: 'bold', display: 'inline-block' }}
+              >
+                Brick Blast 3
+              </a>
+            </li>
+            <li style={{ marginBottom: '10px' }}>
+              <a 
+                href="#" 
+                onClick={(e) => { e.preventDefault(); onStartGame('main'); }}
+                style={{ fontSize: '20px', color: '#0000FF', textDecoration: 'underline', fontWeight: 'bold', display: 'inline-block' }}
+              >
+                Brick Blast Ultimate
+              </a>
+              <div style={{ textAlign: 'center', marginTop: '10px', padding: '10px', borderRadius: '5px' }}>
+                <p style={{ fontSize: '16px', lineHeight: '1.6', maxWidth: '600px', margin: '0 auto' }}>
+                  Destroy all the bricks using your paddle and ball. Collect power-ups to help! 
+                  Gain more gold for beating levels faster, and beware of the level time limit.
+                </p>
+              </div>
+            </li>
+            <li style={{ marginBottom: '10px' }}>
+              <a 
+                href="#" 
+                onClick={(e) => { e.preventDefault(); onStartGame('test'); }}
+                style={{ fontSize: '20px', color: '#0000FF', textDecoration: 'underline', fontWeight: 'bold', display: 'inline-block' }}
+              >
+                Test Level
+              </a>
+            </li>
+          </ul>
+        </nav>
+        <img src="/images/atari-breakout-998.webp" alt="Atari Breakout" style={{ marginTop: '10px', maxHeight: '150px' }}/>
+      </div>
+
+      <footer style={{ textAlign: 'center', marginTop: '30px', paddingTop: '20px', borderTop: '1px dashed #555555', fontSize: '12px' }}>
+        <p>&copy; 2001 BrickBlast Corp. All Rights Reserved.</p>
+        <img src="https://www.thegeocitiesgallery.com/images/blinking-construction.gif" alt="Under Construction" style={{marginTop: '10px'}}/>
+      </footer>
     </div>
   );
 };
