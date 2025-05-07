@@ -30,7 +30,7 @@ const UPGRADABLE_POWER_UPS: PowerUpType[] = [
 ];
 
 export function useGameLogic() {
-    // Core Game State Refs (including initialBonusGoldDecrementCompleteRef)
+    // Core Game State Refs
     const paddleXRef = useRef((BOARD_WIDTH - INITIAL_PADDLE_WIDTH) / 2);
     const ballsRef = useRef<Ball[]>([]);
     const powerUpsRef = useRef<PowerUp[]>([]);
@@ -59,6 +59,7 @@ export function useGameLogic() {
     const livesRef = useRef<number>(INITIAL_LIVES);
     const bonusGoldTimerCountdownRef = useRef<number | null>(null);
     const initialBonusGoldDecrementCompleteRef = useRef<boolean>(false);
+    const firstTestRunCompletedRef = useRef<boolean>(false); // New ref
 
     // UI State
     const [gameOverState, setGameOverState] = useState<GameState>('menu');
@@ -122,7 +123,7 @@ export function useGameLogic() {
         initialBonusGoldDecrementCompleteRef
     });
 
-    // Effects (resetting initialBonusGoldDecrementCompleteRef included)
+    // Effects
     useEffect(() => {
         enabledPowerUpsRef.current = enabledPowerUps;
     }, [enabledPowerUps]);
@@ -148,7 +149,7 @@ export function useGameLogic() {
         }
     }, [gameOverState, resetLevel]);
 
-    // Keyboard Listeners (Unchanged)
+    // Keyboard Listeners
     useEffect(() => {
         const handleKeyDown = (event: KeyboardEvent) => {
             if (gameOverStateRef.current === 'playing' && event.code === 'Space' && !event.repeat) {
@@ -176,7 +177,7 @@ export function useGameLogic() {
         scoreRef.current += points;
     }, []);
 
-    // Field Shrink Logic (Unchanged)
+    // Field Shrink Logic
     const scheduleFieldShrink = useCallback(() => {
         if (collectionFieldShrinkTimerRef.current) {
             clearInterval(collectionFieldShrinkTimerRef.current);
@@ -199,22 +200,17 @@ export function useGameLogic() {
         }, FIELD_SHRINK_INTERVAL);
     }, []);
 
-    // --- MODIFIED: Bonus Gold Reset Callback ---
     const resetBonusGoldCallback = useCallback(() => {
         console.log("Bonus Gold Timer Expired - Resetting Gold and Clearing Balls!");
         bonusGoldRef.current = 0;
         bonusGoldTimerCountdownRef.current = null;
         bonusCountdownStartedRef.current = false;
         initialBonusGoldDecrementCompleteRef.current = false;
-
-        // *** ADDED: Clear all balls ***
         ballsRef.current = [];
         stuckBallsRef.current = [];
-        // *** END ADDITION ***
+    }, [bonusGoldRef, bonusGoldTimerCountdownRef, bonusCountdownStartedRef, initialBonusGoldDecrementCompleteRef, ballsRef, stuckBallsRef]);
 
-    }, [bonusGoldRef, bonusGoldTimerCountdownRef, bonusCountdownStartedRef, initialBonusGoldDecrementCompleteRef, ballsRef, stuckBallsRef]); // Added ball refs as dependencies
-
-    // --- Game Control Functions (resetting initialBonusGoldDecrementCompleteRef included) ---
+    // Game Control Functions
     const handleResetGame = useCallback(() => {
         gameIsRunningRef.current = false;
         isGameStartedRef.current = false;
@@ -225,7 +221,6 @@ export function useGameLogic() {
         goldRef.current = 0;
         spawnablePowerUpsRef.current = new Set();
         currentLevelRef.current = 1;
-        gameModeRef.current = null;
         livesRef.current = INITIAL_LIVES;
         bonusGoldTimerCountdownRef.current = null;
         initialBonusGoldDecrementCompleteRef.current = false;
@@ -235,7 +230,12 @@ export function useGameLogic() {
 
         setGameOverState('menu');
         setShowSidebar(false);
-        setEnabledPowerUps(new Set(ALL_TOGGLEABLE_POWER_UPS));
+        if (gameModeRef.current !== 'test') {
+            setEnabledPowerUps(new Set(ALL_TOGGLEABLE_POWER_UPS));
+            firstTestRunCompletedRef.current = false; // Reset for next new 'test' game session
+        }
+        // Note: gameModeRef.current is nulled *after* the check above
+        gameModeRef.current = null;
         clearBonusGoldTimers();
 
     }, [resetLevel, resetPaddle, clearBonusGoldTimers]);
@@ -314,19 +314,24 @@ export function useGameLogic() {
             livesRef.current = INITIAL_LIVES;
             bonusGoldTimerCountdownRef.current = null;
             initialBonusGoldDecrementCompleteRef.current = false;
+
             if (mode === 'main') {
                  spawnablePowerUpsRef.current = new Set();
-             } else {
+                 setEnabledPowerUps(new Set(ALL_TOGGLEABLE_POWER_UPS)); 
+                 firstTestRunCompletedRef.current = false; // Reset for next new 'test' game session
+             } else if (mode === 'test') {
                  spawnablePowerUpsRef.current = new Set(ALL_TOGGLEABLE_POWER_UPS);
+                 if (!firstTestRunCompletedRef.current) {
+                     setEnabledPowerUps(new Set(['MULTI_BALL'] as PowerUpType[]));
+                     firstTestRunCompletedRef.current = true;
+                 } 
+                 // If firstTestRunCompletedRef.current is true, enabledPowerUps remain as they were from the previous test session (preserved by handleResetGame)
              }
+
             currentLevelRef.current = 1;
             gameModeRef.current = mode;
-
             resetLevel(mode, true);
-
             setShowSidebar(mode === 'test');
-            setEnabledPowerUps(new Set(ALL_TOGGLEABLE_POWER_UPS));
-
             setGameOverState('playing');
         }
     }, [resetLevel]);
@@ -380,7 +385,6 @@ export function useGameLogic() {
         resetLevel(mode, resetScoreAndGold);
     }, [resetLevel]);
 
-    // --- GameStateRefs (includes initialBonusGoldDecrementCompleteRef) ---
     const gameStateRefs: IGameStateRefs = {
         paddleXRef, ballsRef, powerUpsRef, scoreRef, goldRef, spawnablePowerUpsRef,
         paddleWidthRef, widenLevelRef, laserShotsRef, lasersRef, safetyNetCountRef,
@@ -402,9 +406,9 @@ export function useGameLogic() {
         livesRef,
         bonusGoldTimerCountdownRef,
         initialBonusGoldDecrementCompleteRef,
+        firstTestRunCompletedRef, // Added to refs
     };
 
-    // --- GameLoopCallbacks (includes resetBonusGoldCallback) ---
     const gameLoopCallbacks: GameLoopCallbacks = {
         updateScoreCallback,
         setGameOverState,
