@@ -51,8 +51,9 @@ const updateBonusGoldTimer = (
     }
 };
 
-// --- Optimization: Reusable array for collected power-up types ---
+// --- Optimization: Reusable arrays --- 
 const collectedPowerUpTypesReusable: PowerUpType[] = [];
+const spawnRequestsReusable: PowerUpSpawnEvent[] = []; // Reusable array for spawn requests
 
 export const gameUpdate = (
     ctx: CanvasRenderingContext2D,
@@ -73,7 +74,9 @@ export const gameUpdate = (
     const targetFrameTime = 1000 / TARGET_FPS;
     const scaledDeltaTime = elapsedTime / targetFrameTime;
 
-    let spawnRequests: PowerUpSpawnEvent[] = [];
+    // --- Optimization: Clear reusable spawn requests array ---
+    spawnRequestsReusable.length = 0; 
+
     const previousBallCount = refs.ballsRef.current.length + refs.stuckBallsRef.current.length;
 
     const columns = refs.brickColumnsRef.current;
@@ -84,7 +87,8 @@ export const gameUpdate = (
     // --- UPDATES ---
     updatePaddleShrinkTimer(refs, callbacks, elapsedTime);
     updateBonusGoldTimer(refs, callbacks, elapsedTime);
-    updateBalls(refs, callbacks, spawnRequests, currentTime, gameSpeedFactor, scaledDeltaTime, columns, rows); 
+    // Pass the reusable array to updateBalls
+    updateBalls(refs, callbacks, spawnRequestsReusable, currentTime, gameSpeedFactor, scaledDeltaTime, columns, rows); 
 
     // --- DRAWING --- 
     ctx.save();
@@ -118,10 +122,11 @@ export const gameUpdate = (
 
     // --- GAME STARTED UPDATES & DRAWING ---
     
-    // --- Optimization: Clear reusable array instead of creating new one ---
+    // --- Optimization: Clear reusable collected types array ---
     collectedPowerUpTypesReusable.length = 0; 
 
-    updateLasers(refs, callbacks, spawnRequests, currentTime, scaledDeltaTime, columns, rows);
+    // Pass the reusable array to updateLasers
+    updateLasers(refs, callbacks, spawnRequestsReusable, currentTime, scaledDeltaTime, columns, rows);
 
     // --- Optimization: Use reduce to count falling power-ups without intermediate array ---
     const currentFallingPowerUpCount = refs.powerUpsRef.current.reduce((count, p) => {
@@ -132,8 +137,9 @@ export const gameUpdate = (
         ? refs.spawnablePowerUpsRef.current
         : refs.enabledPowerUpsRef.current;
 
+    // Pass the reusable array to handleSpawnEvents
     const { newPowerUps, newBalls } = handleSpawnEvents(
-        spawnRequests,
+        spawnRequestsReusable, 
         currentFallingPowerUpCount,
         availablePowerUpsForSpawning,
         gameMode,
