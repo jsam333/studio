@@ -15,6 +15,13 @@ export const MAIN_GAME_CHANCE_INCREASE_PER_TYPE = 0.1; // +10% chance per availa
 export const POWER_UP_SPAWN_THRESHOLD = 20; // Limit before chance reduction starts
 export const POWER_UP_CHANCE_REDUCTION_PER_EXTRA = 0.02; // Reduction factor per extra power-up
 
+// ---- Optimization: Shared empty arrays ----
+const EMPTY_POWERUPS: PowerUp[] = [];
+const EMPTY_BALLS: Ball[] = [];
+Object.freeze(EMPTY_POWERUPS); // Prevent accidental modification
+Object.freeze(EMPTY_BALLS);   // Prevent accidental modification
+// ------------------------------------------
+
 export const createPowerUp = (x: number, y: number, brickWidth: number, type: PowerUpType, timeCreated?: number): PowerUp => ({
     x: x + brickWidth / 2 - POWER_UP_SIZE / 2,
     y: y + 5, // Spawn slightly below the brick
@@ -56,32 +63,32 @@ export const handleSpawnEvents = (
     currentTime: number,
     currentSpeedFactor: number
 ): { newPowerUps: PowerUp[], newBalls: Ball[] } => {
-    const newlySpawnedPowerUps: PowerUp[] = [];
-    const newlySpawnedBalls: Ball[] = [];
+     // Optimization: Initialize only if needed, or return shared empty arrays
+    let newlySpawnedPowerUps: PowerUp[] | null = null;
+    let newlySpawnedBalls: Ball[] | null = null;
 
     spawnRequests.forEach(event => {
         if (event.marker === 'SPAWN_SPECIAL') {
+            if (!newlySpawnedPowerUps) newlySpawnedPowerUps = []; // Create only when needed
             newlySpawnedPowerUps.push(createPowerUp(event.brickX, event.brickY, event.brickWidth, 'ALL_IN_ONE', currentTime));
         } else if (event.marker === 'SPAWN_BALL') {
-            // Calculate center of the destroyed brick
             const brickCenterX = event.brickX + event.brickWidth / 2;
             const brickCenterY = event.brickY + event.brickHeight / 2;
-            // Spawn a basic ball at the center
             const newBall = createNewBall(
                 brickCenterX,
-                brickCenterY - BALL_SIZE, // Position slightly above center to avoid immediate collision
-                (Math.random() - 0.5) * 4, // Give it a slight random horizontal speed
-                -INITIAL_BALL_SPEED_Y, // Launch upwards
+                brickCenterY - BALL_SIZE, 
+                (Math.random() - 0.5) * 4, 
+                -INITIAL_BALL_SPEED_Y, 
                 currentSpeedFactor
             );
+            if (!newlySpawnedBalls) newlySpawnedBalls = []; // Create only when needed
             newlySpawnedBalls.push(newBall);
         } else if (event.marker === 'PENDING') {
-             // Get the initial spawn chance using the calculation function
-            let spawnChance = calculateBaseSpawnChance(availablePowerUps, gameMode);
+             let spawnChance = calculateBaseSpawnChance(availablePowerUps, gameMode);
 
             if (spawnChance > 0) {
-                // Apply reduction based on falling power-ups
-                const totalEffectivePowerUpCount = currentFallingPowerUpCount + newlySpawnedPowerUps.length;
+                 // Apply reduction based on falling power-ups
+                const totalEffectivePowerUpCount = currentFallingPowerUpCount + (newlySpawnedPowerUps?.length ?? 0); // Adjust count check
                 if (totalEffectivePowerUpCount > POWER_UP_SPAWN_THRESHOLD) {
                     const excessPowerUps = totalEffectivePowerUpCount - POWER_UP_SPAWN_THRESHOLD;
                     spawnChance -= excessPowerUps * POWER_UP_CHANCE_REDUCTION_PER_EXTRA;
@@ -93,6 +100,7 @@ export const handleSpawnEvents = (
                     const possibleTypes = Array.from(availablePowerUps);
                     if (possibleTypes.length > 0) { // Ensure there are types to choose from
                         const type = possibleTypes[Math.floor(Math.random() * possibleTypes.length)];
+                        if (!newlySpawnedPowerUps) newlySpawnedPowerUps = []; // Create only when needed
                         newlySpawnedPowerUps.push(createPowerUp(event.brickX, event.brickY, event.brickWidth, type, currentTime));
                     }
                 }
@@ -100,7 +108,11 @@ export const handleSpawnEvents = (
         }
     });
 
-    return { newPowerUps: newlySpawnedPowerUps, newBalls: newlySpawnedBalls };
+    // Return the created arrays or the shared empty ones
+    return {
+        newPowerUps: newlySpawnedPowerUps ?? EMPTY_POWERUPS,
+        newBalls: newlySpawnedBalls ?? EMPTY_BALLS
+    };
 };
 // --- END MODIFICATION ---
 
