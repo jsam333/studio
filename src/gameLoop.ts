@@ -14,7 +14,7 @@ import {
 } from './constants';
 import { drawPaddle, drawBalls, drawBricks, drawGameInfo, drawPowerUps, drawLasers, drawSafetyNet, drawCollectionFieldRect, drawPowerUpPreviews } from './drawFunctions';
 
-// Function to handle paddle shrink countdown (Unchanged)
+// Function to handle paddle shrink countdown
 const updatePaddleShrinkTimer = (
     refs: GameStateRefs,
     callbacks: GameLoopCallbacks,
@@ -29,30 +29,24 @@ const updatePaddleShrinkTimer = (
     }
 };
 
-// *** MODIFIED: Function to handle Bonus Gold Timer ***
+// Function to handle Bonus Gold Timer
 const updateBonusGoldTimer = (
     refs: GameStateRefs,
     callbacks: GameLoopCallbacks,
     elapsedTime: number
 ) => {
-    // Check if the bonus gold target is reached, the initial decrement is complete, and the timer hasn't started
     if (
-        refs.bonusGoldRef.current === BONUS_GOLD_TARGET && // Use === for exact match
-        refs.initialBonusGoldDecrementCompleteRef.current && // Check if initial decrement is done
-        refs.bonusGoldTimerCountdownRef.current === null   // Check if 20s timer isn't already running
+        refs.bonusGoldRef.current === BONUS_GOLD_TARGET &&
+        refs.initialBonusGoldDecrementCompleteRef.current && 
+        refs.bonusGoldTimerCountdownRef.current === null
     ) {
-        console.log(`Bonus Gold reached ${BONUS_GOLD_TARGET} AFTER initial decrement, starting ${BONUS_GOLD_TIMER_DURATION / 1000}s timer!`);
-        refs.bonusGoldTimerCountdownRef.current = BONUS_GOLD_TIMER_DURATION; // Start the timer
+        refs.bonusGoldTimerCountdownRef.current = BONUS_GOLD_TIMER_DURATION;
     }
 
-    // If the 20s timer is running, decrement it
     if (refs.bonusGoldTimerCountdownRef.current !== null) {
         refs.bonusGoldTimerCountdownRef.current -= elapsedTime;
-        // If the timer runs out, reset bonus gold
         if (refs.bonusGoldTimerCountdownRef.current <= 0) {
-            console.log("Bonus Gold timer expired!");
-            callbacks.resetBonusGoldCallback(); // Call the reset callback (this also resets the flags)
-            // refs.bonusGoldTimerCountdownRef.current = null; // resetBonusGoldCallback handles this
+            callbacks.resetBonusGoldCallback(); 
         }
     }
 };
@@ -66,13 +60,13 @@ export const gameUpdate = (
 ) => {
     const currentGameState = refs.gameOverStateRef.current;
 
-    // Draw End Message if applicable (Unchanged)
     if (currentGameState === 'won' || currentGameState === 'lost' || currentGameState === 'shop' || currentGameState === 'menu') {
         ctx.clearRect(0, 0, BOARD_WIDTH, BOARD_HEIGHT);
         callbacks.drawEndMessage(ctx, currentGameState, refs.scoreRef.current);
         return;
     }
 
+    // Removed loopStartTime and related logs for clarity
     const currentTime = Date.now();
     const gameSpeedFactor = refs.gameSpeedFactorRef.current;
     const targetFrameTime = 1000 / TARGET_FPS;
@@ -86,13 +80,13 @@ export const gameUpdate = (
     const gameMode = refs.gameModeRef.current;
     const isTestMode = gameMode === 'test';
 
-    // --- UPDATES (Only if playing or resetting) ---
+    // --- UPDATES ---
     updatePaddleShrinkTimer(refs, callbacks, elapsedTime);
-    // *** Update bonus gold timer (Now checks the completion flag) ***
     updateBonusGoldTimer(refs, callbacks, elapsedTime);
-    updateBalls(refs, callbacks, spawnRequests, currentTime, gameSpeedFactor, scaledDeltaTime, columns, rows);
+    // updateBalls now modifies refs.ballsRef.current in place
+    updateBalls(refs, callbacks, spawnRequests, currentTime, gameSpeedFactor, scaledDeltaTime, columns, rows); 
 
-    // --- DRAWING --- (Unchanged)
+    // --- DRAWING --- 
     ctx.save();
     ctx.clearRect(0, 0, BOARD_WIDTH, BOARD_HEIGHT);
     drawBricks(ctx, refs.bricksRef.current, columns, rows);
@@ -112,9 +106,10 @@ export const gameUpdate = (
         drawCollectionFieldRect(ctx, refs.paddleXRef.current, refs.paddleWidthRef.current, refs.collectionFieldHeightRef.current, refs.collectionFieldWidthOffsetRef.current);
     }
 
-    // --- PRE-GAME STATE DRAWING --- (Unchanged)
+    // --- PRE-GAME STATE DRAWING ---
     if (!refs.isGameStartedRef.current) {
-        drawBalls(ctx, refs.stuckBallsRef.current);
+        // Pass only stuckBalls to drawBalls when not started
+        drawBalls(ctx, [], refs.stuckBallsRef.current); 
         if (gameMode === 'main') {
             drawPowerUpPreviews(ctx, refs.spawnablePowerUpsRef.current);
         }
@@ -122,7 +117,7 @@ export const gameUpdate = (
         return;
     }
 
-    // --- GAME STARTED UPDATES & DRAWING --- (Unchanged)
+    // --- GAME STARTED UPDATES & DRAWING ---
     let collectedPowerUpTypes: PowerUpType[] = [];
     updateLasers(refs, callbacks, spawnRequests, currentTime, scaledDeltaTime, columns, rows);
 
@@ -140,14 +135,18 @@ export const gameUpdate = (
         gameSpeedFactor
     );
 
-    refs.ballsRef.current.push(...newBalls);
-    refs.powerUpsRef.current = updatePowerUps( refs, gameSpeedFactor, newPowerUps, collectedPowerUpTypes, scaledDeltaTime );
+    // Add new balls from spawn events (if any)
+    if (newBalls.length > 0) {
+        refs.ballsRef.current.push(...newBalls);
+    }
+    // updatePowerUps now modifies refs.powerUpsRef.current in place
+    updatePowerUps( refs, gameSpeedFactor, newPowerUps, collectedPowerUpTypes, scaledDeltaTime );
 
     applyPowerUpEffects(refs, callbacks, collectedPowerUpTypes, currentTime, gameSpeedFactor);
 
-    // --- Draw Active Game Elements --- (Unchanged)
-    const allBallsToDraw = [...refs.ballsRef.current, ...refs.stuckBallsRef.current];
-    drawBalls(ctx, allBallsToDraw);
+    // --- Draw Active Game Elements ---
+    // Pass active and stuck balls separately to avoid creating a new array
+    drawBalls(ctx, refs.ballsRef.current, refs.stuckBallsRef.current);
     drawPowerUps(ctx, refs.powerUpsRef.current);
     drawLasers(ctx, refs.lasersRef.current);
 
@@ -157,7 +156,7 @@ export const gameUpdate = (
     }
     ctx.restore();
 
-    // --- Check Game Status --- (Unchanged)
+    // --- Check Game Status ---
     checkGameStatus(refs, callbacks, previousBallCount);
 
 };

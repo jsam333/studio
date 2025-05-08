@@ -10,14 +10,10 @@ export const updatePowerUps = (
     newlySpawnedPowerUps: PowerUp[],
     collectedPowerUpTypes: PowerUpType[], // Pass this array to add collected types
     deltaTime: number // Add deltaTime parameter
-): PowerUp[] => {
-    const nextPowerUpsArray: PowerUp[] = [];
-    // *** MODIFIED: Removed gameSpeedFactor multiplication ***
+): void => { // Return void as we modify the array in place
     const currentPowerUpSpeed = BASE_POWER_UP_SPEED;
     const currentFieldHeight = refs.collectionFieldHeightRef.current;
     const currentFieldWidthOffset = refs.collectionFieldWidthOffsetRef.current;
-    // Use PADDLE_Y constant instead of calculating from BOARD_HEIGHT
-    // const paddleTopY = BOARD_HEIGHT - PADDLE_HEIGHT; // Less reliable if PADDLE_Y is defined
     const paddleTopY = PADDLE_Y;
     const fieldTopY = paddleTopY - currentFieldHeight;
     const currentPaddleWidth = refs.paddleWidthRef.current;
@@ -25,54 +21,73 @@ export const updatePowerUps = (
     const fieldLeftX = currentPaddleX - currentFieldWidthOffset;
     const fieldRightX = currentPaddleX + currentPaddleWidth + currentFieldWidthOffset;
 
-    refs.powerUpsRef.current.forEach(pu => {
-        // Apply deltaTime to movement
-        const movement = currentPowerUpSpeed * deltaTime;
-        const nextY = pu.y + movement;
-        let collected = false;
-        let keep = true;
+    const powerUpsToRemoveIndices = new Set<number>();
 
+    // Iterate through existing power-ups to update and mark for removal
+    for (let i = 0; i < refs.powerUpsRef.current.length; i++) {
+        const pu = refs.powerUpsRef.current[i];
+        
         if (pu.status === 'falling') {
+            const movement = currentPowerUpSpeed * deltaTime;
+            const nextY = pu.y + movement;
+            let collected = false;
+            let remove = false;
+
             const puBottom = nextY + POWER_UP_SIZE;
             const puRight = pu.x + POWER_UP_SIZE;
 
-            // Check collision with paddle area (Simplified AABB check)
-            // Check if vertical range overlaps paddle's vertical range and horizontal range overlaps paddle's horizontal range
-            if (puBottom >= paddleTopY && // Bottom edge is at or below paddle top
-                nextY < paddleTopY + PADDLE_HEIGHT && // Top edge is above paddle bottom (using nextY, simplified)
-                puRight > currentPaddleX && // Right edge is past paddle left
-                pu.x < currentPaddleX + currentPaddleWidth) // Left edge is before paddle right
-            {
+            // Check collision with paddle area
+            if (puBottom >= paddleTopY &&
+                nextY < paddleTopY + PADDLE_HEIGHT && 
+                puRight > currentPaddleX &&
+                pu.x < currentPaddleX + currentPaddleWidth) {
                 collected = true;
             }
 
-            // Check collision with collection field (if active and not already collected)
+            // Check collision with collection field
             if (!collected && (currentFieldHeight > 0 || currentFieldWidthOffset > 0)) {
-                if (puRight > fieldLeftX && // Right edge past field left
-                    pu.x < fieldRightX && // Left edge before field right
-                    puBottom > fieldTopY && // Bottom edge below field top
-                    nextY < paddleTopY) // Top edge above paddle top (ensures it's in the field area)
-                {
+                if (puRight > fieldLeftX &&
+                    pu.x < fieldRightX && 
+                    puBottom > fieldTopY && 
+                    nextY < paddleTopY) {
                     collected = true;
                 }
             }
 
-
             if (collected) {
-                keep = false;
+                remove = true;
                 collectedPowerUpTypes.push(pu.type);
-            } else if (nextY >= BOARD_HEIGHT) { // Check against BOARD_HEIGHT
-                // Fell off screen
-                keep = false;
+            } else if (nextY >= BOARD_HEIGHT) { // Fell off screen
+                remove = true;
+            }
+
+            if (remove) {
+                powerUpsToRemoveIndices.add(i);
+            } else {
+                // Update position if not removed
+                pu.y = nextY;
             }
         }
+        // Add logic here if power-ups can expire or have other statuses that cause removal
+    }
 
-        if (keep) {
-            // Only update position if not collected or fallen off
-            nextPowerUpsArray.push({ ...pu, y: nextY });
-        }
-    });
+    // Remove marked power-ups by iterating backwards
+    if (powerUpsToRemoveIndices.size > 0) {
+         let writeIndex = 0;
+         for (let readIndex = 0; readIndex < refs.powerUpsRef.current.length; readIndex++) {
+             if (!powerUpsToRemoveIndices.has(readIndex)) {
+                  if (writeIndex !== readIndex) {
+                       refs.powerUpsRef.current[writeIndex] = refs.powerUpsRef.current[readIndex];
+                  }
+                  writeIndex++;
+             }
+         }
+         refs.powerUpsRef.current.length = writeIndex; // Truncate the array
+    }
 
-    // Combine existing (kept) power-ups with newly spawned ones
-    return nextPowerUpsArray.concat(newlySpawnedPowerUps);
+    // Add newly spawned power-ups
+    if (newlySpawnedPowerUps.length > 0) {
+        refs.powerUpsRef.current.push(...newlySpawnedPowerUps);
+    }
+    // The function now modifies refs.powerUpsRef.current directly
 };

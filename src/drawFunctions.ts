@@ -16,6 +16,33 @@ import {
     BONUS_GOLD_TIMER_DURATION // Import for timer color logic
 } from './constants';
 
+// --- Preload Power-Up Images --- 
+const multiBallImage = new Image();
+multiBallImage.src = '/images/multiball.png';
+const widenPaddleImage = new Image();
+widenPaddleImage.src = '/images/widen paddle.png';
+const laserPaddleImage = new Image();
+laserPaddleImage.src = '/images/laser paddle.png';
+const regenBrickImage = new Image();
+regenBrickImage.src = '/images/regen brick.png';
+const upgradeBrickImage = new Image();
+upgradeBrickImage.src = '/images/upgrade brick.png';
+const reinforceBrickImage = new Image();
+reinforceBrickImage.src = '/images/reinforce brick.png';
+const safetyNetImage = new Image();
+safetyNetImage.src = '/images/safety net.png';
+const makeSpecialImage = new Image();
+makeSpecialImage.src = '/images/make special.png';
+const stickyPaddleImage = new Image();
+stickyPaddleImage.src = '/images/sticky paddle.png';
+const bombBrickImage = new Image();
+bombBrickImage.src = '/images/bomb brick.png';
+const ballBrickImage = new Image();
+ballBrickImage.src = '/images/ball brick.png';
+const collectionFieldImage = new Image();
+collectionFieldImage.src = '/images/collection field.png';
+// --------------------------------
+
 // Draw Paddle (Unchanged)
 export const drawPaddle = (
     ctx: CanvasRenderingContext2D,
@@ -106,50 +133,53 @@ export const drawCollectionFieldRect = (
 };
 
 
-// Draw Balls (Unchanged)
-export const drawBalls = (ctx: CanvasRenderingContext2D, allBalls: Ball[]) => {
-    allBalls.forEach(ball => {
-    ctx.save();
-    const currentRadius = ball.isBig ? BALL_SIZE + BIG_BALL_SIZE_INCREASE : BALL_SIZE;
-    ctx.beginPath();
-    ctx.arc(ball.x, ball.y, currentRadius, 0, Math.PI * 2);
+// Draw Balls (Modified to accept active and stuck balls separately)
+export const drawBalls = (ctx: CanvasRenderingContext2D, activeBalls: Ball[], stuckBalls: Ball[]) => {
+    const drawBall = (ball: Ball) => { // Helper function to draw a single ball
+         ctx.save();
+         const currentRadius = ball.isBig ? BALL_SIZE + BIG_BALL_SIZE_INCREASE : BALL_SIZE;
+         ctx.beginPath();
+         ctx.arc(ball.x, ball.y, currentRadius, 0, Math.PI * 2);
 
-    if (ball.stuckOffset !== undefined || ball.stuckSide) { // Check both top and side stuck
-        ctx.fillStyle = "#cccccc";
-    } else if (ball.isHoming) {
-        ctx.fillStyle = POWER_UP_COLORS['HOMING_BALL'] || '#f1c40f';
-    } else if (ball.isSplitting) {
-        ctx.fillStyle = POWER_UP_COLORS['SPLITTING_BALL'] || '#9b59b6';
-    } else if (ball.isBlue) {
-        ctx.fillStyle = POWER_UP_COLORS['BUILDER_BALL']!;
-    } else if (ball.pierceHitsRemaining && ball.pierceHitsRemaining > 0) {
-        ctx.fillStyle = POWER_UP_COLORS['PIERCE_BALL']!;
-    } else if (ball.isBlack) {
-        ctx.fillStyle = "#000000";
-    } else {
-        ctx.fillStyle = "#ffffff";
-    }
-    ctx.fill();
+         if (ball.stuckOffset !== undefined || ball.stuckSide) { // Check both top and side stuck
+             ctx.fillStyle = "#cccccc";
+         } else if (ball.isHoming) {
+             ctx.fillStyle = POWER_UP_COLORS['HOMING_BALL'] || '#f1c40f';
+         } else if (ball.isSplitting) {
+             ctx.fillStyle = POWER_UP_COLORS['SPLITTING_BALL'] || '#9b59b6';
+         } else if (ball.isBlue) {
+             ctx.fillStyle = POWER_UP_COLORS['BUILDER_BALL']!;
+         } else if (ball.pierceHitsRemaining && ball.pierceHitsRemaining > 0) {
+             ctx.fillStyle = POWER_UP_COLORS['PIERCE_BALL']!;
+         } else if (ball.isBlack) {
+             ctx.fillStyle = "#000000";
+         } else {
+             ctx.fillStyle = "#ffffff";
+         }
+         ctx.fill();
 
-    // Adjust stroke logic for clarity
-    if (ball.stuckOffset !== undefined || ball.stuckSide) {
-        ctx.strokeStyle = '#000000'; // Black stroke for stuck balls
-    } else if (ball.isBlack) {
-        ctx.strokeStyle = '#ffffff'; // White stroke for black ball
-    } else if (ball.isSplitting || ball.isHoming) {
-        ctx.strokeStyle = '#000000'; // Black stroke for splitting/homing
-    }
-    // Apply stroke if a strokeStyle was set
-    if (ctx.strokeStyle) {
-        ctx.lineWidth = 1;
-        ctx.stroke();
-    }
-    ctx.closePath();
-    ctx.restore();
-  });
+         // Adjust stroke logic for clarity
+         if (ball.stuckOffset !== undefined || ball.stuckSide) {
+             ctx.strokeStyle = '#000000'; // Black stroke for stuck balls
+         } else if (ball.isBlack) {
+             ctx.strokeStyle = '#ffffff'; // White stroke for black ball
+         } else if (ball.isSplitting || ball.isHoming) {
+             ctx.strokeStyle = '#000000'; // Black stroke for splitting/homing
+         }
+         // Apply stroke if a strokeStyle was set
+         if (ctx.strokeStyle) {
+             ctx.lineWidth = 1;
+             ctx.stroke();
+         }
+         ctx.closePath();
+         ctx.restore();
+    };
+
+    activeBalls.forEach(drawBall);
+    stuckBalls.forEach(drawBall);
 };
 
-// Draw Bricks (Unchanged)
+// Draw Bricks (Reverted to original implementation)
 export const drawBricks = (ctx: CanvasRenderingContext2D, bricks: Brick[][], columns: number, rows: number) => {
     if (!bricks) return;
     for (let c = 0; c < columns; c++) {
@@ -196,6 +226,7 @@ export const drawBricks = (ctx: CanvasRenderingContext2D, bricks: Brick[][], col
         }
     }
 };
+
 
 // --- MODIFIED: drawGameInfo ---
 export const drawGameInfo = (
@@ -262,36 +293,12 @@ export const drawGameInfo = (
 };
 // --- END MODIFICATION ---
 
-// Draw PowerUps
-const multiBallImage = new Image();
-multiBallImage.src = '/images/multiball.png';
-const widenPaddleImage = new Image();
-widenPaddleImage.src = '/images/widen paddle.png';
-const laserPaddleImage = new Image();
-laserPaddleImage.src = '/images/laser paddle.png';
-const regenBrickImage = new Image();
-regenBrickImage.src = '/images/regen brick.png';
-const upgradeBrickImage = new Image();
-upgradeBrickImage.src = '/images/upgrade brick.png';
-const reinforceBrickImage = new Image();
-reinforceBrickImage.src = '/images/reinforce brick.png';
-const safetyNetImage = new Image();
-safetyNetImage.src = '/images/safety net.png';
-const makeSpecialImage = new Image();
-makeSpecialImage.src = '/images/make special.png';
-const stickyPaddleImage = new Image();
-stickyPaddleImage.src = '/images/sticky paddle.png';
-const bombBrickImage = new Image();
-bombBrickImage.src = '/images/bomb brick.png';
-const ballBrickImage = new Image();
-ballBrickImage.src = '/images/ball brick.png';
-const collectionFieldImage = new Image();
-collectionFieldImage.src = '/images/collection field.png';
-
+// Draw PowerUps (Uses preloaded images)
 export const drawPowerUps = (ctx: CanvasRenderingContext2D, powerUps: PowerUp[]) => {
     const currentTime = Date.now();
   powerUps.forEach(powerUp => {
     if (powerUp.status === 'falling') {
+      // Use the preloaded Image objects directly
       if (powerUp.type === 'MULTI_BALL') {
         ctx.drawImage(multiBallImage, powerUp.x, powerUp.y, POWER_UP_SIZE, POWER_UP_SIZE);
       } else if (powerUp.type === 'WIDEN_PADDLE') {
@@ -317,6 +324,7 @@ export const drawPowerUps = (ctx: CanvasRenderingContext2D, powerUps: PowerUp[])
       } else if (powerUp.type === 'COLLECTION_FIELD') {
         ctx.drawImage(collectionFieldImage, powerUp.x, powerUp.y, POWER_UP_SIZE, POWER_UP_SIZE);
       } else {
+        // Fallback for non-image power-ups (if any)
         ctx.beginPath(); ctx.rect(powerUp.x, powerUp.y, POWER_UP_SIZE, POWER_UP_SIZE);
         if (powerUp.type === 'ALL_IN_ONE' && powerUp.timeCreated) {
             const timeElapsed = currentTime - powerUp.timeCreated; const colorIndex = Math.floor(timeElapsed / RAINBOW_FLASH_INTERVAL) % RAINBOW_COLORS.length;
@@ -336,7 +344,7 @@ export const drawPowerUps = (ctx: CanvasRenderingContext2D, powerUps: PowerUp[])
   });
 };
 
-// Draw PowerUp Previews
+// Draw PowerUp Previews (Uses preloaded images)
 export const drawPowerUpPreviews = (ctx: CanvasRenderingContext2D, spawnablePowerUpTypes: Set<PowerUpType>) => {
     const typesArray = Array.from(spawnablePowerUpTypes);
     const totalSpawnable = typesArray.length;
@@ -350,6 +358,7 @@ export const drawPowerUpPreviews = (ctx: CanvasRenderingContext2D, spawnablePowe
     ctx.save(); // Save context state
     typesArray.forEach((type) => {
         ctx.globalAlpha = parseFloat((parseInt(previewAlpha, 16) / 255).toFixed(2));
+        // Use the preloaded Image objects directly
         if (type === 'MULTI_BALL') {
             ctx.drawImage(multiBallImage, currentX, startY, POWER_UP_SIZE, POWER_UP_SIZE);
         } else if (type === 'WIDEN_PADDLE') {
@@ -375,6 +384,7 @@ export const drawPowerUpPreviews = (ctx: CanvasRenderingContext2D, spawnablePowe
         } else if (type === 'COLLECTION_FIELD') {
             ctx.drawImage(collectionFieldImage, currentX, startY, POWER_UP_SIZE, POWER_UP_SIZE);
         } else {
+            // Fallback for non-image power-ups
             ctx.globalAlpha = 1.0; // Reset alpha for non-image power-ups before applying color alpha
             const color = POWER_UP_COLORS[type] || POWER_UP_COLORS['NONE']!;
             ctx.fillStyle = color + previewAlpha;
