@@ -51,6 +51,8 @@ const updateBonusGoldTimer = (
     }
 };
 
+// --- Optimization: Reusable array for collected power-up types ---
+const collectedPowerUpTypesReusable: PowerUpType[] = [];
 
 export const gameUpdate = (
     ctx: CanvasRenderingContext2D,
@@ -66,7 +68,6 @@ export const gameUpdate = (
         return;
     }
 
-    // Removed loopStartTime and related logs for clarity
     const currentTime = Date.now();
     const gameSpeedFactor = refs.gameSpeedFactorRef.current;
     const targetFrameTime = 1000 / TARGET_FPS;
@@ -83,7 +84,6 @@ export const gameUpdate = (
     // --- UPDATES ---
     updatePaddleShrinkTimer(refs, callbacks, elapsedTime);
     updateBonusGoldTimer(refs, callbacks, elapsedTime);
-    // updateBalls now modifies refs.ballsRef.current in place
     updateBalls(refs, callbacks, spawnRequests, currentTime, gameSpeedFactor, scaledDeltaTime, columns, rows); 
 
     // --- DRAWING --- 
@@ -108,7 +108,6 @@ export const gameUpdate = (
 
     // --- PRE-GAME STATE DRAWING ---
     if (!refs.isGameStartedRef.current) {
-        // Pass only stuckBalls to drawBalls when not started
         drawBalls(ctx, [], refs.stuckBallsRef.current); 
         if (gameMode === 'main') {
             drawPowerUpPreviews(ctx, refs.spawnablePowerUpsRef.current);
@@ -118,10 +117,17 @@ export const gameUpdate = (
     }
 
     // --- GAME STARTED UPDATES & DRAWING ---
-    let collectedPowerUpTypes: PowerUpType[] = [];
+    
+    // --- Optimization: Clear reusable array instead of creating new one ---
+    collectedPowerUpTypesReusable.length = 0; 
+
     updateLasers(refs, callbacks, spawnRequests, currentTime, scaledDeltaTime, columns, rows);
 
-    const currentFallingPowerUpCount = refs.powerUpsRef.current.filter(p => p.status === 'falling').length;
+    // --- Optimization: Use reduce to count falling power-ups without intermediate array ---
+    const currentFallingPowerUpCount = refs.powerUpsRef.current.reduce((count, p) => {
+        return p.status === 'falling' ? count + 1 : count;
+    }, 0);
+    
     const availablePowerUpsForSpawning = gameMode === 'main'
         ? refs.spawnablePowerUpsRef.current
         : refs.enabledPowerUpsRef.current;
@@ -135,17 +141,17 @@ export const gameUpdate = (
         gameSpeedFactor
     );
 
-    // Add new balls from spawn events (if any)
     if (newBalls.length > 0) {
         refs.ballsRef.current.push(...newBalls);
     }
-    // updatePowerUps now modifies refs.powerUpsRef.current in place
-    updatePowerUps( refs, gameSpeedFactor, newPowerUps, collectedPowerUpTypes, scaledDeltaTime );
 
-    applyPowerUpEffects(refs, callbacks, collectedPowerUpTypes, currentTime, gameSpeedFactor);
+    // Pass the reusable array to updatePowerUps
+    updatePowerUps( refs, gameSpeedFactor, newPowerUps, collectedPowerUpTypesReusable, scaledDeltaTime );
+
+    // Pass the reusable array to applyPowerUpEffects
+    applyPowerUpEffects(refs, callbacks, collectedPowerUpTypesReusable, currentTime, gameSpeedFactor);
 
     // --- Draw Active Game Elements ---
-    // Pass active and stuck balls separately to avoid creating a new array
     drawBalls(ctx, refs.ballsRef.current, refs.stuckBallsRef.current);
     drawPowerUps(ctx, refs.powerUpsRef.current);
     drawLasers(ctx, refs.lasersRef.current);
