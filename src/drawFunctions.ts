@@ -41,7 +41,26 @@ const ballBrickImage = new Image();
 ballBrickImage.src = '/images/ball brick.png';
 const collectionFieldImage = new Image();
 collectionFieldImage.src = '/images/collection field.png';
+const bigBallImage = new Image();
+bigBallImage.src = '/images/big ball.png';
+const blackBallImage = new Image();
+blackBallImage.src = '/images/black ball.png';
+const builderBallImage = new Image();
+builderBallImage.src = '/images/builder ball.png';
+const homingBallImage = new Image();
+homingBallImage.src = '/images/homing ball.png';
+const pierceBallImage = new Image();
+pierceBallImage.src = '/images/pierce ball.png';
+const splittingBallImage = new Image();
+splittingBallImage.src = '/images/splitting ball.png';
 // --------------------------------
+
+// Helper function to get the base power-up type
+const getBasePowerUpType = (type: PowerUpType): PowerUpType => {
+    const baseType = type.split('_L')[0];
+    return baseType as PowerUpType;
+};
+
 
 // Draw Paddle (Unchanged)
 export const drawPaddle = (
@@ -296,55 +315,57 @@ export const drawGameInfo = (
 // Draw PowerUps (Uses preloaded images)
 export const drawPowerUps = (ctx: CanvasRenderingContext2D, powerUps: PowerUp[]) => {
     const currentTime = Date.now();
-  powerUps.forEach(powerUp => {
-    if (powerUp.status === 'falling') {
-      // Use the preloaded Image objects directly
-      if (powerUp.type === 'MULTI_BALL') {
-        ctx.drawImage(multiBallImage, powerUp.x, powerUp.y, POWER_UP_SIZE, POWER_UP_SIZE);
-      } else if (powerUp.type === 'WIDEN_PADDLE') {
-        ctx.drawImage(widenPaddleImage, powerUp.x, powerUp.y, POWER_UP_SIZE, POWER_UP_SIZE);
-      } else if (powerUp.type === 'LASER_PADDLE') {
-        ctx.drawImage(laserPaddleImage, powerUp.x, powerUp.y, POWER_UP_SIZE, POWER_UP_SIZE);
-      } else if (powerUp.type === 'REGEN_BRICK') {
-        ctx.drawImage(regenBrickImage, powerUp.x, powerUp.y, POWER_UP_SIZE, POWER_UP_SIZE);
-      } else if (powerUp.type === 'UPGRADE_BRICK') {
-        ctx.drawImage(upgradeBrickImage, powerUp.x, powerUp.y, POWER_UP_SIZE, POWER_UP_SIZE);
-      } else if (powerUp.type === 'REINFORCE_BRICK') {
-        ctx.drawImage(reinforceBrickImage, powerUp.x, powerUp.y, POWER_UP_SIZE, POWER_UP_SIZE);
-      } else if (powerUp.type === 'SAFETY_NET') {
-        ctx.drawImage(safetyNetImage, powerUp.x, powerUp.y, POWER_UP_SIZE, POWER_UP_SIZE);
-      } else if (powerUp.type === 'MAKE_SPECIAL') {
-        ctx.drawImage(makeSpecialImage, powerUp.x, powerUp.y, POWER_UP_SIZE, POWER_UP_SIZE);
-      } else if (powerUp.type === 'STICKY_PADDLE') {
-        ctx.drawImage(stickyPaddleImage, powerUp.x, powerUp.y, POWER_UP_SIZE, POWER_UP_SIZE);
-      } else if (powerUp.type === 'BOMB_BRICK') {
-        ctx.drawImage(bombBrickImage, powerUp.x, powerUp.y, POWER_UP_SIZE, POWER_UP_SIZE);
-      } else if (powerUp.type === 'BALL_BRICK') {
-        ctx.drawImage(ballBrickImage, powerUp.x, powerUp.y, POWER_UP_SIZE, POWER_UP_SIZE);
-      } else if (powerUp.type === 'COLLECTION_FIELD') {
-        ctx.drawImage(collectionFieldImage, powerUp.x, powerUp.y, POWER_UP_SIZE, POWER_UP_SIZE);
-      } else {
-        // Fallback for non-image power-ups (if any)
-        ctx.beginPath(); ctx.rect(powerUp.x, powerUp.y, POWER_UP_SIZE, POWER_UP_SIZE);
-        if (powerUp.type === 'ALL_IN_ONE' && powerUp.timeCreated) {
-            const timeElapsed = currentTime - powerUp.timeCreated; const colorIndex = Math.floor(timeElapsed / RAINBOW_FLASH_INTERVAL) % RAINBOW_COLORS.length;
-            ctx.fillStyle = RAINBOW_COLORS[colorIndex];
-        } else {
-            ctx.fillStyle = POWER_UP_COLORS[powerUp.type as PowerUpType] || POWER_UP_COLORS['NONE']!;
+    powerUps.forEach(powerUp => {
+        if (powerUp.status === 'falling') {
+            let imageToDraw: HTMLImageElement | null = null;
+            const baseType = getBasePowerUpType(powerUp.type);
+
+            switch (baseType) {
+                case 'MULTI_BALL': imageToDraw = multiBallImage; break;
+                case 'WIDEN_PADDLE': imageToDraw = widenPaddleImage; break;
+                case 'LASER_PADDLE': imageToDraw = laserPaddleImage; break;
+                case 'REGEN_BRICK': imageToDraw = regenBrickImage; break;
+                case 'UPGRADE_BRICK': imageToDraw = upgradeBrickImage; break;
+                case 'REINFORCE_BRICK': imageToDraw = reinforceBrickImage; break;
+                case 'SAFETY_NET': imageToDraw = safetyNetImage; break;
+                case 'MAKE_SPECIAL': imageToDraw = makeSpecialImage; break;
+                case 'STICKY_PADDLE': imageToDraw = stickyPaddleImage; break;
+                case 'BOMB_BRICK': imageToDraw = bombBrickImage; break;
+                case 'BALL_BRICK': imageToDraw = ballBrickImage; break;
+                case 'COLLECTION_FIELD': imageToDraw = collectionFieldImage; break;
+                case 'BIG_BALL': imageToDraw = bigBallImage; break;
+                case 'BLACK_BALL': imageToDraw = blackBallImage; break;
+                case 'BUILDER_BALL': imageToDraw = builderBallImage; break;
+                case 'HOMING_BALL': imageToDraw = homingBallImage; break;
+                case 'PIERCE_BALL': imageToDraw = pierceBallImage; break;
+                case 'SPLITTING_BALL': imageToDraw = splittingBallImage; break;
+            }
+
+            if (imageToDraw) {
+                ctx.drawImage(imageToDraw, powerUp.x, powerUp.y, POWER_UP_SIZE, POWER_UP_SIZE);
+            } else {
+                // Fallback for non-image power-ups (e.g., ALL_IN_ONE or if a type is not covered by a base image)
+                ctx.beginPath(); ctx.rect(powerUp.x, powerUp.y, POWER_UP_SIZE, POWER_UP_SIZE);
+                if (powerUp.type === 'ALL_IN_ONE' && powerUp.timeCreated) {
+                    const timeElapsed = currentTime - powerUp.timeCreated;
+                    const colorIndex = Math.floor(timeElapsed / RAINBOW_FLASH_INTERVAL) % RAINBOW_COLORS.length;
+                    ctx.fillStyle = RAINBOW_COLORS[colorIndex];
+                } else {
+                    ctx.fillStyle = POWER_UP_COLORS[powerUp.type as PowerUpType] || POWER_UP_COLORS['NONE']!;
+                }
+                ctx.fill();
+                if (powerUp.type === 'BLACK_BALL' || powerUp.type === 'BOMB_BRICK' || powerUp.type === 'ALL_IN_ONE' || powerUp.type === 'STICKY_PADDLE') {
+                    ctx.strokeStyle = (powerUp.type === 'ALL_IN_ONE') ? '#000000' : '#ffffff';
+                    ctx.lineWidth = 1;
+                    ctx.stroke();
+                }
+                ctx.closePath();
+            }
         }
-        ctx.fill();
-        if (powerUp.type === 'BLACK_BALL' || powerUp.type === 'BOMB_BRICK' || powerUp.type === 'ALL_IN_ONE' || powerUp.type === 'STICKY_PADDLE') {
-             ctx.strokeStyle = (powerUp.type === 'ALL_IN_ONE') ? '#000000' : '#ffffff';
-             ctx.lineWidth = 1;
-             ctx.stroke();
-        }
-        ctx.closePath();
-      }
-    }
-  });
+    });
 };
 
-// Draw PowerUp Previews (Uses preloaded images)
+// Draw PowerUp Previews (Uses preloaded images - Base images only)
 export const drawPowerUpPreviews = (ctx: CanvasRenderingContext2D, spawnablePowerUpTypes: Set<PowerUpType>) => {
     const typesArray = Array.from(spawnablePowerUpTypes);
     const totalSpawnable = typesArray.length;
@@ -358,31 +379,32 @@ export const drawPowerUpPreviews = (ctx: CanvasRenderingContext2D, spawnablePowe
     ctx.save(); // Save context state
     typesArray.forEach((type) => {
         ctx.globalAlpha = parseFloat((parseInt(previewAlpha, 16) / 255).toFixed(2));
-        // Use the preloaded Image objects directly
-        if (type === 'MULTI_BALL') {
-            ctx.drawImage(multiBallImage, currentX, startY, POWER_UP_SIZE, POWER_UP_SIZE);
-        } else if (type === 'WIDEN_PADDLE') {
-            ctx.drawImage(widenPaddleImage, currentX, startY, POWER_UP_SIZE, POWER_UP_SIZE);
-        } else if (type === 'LASER_PADDLE') {
-            ctx.drawImage(laserPaddleImage, currentX, startY, POWER_UP_SIZE, POWER_UP_SIZE);
-        } else if (type === 'REGEN_BRICK') {
-            ctx.drawImage(regenBrickImage, currentX, startY, POWER_UP_SIZE, POWER_UP_SIZE);
-        } else if (type === 'UPGRADE_BRICK') {
-            ctx.drawImage(upgradeBrickImage, currentX, startY, POWER_UP_SIZE, POWER_UP_SIZE);
-        } else if (type === 'REINFORCE_BRICK') {
-            ctx.drawImage(reinforceBrickImage, currentX, startY, POWER_UP_SIZE, POWER_UP_SIZE);
-        } else if (type === 'SAFETY_NET') {
-            ctx.drawImage(safetyNetImage, currentX, startY, POWER_UP_SIZE, POWER_UP_SIZE);
-        } else if (type === 'MAKE_SPECIAL') {
-            ctx.drawImage(makeSpecialImage, currentX, startY, POWER_UP_SIZE, POWER_UP_SIZE);
-        } else if (type === 'STICKY_PADDLE') {
-            ctx.drawImage(stickyPaddleImage, currentX, startY, POWER_UP_SIZE, POWER_UP_SIZE);
-        } else if (type === 'BOMB_BRICK') {
-            ctx.drawImage(bombBrickImage, currentX, startY, POWER_UP_SIZE, POWER_UP_SIZE);
-        } else if (type === 'BALL_BRICK') {
-            ctx.drawImage(ballBrickImage, currentX, startY, POWER_UP_SIZE, POWER_UP_SIZE);
-        } else if (type === 'COLLECTION_FIELD') {
-            ctx.drawImage(collectionFieldImage, currentX, startY, POWER_UP_SIZE, POWER_UP_SIZE);
+        let imageToDraw: HTMLImageElement | null = null;
+        const baseType = getBasePowerUpType(type);
+
+        switch (baseType) {
+            case 'MULTI_BALL': imageToDraw = multiBallImage; break;
+            case 'WIDEN_PADDLE': imageToDraw = widenPaddleImage; break;
+            case 'LASER_PADDLE': imageToDraw = laserPaddleImage; break;
+            case 'REGEN_BRICK': imageToDraw = regenBrickImage; break;
+            case 'UPGRADE_BRICK': imageToDraw = upgradeBrickImage; break;
+            case 'REINFORCE_BRICK': imageToDraw = reinforceBrickImage; break;
+            case 'SAFETY_NET': imageToDraw = safetyNetImage; break;
+            case 'MAKE_SPECIAL': imageToDraw = makeSpecialImage; break;
+            case 'STICKY_PADDLE': imageToDraw = stickyPaddleImage; break;
+            case 'BOMB_BRICK': imageToDraw = bombBrickImage; break;
+            case 'BALL_BRICK': imageToDraw = ballBrickImage; break;
+            case 'COLLECTION_FIELD': imageToDraw = collectionFieldImage; break;
+            case 'BIG_BALL': imageToDraw = bigBallImage; break;
+            case 'BLACK_BALL': imageToDraw = blackBallImage; break;
+            case 'BUILDER_BALL': imageToDraw = builderBallImage; break;
+            case 'HOMING_BALL': imageToDraw = homingBallImage; break;
+            case 'PIERCE_BALL': imageToDraw = pierceBallImage; break;
+            case 'SPLITTING_BALL': imageToDraw = splittingBallImage; break;
+        }
+        
+        if (imageToDraw) {
+            ctx.drawImage(imageToDraw, currentX, startY, POWER_UP_SIZE, POWER_UP_SIZE);
         } else {
             // Fallback for non-image power-ups
             ctx.globalAlpha = 1.0; // Reset alpha for non-image power-ups before applying color alpha
@@ -397,10 +419,7 @@ export const drawPowerUpPreviews = (ctx: CanvasRenderingContext2D, spawnablePowe
             ctx.stroke();
             ctx.closePath();
         }
-        // Reset alpha after drawing any image that uses globalAlpha
-        if (['MULTI_BALL', 'WIDEN_PADDLE', 'LASER_PADDLE', 'REGEN_BRICK', 'UPGRADE_BRICK', 'REINFORCE_BRICK', 'SAFETY_NET', 'MAKE_SPECIAL', 'STICKY_PADDLE', 'BOMB_BRICK', 'BALL_BRICK', 'COLLECTION_FIELD'].includes(type)) {
-            ctx.globalAlpha = 1.0;
-        }
+        ctx.globalAlpha = 1.0; // Reset alpha for the next iteration
         currentX += POWER_UP_SIZE + spacing;
     });
     ctx.restore(); // Restore context state
