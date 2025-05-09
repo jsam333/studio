@@ -1,9 +1,21 @@
-import { PowerUpType } from '../../interfaces';
+import { PowerUpType, PointsField } from '../../interfaces';
 import { GameStateRefs, GameLoopCallbacks } from '../../interfaces';
 import {
     FIELD_MAX_HEIGHT_OFFSET, FIELD_HEIGHT_INCREMENT,
-    FIELD_MAX_WIDTH_OFFSET, FIELD_WIDTH_INCREMENT
+    FIELD_MAX_WIDTH_OFFSET, FIELD_WIDTH_INCREMENT,
+    POINTS_FIELD_WIDTH, POINTS_FIELD_HEIGHT, BOARD_WIDTH, BOARD_HEIGHT
 } from '../../constants';
+
+let nextPointsFieldId = 0;
+
+const createSinglePointsField = (currentTime: number): PointsField => ({
+    id: nextPointsFieldId++,
+    width: POINTS_FIELD_WIDTH,
+    height: POINTS_FIELD_HEIGHT,
+    x: Math.random() * (BOARD_WIDTH - POINTS_FIELD_WIDTH),
+    y: Math.random() * (BOARD_HEIGHT - POINTS_FIELD_HEIGHT - 50), // Avoid spawning too low
+    createdAt: currentTime
+});
 
 export const applyGameEffects = (
     refs: GameStateRefs,
@@ -34,12 +46,11 @@ export const applyGameEffects = (
                 FIELD_MAX_WIDTH_OFFSET,
                 refs.collectionFieldWidthOffsetRef.current + widthIncrement
             );
-            // Schedule shrink regardless of level, the shrink logic itself handles the decay.
             callbacks.scheduleFieldShrink();
             break;
         }
         case 'SAFETY_NET':
-        case 'SAFETY_NET_L2': // Assuming L2 adds 2 nets, L3 adds 3
+        case 'SAFETY_NET_L2':
         case 'SAFETY_NET_L3': {
             let netsToAdd = 1;
              if (type === 'SAFETY_NET_L2') {
@@ -48,6 +59,23 @@ export const applyGameEffects = (
                 netsToAdd = 3;
             }
             refs.safetyNetCountRef.current += netsToAdd;
+            break;
+        }
+        case 'POINTS_FIELD':
+        case 'POINTS_FIELD_L2':
+        case 'POINTS_FIELD_L3': {
+            if (!refs.pointsFieldsRef.current) {
+                refs.pointsFieldsRef.current = [];
+            }
+            let fieldsToSpawn = 1;
+            if (type === 'POINTS_FIELD_L2') {
+                fieldsToSpawn = 2;
+            } else if (type === 'POINTS_FIELD_L3') {
+                fieldsToSpawn = 3;
+            }
+            for (let i = 0; i < fieldsToSpawn; i++) {
+                refs.pointsFieldsRef.current.push(createSinglePointsField(currentTime));
+            }
             break;
         }
         default:

@@ -33,7 +33,8 @@ export type PowerUpType =
     'HOMING_BALL' | 'HOMING_BALL_L2' | 'HOMING_BALL_L3' |
     'BOMB_BRICK' | 'BOMB_BRICK_L2' | 'BOMB_BRICK_L3' |
     'STICKY_PADDLE' | 'STICKY_PADDLE_L2' | 'STICKY_PADDLE_L3' |
-    'BALL_BRICK' | 'BALL_BRICK_L2' | 'BALL_BRICK_L3' | // Added levels L2 and L3
+    'BALL_BRICK' | 'BALL_BRICK_L2' | 'BALL_BRICK_L3' |
+    'POINTS_FIELD' | 'POINTS_FIELD_L2' | 'POINTS_FIELD_L3' | // Added POINTS_FIELD levels
     'NONE';
 
 export interface PowerUp {
@@ -68,6 +69,7 @@ export interface Ball {
   stuckOffset?: number; // For top sticking
   stuckSide?: 'left' | 'right' | null; // For side sticking
   stuckSideOffset?: number; // Vertical offset for side sticking
+  lastFramePointsFieldIds: Set<number>; // Added to track field entries
 }
 
 export type SpawnMarker = 'PENDING' | 'SPAWN_SPECIAL' | 'SPAWN_BALL' | 'NONE';
@@ -98,6 +100,15 @@ export interface Laser {
     height: number;
     speed: number;
     id: number;
+}
+
+export interface PointsField {
+    id: number;
+    x: number;
+    y: number;
+    width: number;
+    height: number;
+    createdAt: number; // Added createdAt timestamp
 }
 
 // Add 'level_reset' to GameState
@@ -137,6 +148,7 @@ export interface GameStateRefsBase {
     bonusGoldTimerCountdownRef: React.MutableRefObject<number | null>;
     // *** ADDED: Flag for initial bonus gold decrement completion ***
     initialBonusGoldDecrementCompleteRef: React.MutableRefObject<boolean>;
+    pointsFieldsRef: React.MutableRefObject<PointsField[]>; // Added pointsFieldsRef
 }
 
 export interface GameStateRefs extends GameStateRefsBase {

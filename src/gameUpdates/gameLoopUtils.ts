@@ -131,11 +131,19 @@ export const handleSpawnEvents = (
 // --- Other Utility Functions ---
 
 export const createNewBall = (x: number, y: number, speedX: number, speedY: number, currentSpeedFactor: number): Ball => ({
-    x, y,
+    x,
+    y,
     speedX: speedX * currentSpeedFactor,
     speedY: speedY * currentSpeedFactor,
     id: Date.now() + Math.random() * 100,
-    isBlack: false, pierceHitsRemaining: 0, isBlue: false, isBig: false, isSplitting: false, isHoming: false
+    isBlack: false, 
+    // @ts-ignore
+    pierceHitsRemaining: 0, 
+    isBlue: false, 
+    isBig: false, 
+    isSplitting: false, 
+    isHoming: false,
+    lastFramePointsFieldIds: new Set() // Added initialization
 });
 
 export const findClosestBrick = (ball: Ball, bricks: Brick[][], columns: number, rows: number): Brick | null => {

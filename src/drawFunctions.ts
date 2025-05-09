@@ -1,4 +1,4 @@
-import { Brick, PowerUp, Ball, Laser, PowerUpType, GameState } from './interfaces'; // Added GameState
+import { Brick, PowerUp, Ball, Laser, PowerUpType, GameState, PointsField } from './interfaces'; // Added GameState, PointsField
 import {
     BOARD_WIDTH, BOARD_HEIGHT, PADDLE_HEIGHT, BALL_SIZE, PADDLE_Y,
     BRICK_PADDING, BRICK_OFFSET_LEFT, BRICK_OFFSET_TOP, POWER_UP_SIZE,
@@ -13,6 +13,7 @@ import {
     BOMB_BRICK_COLOR,
     GOLD_COLOR,
     BALL_BRICK_COLOR, // Added import for the new brick color
+    POINTS_FIELD_COLOR, // Added import for POINTS_FIELD color
     BONUS_GOLD_TIMER_DURATION // Import for timer color logic
 } from './constants';
 
@@ -35,6 +36,7 @@ let builderBallImage: HTMLImageElement;
 let homingBallImage: HTMLImageElement;
 let pierceBallImage: HTMLImageElement;
 let splittingBallImage: HTMLImageElement;
+let pointsFieldImage: HTMLImageElement; // Added for POINTS_FIELD
 
 if (typeof window !== 'undefined') {
     multiBallImage = new Image();
@@ -73,6 +75,8 @@ if (typeof window !== 'undefined') {
     pierceBallImage.src = '/images/pierce ball.png';
     splittingBallImage = new Image();
     splittingBallImage.src = '/images/splitting ball.png';
+    // pointsFieldImage = new Image(); // Assuming no specific image for points field, it will be drawn programmatically
+    // pointsFieldImage.src = '/images/points field.png'; // Example if you add an image
 }
 // --------------------------------
 
@@ -172,6 +176,23 @@ export const drawCollectionFieldRect = (
     ctx.restore();
 };
 
+// Draw Points Fields
+export const drawPointsFields = (ctx: CanvasRenderingContext2D, pointsFields: PointsField[]) => {
+    if (!pointsFields) return;
+    pointsFields.forEach(field => {
+        ctx.save();
+        ctx.fillStyle = POINTS_FIELD_COLOR;
+        ctx.beginPath();
+        ctx.rect(field.x, field.y, field.width, field.height);
+        ctx.fill();
+        // Optional: Add a border for better visibility
+        ctx.strokeStyle = 'rgba(0, 255, 0, 0.6)'; // Slightly more opaque neon green
+        ctx.lineWidth = 2;
+        ctx.stroke();
+        ctx.closePath();
+        ctx.restore();
+    });
+};
 
 // Draw Balls (Modified to accept active and stuck balls separately)
 export const drawBalls = (ctx: CanvasRenderingContext2D, activeBalls: Ball[], stuckBalls: Ball[]) => {
@@ -350,7 +371,7 @@ export const drawPowerUps = (ctx: CanvasRenderingContext2D, powerUps: PowerUp[])
                 case 'REINFORCE_BRICK': imageToDraw = reinforceBrickImage; break;
                 case 'SAFETY_NET': imageToDraw = safetyNetImage; break;
                 case 'MAKE_SPECIAL': imageToDraw = makeSpecialImage; break;
-                case 'STICKY_PADDLE': imageToDraw = stickyPaddleImage; break;
+                case 'STICKY_PADDLE': imageToДraw = stickyPaddleImage; break;
                 case 'BOMB_BRICK': imageToDraw = bombBrickImage; break;
                 case 'BALL_BRICK': imageToDraw = ballBrickImage; break;
                 case 'COLLECTION_FIELD': imageToDraw = collectionFieldImage; break;
@@ -360,11 +381,12 @@ export const drawPowerUps = (ctx: CanvasRenderingContext2D, powerUps: PowerUp[])
                 case 'HOMING_BALL': imageToDraw = homingBallImage; break;
                 case 'PIERCE_BALL': imageToDraw = pierceBallImage; break;
                 case 'SPLITTING_BALL': imageToDraw = splittingBallImage; break;
+                // case 'POINTS_FIELD': imageToDraw = pointsFieldImage; break; // Add if you have an image
             }
 
             if (imageToDraw && imageToDraw.complete) { // check if image is loaded
                 ctx.drawImage(imageToDraw, powerUp.x, powerUp.y, POWER_UP_SIZE, POWER_UP_SIZE);
-            } else if (!imageToDraw) { // Fallback for non-image power-ups or if image is not defined (e.g. server-side)
+            } else if (!imageToDraw || (baseType === 'POINTS_FIELD' && !imageToDraw)) { // Fallback for non-image power-ups or if image is not defined
                 ctx.beginPath(); ctx.rect(powerUp.x, powerUp.y, POWER_UP_SIZE, POWER_UP_SIZE);
                 if (powerUp.type === 'ALL_IN_ONE' && powerUp.timeCreated) {
                     const timeElapsed = currentTime - powerUp.timeCreated;
@@ -421,11 +443,12 @@ export const drawPowerUpPreviews = (ctx: CanvasRenderingContext2D, spawnablePowe
             case 'HOMING_BALL': imageToDraw = homingBallImage; break;
             case 'PIERCE_BALL': imageToDraw = pierceBallImage; break;
             case 'SPLITTING_BALL': imageToDraw = splittingBallImage; break;
+            // case 'POINTS_FIELD': imageToDraw = pointsFieldImage; break; // Add if you have an image for preview
         }
         
         if (imageToDraw && imageToDraw.complete) { // check if image is loaded
             ctx.drawImage(imageToDraw, currentX, startY, POWER_UP_SIZE, POWER_UP_SIZE);
-        } else if (!imageToDraw) { // Fallback for non-image power-ups or if image is not defined (e.g. server-side)
+        } else if (!imageToDraw || (baseType === 'POINTS_FIELD' && !imageToDraw)) { // Fallback for non-image power-ups or if image is not defined
             // Fallback for non-image power-ups
             ctx.globalAlpha = 1.0; // Reset alpha for non-image power-ups before applying color alpha
             const color = POWER_UP_COLORS[type] || POWER_UP_COLORS['NONE']!;

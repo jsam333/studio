@@ -22,7 +22,8 @@ export const applyPowerUpEffects = (
                 'WIDEN_PADDLE', 'LASER_PADDLE', 'SAFETY_NET',
                 'MAKE_SPECIAL', 'BOMB_BRICK', 'STICKY_PADDLE',
                 'REINFORCE_BRICK', 'UPGRADE_BRICK',
-                'BALL_BRICK' // Added BALL_BRICK to ALL_IN_ONE effects
+                'BALL_BRICK',
+                'POINTS_FIELD' // Added POINTS_FIELD to ALL_IN_ONE effects
             ];
             // Apply all effects except 'ALL_IN_ONE' itself to avoid infinite loop
             applyPowerUpEffects(refs, callbacks, allTypes, currentTime, gameSpeedFactor);

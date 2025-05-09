@@ -26,9 +26,29 @@ export const initializeBricks = (columns: number, rows: number, brickHeight: num
     return newBricks;
 };
 
-// initialBallState remains the same
 export const initialBallState: Ball = {
-  x: (BOARD_WIDTH - INITIAL_PADDLE_WIDTH) / 2 + INITIAL_PADDLE_WIDTH / 2, y: PADDLE_Y - BALL_SIZE, speedX: 0, speedY: 0, id: 0, stuckOffset: INITIAL_PADDLE_WIDTH / 2, isBlack: false, blackEndTime: undefined, blackPausedDuration: undefined, pierceHitsRemaining: 0, isBlue: false, blueEndTime: undefined, bluePausedDuration: undefined, isBig: false, bigEndTime: undefined, bigPausedDuration: undefined, isSplitting: false, splittingEndTime: undefined, splittingPausedDuration: undefined, isHoming: false,
+  x: (BOARD_WIDTH - INITIAL_PADDLE_WIDTH) / 2 + INITIAL_PADDLE_WIDTH / 2, 
+  y: PADDLE_Y - BALL_SIZE, 
+  speedX: 0, 
+  speedY: 0, 
+  id: 0, 
+  stuckOffset: INITIAL_PADDLE_WIDTH / 2, 
+  isBlack: false, 
+  blackEndTime: undefined, 
+  blackPausedDuration: undefined, 
+  isBlue: false, 
+  blueEndTime: undefined, 
+  bluePausedDuration: undefined, 
+  isBig: false, 
+  bigEndTime: undefined, 
+  bigPausedDuration: undefined, 
+  isSplitting: false, 
+  splittingEndTime: undefined, 
+  splittingPausedDuration: undefined, 
+  isHoming: false,
+  lastFramePointsFieldIds: new Set(), // Initialize for new balls
+  // @ts-ignore : This property will be added by pierce powerup if active
+  pierceHitsRemaining: 0 
 };
 
 // *** MODIFIED: damageBrick function ***
@@ -80,6 +100,7 @@ export const checkBrickCollision = ( ball: Ball, bricks: Brick[][], columns: num
                      collisionDetected = true;
                      let tempSpeedX = ball.speedX;
                      let tempSpeedY = ball.speedY;
+                     // @ts-ignore
                      if (!(ball.pierceHitsRemaining && ball.pierceHitsRemaining > 0)) {
                          const brickCenterX = brick.x + brick.width / 2;
                          const brickCenterY = brick.y + brick.height / 2;
@@ -95,8 +116,10 @@ export const checkBrickCollision = ( ball: Ball, bricks: Brick[][], columns: num
                              tempSpeedX = -ball.speedX;
                          }
                      }
+                     // @ts-ignore
                     if (ball.pierceHitsRemaining && ball.pierceHitsRemaining > 0) {
                          pierceOccurred = true;
+                         // @ts-ignore
                          ball.pierceHitsRemaining--;
                          pointsAwarded += damageBrick(brick, bricks, columns, rows, spawnEvents);
                          if (brick.isBomb && brick.status === 0) {

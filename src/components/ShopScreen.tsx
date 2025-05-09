@@ -28,9 +28,7 @@ const getCurrentLevel = (ownedPowerUps: Set<PowerUpType>, baseType: PowerUpType)
 const getPowerUpTypeForLevel = (baseType: PowerUpType, level: number): PowerUpType | null => {
     if (level < 1 || level > MAX_LEVEL) return null;
     if (level === 1) return baseType;
-    // Construct the level type string (e.g., "MULTI_BALL_L2")
-    // Type assertion needed as TS doesn't know all combinations exist in PowerUpType
-    return `${baseType}_L${level}` as PowerUpType;
+    return `${baseType}_L${level}` as PowerUpType; 
 };
 
 // Identify which base types are upgradable
@@ -39,7 +37,7 @@ const UPGRADABLE_POWER_UPS: PowerUpType[] = [
     'REGEN_BRICK', 'SAFETY_NET', 'REINFORCE_BRICK', 'MAKE_SPECIAL', 'BLACK_BALL',
     'PIERCE_BALL', 'UPGRADE_BRICK', 'BUILDER_BALL', 'BIG_BALL', 'SPLITTING_BALL',
     'COLLECTION_FIELD', 'HOMING_BALL', 'BOMB_BRICK',
-    'BALL_BRICK' // Added BALL_BRICK as upgradable
+    'BALL_BRICK', 'POINTS_FIELD' // Added POINTS_FIELD as upgradable
 ];
 
 interface ShopScreenProps {
@@ -58,11 +56,10 @@ export const ShopScreen: React.FC<ShopScreenProps> = ({
   handleResetGame
 }) => {
   const [shopItems, setShopItems] = useState<PowerUpType[]>([]);
-  // Use a map to track session purchases for each upgradable type
   const [purchasedInSession, setPurchasedInSession] = useState<Map<PowerUpType, boolean>>(new Map());
   const [goldDisplay, setGoldDisplay] = useState(gameStateRefs.goldRef.current);
   const [currentSpawnChance, setCurrentSpawnChance] = useState(0);
-  const [displaySpawnablePowerUps, setDisplaySpawnablePowerUps] = useState<PowerUpType[]>([]); // State for currently spawnable power-ups
+  const [displaySpawnablePowerUps, setDisplaySpawnablePowerUps] = useState<PowerUpType[]>([]);
 
   useEffect(() => {
     const ownedPowerUps = gameStateRefs.spawnablePowerUpsRef.current;
@@ -73,14 +70,11 @@ export const ShopScreen: React.FC<ShopScreenProps> = ({
 
     setShopItems(currentShopSelection);
 
-    // Reset session purchase tracking
-    setPurchasedInSession(new Map());
+    setPurchasedInSession(new Map()); 
     setGoldDisplay(gameStateRefs.goldRef.current);
     const chance = calculateBaseSpawnChance(ownedPowerUps, 'main');
     setCurrentSpawnChance(chance);
-
-    // Set the list of currently owned/spawnable power-ups for display
-    setDisplaySpawnablePowerUps(Array.from(ownedPowerUps).sort()); // Convert Set to sorted array
+    setDisplaySpawnablePowerUps(Array.from(ownedPowerUps).sort());
 
   }, [gameStateRefs.goldRef, gameStateRefs.spawnablePowerUpsRef]);
 
@@ -91,25 +85,23 @@ export const ShopScreen: React.FC<ShopScreenProps> = ({
     let isUpgradePurchase = false;
     let baseTypeOfUpgrade: PowerUpType | null = null;
 
-    // Check if it's a base type that is upgradable
     if (UPGRADABLE_POWER_UPS.includes(itemToPurchase)) {
         isUpgradePurchase = true;
         baseTypeOfUpgrade = itemToPurchase;
         const currentOwnedLevel = getCurrentLevel(ownedPowerUps, baseTypeOfUpgrade);
-
+        
         if (currentOwnedLevel >= MAX_LEVEL) {
             console.warn("Attempted to purchase max level item:", baseTypeOfUpgrade);
-            return;
+            return; 
         }
         const nextLevel = currentOwnedLevel + 1;
         actualItemToAdd = getPowerUpTypeForLevel(baseTypeOfUpgrade, nextLevel);
         if (!actualItemToAdd) {
              console.error("Could not determine next level type for:", baseTypeOfUpgrade);
-             return;
+             return; 
         }
-    }
-
-    // This should not happen if logic is correct, but safety check
+    } 
+    
     if (!actualItemToAdd) {
          console.error("actualItemToAdd is null, cannot proceed with purchase.");
          return;
@@ -117,40 +109,34 @@ export const ShopScreen: React.FC<ShopScreenProps> = ({
 
     cost = POWER_UP_COSTS[actualItemToAdd as keyof typeof POWER_UP_COSTS] ?? 999;
 
-    // Prevent purchasing if already owned OR if this base type was bought this session
-    if (ownedPowerUps.has(actualItemToAdd) ||
+    if (ownedPowerUps.has(actualItemToAdd) || 
         (isUpgradePurchase && baseTypeOfUpgrade && purchasedInSession.get(baseTypeOfUpgrade))
     ) {
          console.warn("Attempted to purchase already owned or session-purchased item:", actualItemToAdd);
          return;
     }
 
-    if (gameStateRefs.goldRef.current < cost) return; // Can't afford
+    if (gameStateRefs.goldRef.current < cost) return;
 
     gameStateRefs.goldRef.current -= cost;
     setGoldDisplay(gameStateRefs.goldRef.current);
-    addSpawnablePowerUp(actualItemToAdd); // Let addSpawnablePowerUp handle removing lower levels
+    addSpawnablePowerUp(actualItemToAdd);
 
-    // Mark base type as purchased this session
     if (isUpgradePurchase && baseTypeOfUpgrade) {
         setPurchasedInSession(prev => new Map(prev).set(baseTypeOfUpgrade!, true));
     }
 
     const newChance = calculateBaseSpawnChance(gameStateRefs.spawnablePowerUpsRef.current, 'main');
     setCurrentSpawnChance(newChance);
-
-    // Update the display of spawnable power-ups immediately after purchase
     setDisplaySpawnablePowerUps(Array.from(gameStateRefs.spawnablePowerUpsRef.current).sort());
 
     console.log(`Purchased ${actualItemToAdd} for ${cost} gold. Remaining: ${gameStateRefs.goldRef.current}. New Spawn Chance: ${newChance * 100}%`);
   };
 
-  // --- Render Function --- 
   return (
     <TooltipProvider>
         <div className="flex flex-col items-center justify-center min-h-screen bg-gray-800 text-white py-8">
             <h1 className="text-4xl font-bold mb-6">Level Complete!</h1>
-            {/* Gold & Spawn Chance Display */}
             <div className="flex items-center space-x-6 mb-6">
                 <p className="text-3xl" style={{ color: GOLD_COLOR || '#FFD700' }}>
                     Gold: {goldDisplay}
@@ -160,7 +146,6 @@ export const ShopScreen: React.FC<ShopScreenProps> = ({
                 </p>
             </div>
 
-            {/* Currently Spawnable Power-ups Display */}
             <div className="mb-8 px-4 w-full max-w-4xl">
                 <h3 className="text-xl font-semibold mb-3 text-center">Currently Active Power-ups</h3>
                 {displaySpawnablePowerUps.length > 0 ? (
@@ -177,7 +162,6 @@ export const ShopScreen: React.FC<ShopScreenProps> = ({
             </div>
 
             <h2 className="text-2xl font-semibold mb-4">Power-up Shop</h2>
-            {/* Shop Items Grid */}
             <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-4 mb-10 w-full max-w-4xl px-4">
                 {shopItems.length > 0 ? (
                     shopItems.map(item => {
@@ -189,12 +173,12 @@ export const ShopScreen: React.FC<ShopScreenProps> = ({
                         let buttonText = `Cost: ${displayCost}`;
                         let buttonStyle = 'bg-blue-600 hover:bg-blue-700';
                         let itemToPurchaseOnClick = item;
-                        let descriptionType : PowerUpType | string = item; // Type used for description lookup, initialize with item
+                        let descriptionType : PowerUpType | string = item;
                         const isBaseUpgradable = UPGRADABLE_POWER_UPS.includes(item);
 
                         if (isBaseUpgradable) {
-                            const baseName = displayName; // Store the formatted base name
-                            itemKey = `${item}_UPGRADE`; // Unique key for upgradable items
+                            const baseName = displayName;
+                            itemKey = `${item}_UPGRADE`;
                             const currentOwnedLevel = getCurrentLevel(ownedPowerUps, item);
                             const hasPurchasedThisSession = purchasedInSession.get(item) ?? false;
 
@@ -205,7 +189,7 @@ export const ShopScreen: React.FC<ShopScreenProps> = ({
                                 buttonStyle = 'bg-gray-500 opacity-70';
                                 const maxLevelType = getPowerUpTypeForLevel(item, MAX_LEVEL);
                                 itemToPurchaseOnClick = maxLevelType ? maxLevelType : item;
-                                descriptionType = itemToPurchaseOnClick; // Show max level description
+                                descriptionType = itemToPurchaseOnClick;
                             } else {
                                 const nextLevel = currentOwnedLevel + 1;
                                 const nextLevelType = getPowerUpTypeForLevel(item, nextLevel);
@@ -213,8 +197,8 @@ export const ShopScreen: React.FC<ShopScreenProps> = ({
                                     displayName = `${baseName} Lvl ${nextLevel}`;
                                     displayCost = POWER_UP_COSTS[nextLevelType as keyof typeof POWER_UP_COSTS] ?? 999;
                                     buttonText = `Cost: ${displayCost}`;
-                                    itemToPurchaseOnClick = item; // Keep the base type for the purchase handler
-                                    descriptionType = nextLevelType; // Show description for the level being bought
+                                    itemToPurchaseOnClick = item; 
+                                    descriptionType = nextLevelType;
                                     isDisabled = goldDisplay < displayCost || hasPurchasedThisSession;
                                     if (isDisabled) {
                                         buttonStyle = hasPurchasedThisSession ? 'bg-gray-500 opacity-70' : 'bg-red-800 opacity-50';
@@ -222,18 +206,16 @@ export const ShopScreen: React.FC<ShopScreenProps> = ({
                                     }
                                 } else {
                                     displayName = `${baseName} Error`; isDisabled = true;
-                                    descriptionType = item; // Fallback description
+                                    descriptionType = item;
                                 }
                             }
                         } else {
-                            // --- Regular Non-Upgradeable Power-up --- 
                             const isGloballyOwned = ownedPowerUps.has(item);
-                            // Check if it *was* upgradable but isn't the base type (e.g. MULTI_BALL_L2 showing up randomly)
                             const wasUpgraded = UPGRADABLE_POWER_UPS.some(up => item.startsWith(up) && item !== up);
                             isDisabled = goldDisplay < displayCost || isGloballyOwned || wasUpgraded;
-                            descriptionType = item; // Use the item's type directly
+                            descriptionType = item;
 
-                            if (isGloballyOwned || wasUpgraded) { // Treat already upgraded items appearing as 'Owned'
+                            if (isGloballyOwned || wasUpgraded) {
                                 buttonText = '(Owned)';
                                 buttonStyle = 'bg-gray-500 opacity-70';
                             } else if (goldDisplay < displayCost) {
@@ -247,7 +229,7 @@ export const ShopScreen: React.FC<ShopScreenProps> = ({
                             <Tooltip key={itemKey}>
                                 <TooltipTrigger asChild>
                                     <Button
-                                        onClick={() => handlePurchase(itemToPurchaseOnClick)} // Use the correct item type for purchase
+                                        onClick={() => handlePurchase(itemToPurchaseOnClick)}
                                         disabled={isDisabled}
                                         className={`py-3 px-2 text-sm flex flex-col h-24 justify-center items-center ${buttonStyle}`}
                                     >
@@ -266,7 +248,6 @@ export const ShopScreen: React.FC<ShopScreenProps> = ({
                 )}
             </div>
 
-            {/* Navigation Buttons */}
             <div className="flex flex-col items-center">
                 <Button
                     onClick={startNextLevel}

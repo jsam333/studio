@@ -103,27 +103,34 @@ export const FIELD_SHRINK_RATE_H = 0.1;
 export const FIELD_SHRINK_RATE_W = 0.08;
 export const FIELD_SHRINK_INTERVAL = 16;
 
+// Points Field
+export const POINTS_FIELD_WIDTH = 50; 
+export const POINTS_FIELD_HEIGHT = 50; 
+export const POINTS_FIELD_COLOR = 'rgba(0, 255, 0, 0.3)';
+export const POINTS_FIELD_DURATION = 5000;
+
 // *** All potentially spawnable power-ups (for UI and logic) ***
 // NOTE: Upgrades (L2/L3) are handled by ShopScreen, not listed here.
 export const ALL_TOGGLEABLE_POWER_UPS: PowerUpType[] = [
-    'MULTI_BALL', //exponential
-    'WIDEN_PADDLE', //safety and powerups
-    'LASER_PADDLE', //linear
-    'REGEN_BRICK', //points and powerup
-    'SAFETY_NET', //safety
-    'REINFORCE_BRICK', //points
-    'MAKE_SPECIAL', //exponential
-    'BLACK_BALL', //linear
-    'PIERCE_BALL', //linear                                                                                               
-    'UPGRADE_BRICK', //points
-    'BUILDER_BALL', //points
-    'BIG_BALL', //safety and exponential
-    'SPLITTING_BALL', //exponential
-    'COLLECTION_FIELD', //powerup
-    'HOMING_BALL', //safety
-    'BOMB_BRICK', //linear
-    'STICKY_PADDLE', //safety
-    'BALL_BRICK', // exponential
+    'MULTI_BALL', 
+    'WIDEN_PADDLE', 
+    'LASER_PADDLE', 
+    'REGEN_BRICK', 
+    'SAFETY_NET', 
+    'REINFORCE_BRICK', 
+    'MAKE_SPECIAL', 
+    'BLACK_BALL', 
+    'PIERCE_BALL',                                                                                               
+    'UPGRADE_BRICK', 
+    'BUILDER_BALL', 
+    'BIG_BALL', 
+    'SPLITTING_BALL', 
+    'COLLECTION_FIELD', 
+    'HOMING_BALL', 
+    'BOMB_BRICK', 
+    'STICKY_PADDLE', 
+    'BALL_BRICK', 
+    'POINTS_FIELD', 
 ];
 
 // *** Individual Power-up Costs ***
@@ -180,9 +187,12 @@ export const POWER_UP_COSTS: { [key in PowerUpType]?: number } = {
     STICKY_PADDLE_L2: 8,
     STICKY_PADDLE_L3: 10,
     BALL_BRICK: 9,
-    BALL_BRICK_L2: 11, // Added L2 cost
-    BALL_BRICK_L3: 13, // Added L3 cost
-    ALL_IN_ONE: 100, // Remains single level
+    BALL_BRICK_L2: 11, 
+    BALL_BRICK_L3: 13, 
+    POINTS_FIELD: 8,
+    POINTS_FIELD_L2: 10, // Added cost for POINTS_FIELD_L2
+    POINTS_FIELD_L3: 12, // Added cost for POINTS_FIELD_L3
+    ALL_IN_ONE: 100, 
     NONE: 0
 };
 
@@ -242,7 +252,10 @@ export const POWER_UP_DESCRIPTIONS: { [key in PowerUpType | string]?: string } =
     BALL_BRICK: "Turns 1 brick into a brick that releases a ball when broken.",
     BALL_BRICK_L2: "Turns 2 bricks into ball-holding bricks.",
     BALL_BRICK_L3: "Turns 3 bricks into ball-holding bricks.",
-    ALL_IN_ONE: "Grants a random selection of powerful effects.", // Placeholder, adjust if needed
+    POINTS_FIELD: "Creates 1 field for 5s where balls earn points.",
+    POINTS_FIELD_L2: "Creates 2 fields for 5s where balls earn points.", // Added description
+    POINTS_FIELD_L3: "Creates 3 fields for 5s where balls earn points.", // Added description
+    ALL_IN_ONE: "Grants a random selection of powerful effects.",
     NONE: "No power-up."
 };
 
@@ -251,7 +264,7 @@ export const POWER_UP_DESCRIPTIONS: { [key in PowerUpType | string]?: string } =
 export const PADDLE_WIDEN_INCREMENT = INITIAL_PADDLE_WIDTH * 0.1;
 export const MAX_PADDLE_WIDEN_DURATION = 5000;
 export const MIN_PADDLE_WIDEN_DURATION = 100;
-export const MAX_PADDLE_WIDTH = INITIAL_PADDLE_WIDTH * 4; // Changed from 5 to 4
+export const MAX_PADDLE_WIDTH = INITIAL_PADDLE_WIDTH * 4; 
 export const LASER_SPEED = 5;
 export const LASER_WIDTH = 5;
 export const LASER_HEIGHT = 15;
@@ -261,12 +274,12 @@ export const LASER_STRIPE_WIDTH_PER_SHOT = 4;
 // Colors
 export const GOLD_COLOR = '#FFD700';
 export const NORMAL_BRICK_COLOR = '#e67e22';
-export const REINFORCED_BRICK_COLOR = '#A0522D'; // Level 1: Orange-Brown (Sienna)
-export const UPGRADED_BRICK_COLOR = '#8B4513';   // Level 2: Brown (SaddleBrown)
-export const BUILDER_BRICK_COLOR = '#654321';    // Level 3: Dark Brown
+export const REINFORCED_BRICK_COLOR = '#A0522D'; 
+export const UPGRADED_BRICK_COLOR = '#8B4513';   
+export const BUILDER_BRICK_COLOR = '#654321';    
 export const SPECIAL_BRICK_COLOR = '#FFD700';
 export const BOMB_BRICK_COLOR = '#8B0000';
-export const BALL_BRICK_COLOR = '#FFFFFF'; // Added color for the ball-holding brick
+export const BALL_BRICK_COLOR = '#FFFFFF'; 
 export const RAINBOW_COLORS = ['#FF0000', '#FF7F00', '#FFFF00', '#00FF00', '#0000FF', '#4B0082', '#9400D3'];
 export const RAINBOW_FLASH_INTERVAL = 100;
 
@@ -301,9 +314,9 @@ export const POWER_UP_COLORS: { [key in PowerUpType | 'NONE']?: string } = {
     UPGRADE_BRICK: '#8A2BE2',
     UPGRADE_BRICK_L2: '#8A2BE2',
     UPGRADE_BRICK_L3: '#8A2BE2',
-    BUILDER_BALL: '#B85E34', // Changed from '#A0522D'
-    BUILDER_BALL_L2: '#B85E34', // Changed from '#A0522D'
-    BUILDER_BALL_L3: '#B85E34', // Changed from '#A0522D'
+    BUILDER_BALL: '#B85E34', 
+    BUILDER_BALL_L2: '#B85E34', 
+    BUILDER_BALL_L3: '#B85E34', 
     BIG_BALL: '#F08080',
     BIG_BALL_L2: '#F08080',
     BIG_BALL_L3: '#F08080',
@@ -325,6 +338,9 @@ export const POWER_UP_COLORS: { [key in PowerUpType | 'NONE']?: string } = {
     BALL_BRICK: '#40E0D0',
     BALL_BRICK_L2: '#40E0D0',
     BALL_BRICK_L3: '#40E0D0',
+    POINTS_FIELD: POINTS_FIELD_COLOR, 
+    POINTS_FIELD_L2: POINTS_FIELD_COLOR, // Same color for L2 icon
+    POINTS_FIELD_L3: POINTS_FIELD_COLOR, // Same color for L3 icon
     ALL_IN_ONE: '#FFFFFF',
     NONE: '#888888'
 };
