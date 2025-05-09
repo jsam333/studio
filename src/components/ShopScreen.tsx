@@ -146,7 +146,7 @@ export const ShopScreen: React.FC<ShopScreenProps> = ({
                 </p>
             </div>
 
-            <div className="mb-8 px-4 w-full max-w-4xl">
+            <div className="mb-4 px-4 w-full max-w-4xl">
                 <h3 className="text-xl font-semibold mb-3 text-center">Currently Active Power-ups</h3>
                 {displaySpawnablePowerUps.length > 0 ? (
                     <div className="flex flex-wrap justify-center gap-2">
@@ -162,7 +162,7 @@ export const ShopScreen: React.FC<ShopScreenProps> = ({
             </div>
 
             <h2 className="text-2xl font-semibold mb-4">Power-up Shop</h2>
-            <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-4 mb-10 w-full max-w-4xl px-4">
+            <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-y-1 sm:gap-2 md:gap-4 mb-4 md:mb-10 w-full max-w-4xl px-4">
                 {shopItems.length > 0 ? (
                     shopItems.map(item => {
                         const ownedPowerUps = gameStateRefs.spawnablePowerUpsRef.current;
@@ -231,9 +231,9 @@ export const ShopScreen: React.FC<ShopScreenProps> = ({
                                     <Button
                                         onClick={() => handlePurchase(itemToPurchaseOnClick)}
                                         disabled={isDisabled}
-                                        className={`py-3 px-2 text-sm flex flex-col h-24 justify-center items-center ${buttonStyle}`}
+                                        className={`py-2 px-1 text-xs flex flex-col h-16 md:h-20 justify-center items-center ${buttonStyle}`}
                                     >
-                                        <span className="mb-1">{displayName}</span>
+                                        <span className="mb-1 text-xs">{displayName}</span>
                                         <span className="text-xs mt-1">{buttonText}</span>
                                     </Button>
                                 </TooltipTrigger>
