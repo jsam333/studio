@@ -189,9 +189,9 @@ export const POWER_UP_COSTS: { [key in PowerUpType]?: number } = {
     BALL_BRICK: 9,
     BALL_BRICK_L2: 11, 
     BALL_BRICK_L3: 13, 
-    POINTS_FIELD: 8,
-    POINTS_FIELD_L2: 10, // Added cost for POINTS_FIELD_L2
-    POINTS_FIELD_L3: 12, // Added cost for POINTS_FIELD_L3
+    POINTS_FIELD: 12,
+    POINTS_FIELD_L2: 15, 
+    POINTS_FIELD_L3: 18,
     ALL_IN_ONE: 100, 
     NONE: 0
 };
@@ -252,7 +252,7 @@ export const POWER_UP_DESCRIPTIONS: { [key in PowerUpType | string]?: string } =
     BALL_BRICK: "Turns 1 brick into a brick that releases a ball when broken.",
     BALL_BRICK_L2: "Turns 2 bricks into ball-holding bricks.",
     BALL_BRICK_L3: "Turns 3 bricks into ball-holding bricks.",
-    POINTS_FIELD: "Creates 1 field for 5s where balls earn points.",
+    POINTS_FIELD: "Creates 1 field for 5s where balls entering it earn points.",
     POINTS_FIELD_L2: "Creates 2 fields for 5s where balls earn points.", // Added description
     POINTS_FIELD_L3: "Creates 3 fields for 5s where balls earn points.", // Added description
     ALL_IN_ONE: "Grants a random selection of powerful effects.",
