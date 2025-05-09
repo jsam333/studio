@@ -75,8 +75,8 @@ if (typeof window !== 'undefined') {
     pierceBallImage.src = '/images/pierce ball.png';
     splittingBallImage = new Image();
     splittingBallImage.src = '/images/splitting ball.png';
-    // pointsFieldImage = new Image(); // Assuming no specific image for points field, it will be drawn programmatically
-    // pointsFieldImage.src = '/images/points field.png'; // Example if you add an image
+    pointsFieldImage = new Image(); 
+    pointsFieldImage.src = '/images/points field.png';
 }
 // --------------------------------
 
@@ -381,7 +381,7 @@ export const drawPowerUps = (ctx: CanvasRenderingContext2D, powerUps: PowerUp[])
                 case 'HOMING_BALL': imageToDraw = homingBallImage; break;
                 case 'PIERCE_BALL': imageToDraw = pierceBallImage; break;
                 case 'SPLITTING_BALL': imageToDraw = splittingBallImage; break;
-                // case 'POINTS_FIELD': imageToDraw = pointsFieldImage; break; // Add if you have an image
+                case 'POINTS_FIELD': imageToDraw = pointsFieldImage; break;
             }
 
             if (imageToDraw && imageToDraw.complete) { // check if image is loaded
@@ -443,7 +443,7 @@ export const drawPowerUpPreviews = (ctx: CanvasRenderingContext2D, spawnablePowe
             case 'HOMING_BALL': imageToDraw = homingBallImage; break;
             case 'PIERCE_BALL': imageToDraw = pierceBallImage; break;
             case 'SPLITTING_BALL': imageToDraw = splittingBallImage; break;
-            // case 'POINTS_FIELD': imageToDraw = pointsFieldImage; break; // Add if you have an image for preview
+            case 'POINTS_FIELD': imageToDraw = pointsFieldImage; break;
         }
         
         if (imageToDraw && imageToDraw.complete) { // check if image is loaded
