@@ -17,42 +17,63 @@ import {
 } from './constants';
 
 // --- Preload Power-Up Images --- 
-const multiBallImage = new Image();
-multiBallImage.src = '/images/multiball.png';
-const widenPaddleImage = new Image();
-widenPaddleImage.src = '/images/widen paddle.png';
-const laserPaddleImage = new Image();
-laserPaddleImage.src = '/images/laser paddle.png';
-const regenBrickImage = new Image();
-regenBrickImage.src = '/images/regen brick.png';
-const upgradeBrickImage = new Image();
-upgradeBrickImage.src = '/images/upgrade brick.png';
-const reinforceBrickImage = new Image();
-reinforceBrickImage.src = '/images/reinforce brick.png';
-const safetyNetImage = new Image();
-safetyNetImage.src = '/images/safety net.png';
-const makeSpecialImage = new Image();
-makeSpecialImage.src = '/images/make special.png';
-const stickyPaddleImage = new Image();
-stickyPaddleImage.src = '/images/sticky paddle.png';
-const bombBrickImage = new Image();
-bombBrickImage.src = '/images/bomb brick.png';
-const ballBrickImage = new Image();
-ballBrickImage.src = '/images/ball brick.png';
-const collectionFieldImage = new Image();
-collectionFieldImage.src = '/images/collection field.png';
-const bigBallImage = new Image();
-bigBallImage.src = '/images/big ball.png';
-const blackBallImage = new Image();
-blackBallImage.src = '/images/black ball.png';
-const builderBallImage = new Image();
-builderBallImage.src = '/images/builder ball.png';
-const homingBallImage = new Image();
-homingBallImage.src = '/images/homing ball.png';
-const pierceBallImage = new Image();
-pierceBallImage.src = '/images/pierce ball.png';
-const splittingBallImage = new Image();
-splittingBallImage.src = '/images/splitting ball.png';
+let multiBallImage: HTMLImageElement;
+let widenPaddleImage: HTMLImageElement;
+let laserPaddleImage: HTMLImageElement;
+let regenBrickImage: HTMLImageElement;
+let upgradeBrickImage: HTMLImageElement;
+let reinforceBrickImage: HTMLImageElement;
+let safetyNetImage: HTMLImageElement;
+let makeSpecialImage: HTMLImageElement;
+let stickyPaddleImage: HTMLImageElement;
+let bombBrickImage: HTMLImageElement;
+let ballBrickImage: HTMLImageElement;
+let collectionFieldImage: HTMLImageElement;
+let bigBallImage: HTMLImageElement;
+let blackBallImage: HTMLImageElement;
+let builderBallImage: HTMLImageElement;
+let homingBallImage: HTMLImageElement;
+let pierceBallImage: HTMLImageElement;
+let splittingBallImage: HTMLImageElement;
+
+if (typeof window !== 'undefined') {
+    multiBallImage = new Image();
+    multiBallImage.src = '/images/multiball.png';
+    widenPaddleImage = new Image();
+    widenPaddleImage.src = '/images/widen paddle.png';
+    laserPaddleImage = new Image();
+    laserPaddleImage.src = '/images/laser paddle.png';
+    regenBrickImage = new Image();
+    regenBrickImage.src = '/images/regen brick.png';
+    upgradeBrickImage = new Image();
+    upgradeBrickImage.src = '/images/upgrade brick.png';
+    reinforceBrickImage = new Image();
+    reinforceBrickImage.src = '/images/reinforce brick.png';
+    safetyNetImage = new Image();
+    safetyNetImage.src = '/images/safety net.png';
+    makeSpecialImage = new Image();
+    makeSpecialImage.src = '/images/make special.png';
+    stickyPaddleImage = new Image();
+    stickyPaddleImage.src = '/images/sticky paddle.png';
+    bombBrickImage = new Image();
+    bombBrickImage.src = '/images/bomb brick.png';
+    ballBrickImage = new Image();
+    ballBrickImage.src = '/images/ball brick.png';
+    collectionFieldImage = new Image();
+    collectionFieldImage.src = '/images/collection field.png';
+    bigBallImage = new Image();
+    bigBallImage.src = '/images/big ball.png';
+    blackBallImage = new Image();
+    blackBallImage.src = '/images/black ball.png';
+    builderBallImage = new Image();
+    builderBallImage.src = '/images/builder ball.png';
+    homingBallImage = new Image();
+    homingBallImage.src = '/images/homing ball.png';
+    pierceBallImage = new Image();
+    pierceBallImage.src = '/images/pierce ball.png';
+    splittingBallImage = new Image();
+    splittingBallImage.src = '/images/splitting ball.png';
+}
 // --------------------------------
 
 // Helper function to get the base power-up type
@@ -341,10 +362,9 @@ export const drawPowerUps = (ctx: CanvasRenderingContext2D, powerUps: PowerUp[])
                 case 'SPLITTING_BALL': imageToDraw = splittingBallImage; break;
             }
 
-            if (imageToDraw) {
+            if (imageToDraw && imageToDraw.complete) { // check if image is loaded
                 ctx.drawImage(imageToDraw, powerUp.x, powerUp.y, POWER_UP_SIZE, POWER_UP_SIZE);
-            } else {
-                // Fallback for non-image power-ups (e.g., ALL_IN_ONE or if a type is not covered by a base image)
+            } else if (!imageToDraw) { // Fallback for non-image power-ups or if image is not defined (e.g. server-side)
                 ctx.beginPath(); ctx.rect(powerUp.x, powerUp.y, POWER_UP_SIZE, POWER_UP_SIZE);
                 if (powerUp.type === 'ALL_IN_ONE' && powerUp.timeCreated) {
                     const timeElapsed = currentTime - powerUp.timeCreated;
@@ -403,9 +423,9 @@ export const drawPowerUpPreviews = (ctx: CanvasRenderingContext2D, spawnablePowe
             case 'SPLITTING_BALL': imageToDraw = splittingBallImage; break;
         }
         
-        if (imageToDraw) {
+        if (imageToDraw && imageToDraw.complete) { // check if image is loaded
             ctx.drawImage(imageToDraw, currentX, startY, POWER_UP_SIZE, POWER_UP_SIZE);
-        } else {
+        } else if (!imageToDraw) { // Fallback for non-image power-ups or if image is not defined (e.g. server-side)
             // Fallback for non-image power-ups
             ctx.globalAlpha = 1.0; // Reset alpha for non-image power-ups before applying color alpha
             const color = POWER_UP_COLORS[type] || POWER_UP_COLORS['NONE']!;
