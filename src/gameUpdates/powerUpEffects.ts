@@ -20,10 +20,11 @@ export const applyPowerUpEffects = (
                 'HOMING_BALL', 'COLLECTION_FIELD', 'SPLITTING_BALL', 'BIG_BALL',
                 'MULTI_BALL', 'BUILDER_BALL', 'BLACK_BALL', 'PIERCE_BALL',
                 'WIDEN_PADDLE', 'LASER_PADDLE', 'SAFETY_NET',
-                'MAKE_SPECIAL', 'BOMB_BRICK', 'STICKY_PADDLE',
+                'BOMB_BRICK', 'STICKY_PADDLE',
                 'REINFORCE_BRICK', 'UPGRADE_BRICK',
                 'BALL_BRICK',
-                'POINTS_FIELD' // Added POINTS_FIELD to ALL_IN_ONE effects
+                'POINTS_FIELD',
+                'REGEN_BRICK' // Added REGEN_BRICK
             ];
             // Apply all effects except 'ALL_IN_ONE' itself to avoid infinite loop
             applyPowerUpEffects(refs, callbacks, allTypes, currentTime, gameSpeedFactor);
