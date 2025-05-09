@@ -192,7 +192,7 @@ export const drawBalls = (ctx: CanvasRenderingContext2D, activeBalls: Ball[], st
          } else if (ball.pierceHitsRemaining && ball.pierceHitsRemaining > 0) {
              ctx.fillStyle = POWER_UP_COLORS['PIERCE_BALL']!;
          } else if (ball.isBlack) {
-             ctx.fillStyle = "#000000";
+             ctx.fillStyle = "#808080";
          } else {
              ctx.fillStyle = "#ffffff";
          }

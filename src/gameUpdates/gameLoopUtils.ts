@@ -141,21 +141,49 @@ export const createNewBall = (x: number, y: number, speedX: number, speedY: numb
 export const findClosestBrick = (ball: Ball, bricks: Brick[][], columns: number, rows: number): Brick | null => {
     let closestBrick: Brick | null = null;
     let minDistSq = Infinity;
+    const specialBricks: Brick[] = [];
 
     const ballCenterX = ball.x;
     const ballCenterY = ball.y;
 
+    // First, identify all special bricks
     for (let c = 0; c < columns; c++) {
         if (!bricks[c]) continue;
         for (let r = 0; r < rows; r++) {
             const brick = bricks[c][r];
             if (brick && brick.status === 1) {
-                const brickCenterX = brick.x + brick.width / 2;
-                const brickCenterY = brick.y + brick.height / 2;
-                const distSq = Math.pow(ballCenterX - brickCenterX, 2) + Math.pow(ballCenterY - brickCenterY, 2);
-                if (distSq < minDistSq) {
-                    minDistSq = distSq;
-                    closestBrick = brick;
+                if (brick.isSpecial || brick.isBomb || brick.holdsBall) {
+                    specialBricks.push(brick);
+                }
+            }
+        }
+    }
+
+    // If special bricks exist, find the closest among them
+    if (specialBricks.length > 0) {
+        for (const brick of specialBricks) {
+            const brickCenterX = brick.x + brick.width / 2;
+            const brickCenterY = brick.y + brick.height / 2;
+            const distSq = Math.pow(ballCenterX - brickCenterX, 2) + Math.pow(ballCenterY - brickCenterY, 2);
+            if (distSq < minDistSq) {
+                minDistSq = distSq;
+                closestBrick = brick;
+            }
+        }
+    } else {
+        // Fallback: if no special bricks, find the closest of any brick
+        for (let c = 0; c < columns; c++) {
+            if (!bricks[c]) continue;
+            for (let r = 0; r < rows; r++) {
+                const brick = bricks[c][r];
+                if (brick && brick.status === 1) {
+                    const brickCenterX = brick.x + brick.width / 2;
+                    const brickCenterY = brick.y + brick.height / 2;
+                    const distSq = Math.pow(ballCenterX - brickCenterX, 2) + Math.pow(ballCenterY - brickCenterY, 2);
+                    if (distSq < minDistSq) {
+                        minDistSq = distSq;
+                        closestBrick = brick;
+                    }
                 }
             }
         }
