@@ -301,9 +301,9 @@ export const POWER_UP_COLORS: { [key in PowerUpType | 'NONE']?: string } = {
     UPGRADE_BRICK: '#8A2BE2',
     UPGRADE_BRICK_L2: '#8A2BE2',
     UPGRADE_BRICK_L3: '#8A2BE2',
-    BUILDER_BALL: '#4682B4',
-    BUILDER_BALL_L2: '#4682B4',
-    BUILDER_BALL_L3: '#4682B4',
+    BUILDER_BALL: '#B85E34', // Changed from '#A0522D'
+    BUILDER_BALL_L2: '#B85E34', // Changed from '#A0522D'
+    BUILDER_BALL_L3: '#B85E34', // Changed from '#A0522D'
     BIG_BALL: '#F08080',
     BIG_BALL_L2: '#F08080',
     BIG_BALL_L3: '#F08080',

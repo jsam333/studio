@@ -107,7 +107,7 @@ export const checkBrickCollision = ( ball: Ball, bricks: Brick[][], columns: num
                      } else if (ball.isBlue) {
                          builderHitOccurred = true;
                          if (!brick.isSpecial && !brick.isBomb && !brick.holdsBall) { // Builder ball doesn't affect ball bricks
-                             brick.upgradeLevel = MAX_BRICK_UPGRADE_LEVEL;
+                             brick.upgradeLevel = Math.min((brick.upgradeLevel || 0) + 1, MAX_BRICK_UPGRADE_LEVEL);
                              brick.isSpecial = false; // Builder ball converts bricks
                          }
                          newSpeedX = tempSpeedX; // Bounce like normal after building
