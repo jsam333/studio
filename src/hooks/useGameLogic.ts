@@ -1,5 +1,5 @@
 // src/hooks/useGameLogic.ts
-import { useRef, useCallback, useEffect, useState } from 'react';
+import { useRef, useCallback, useEffect, useState, useMemo } from 'react'; // Added useMemo
 import {
     BOARD_WIDTH, INITIAL_PADDLE_WIDTH, BASE_BALL_SPEED_FACTOR,
     FIELD_INITIAL_HEIGHT_OFFSET, FIELD_INITIAL_WIDTH_OFFSET,
@@ -385,7 +385,7 @@ export function useGameLogic() {
         resetLevel(mode, resetScoreAndGold);
     }, [resetLevel]);
 
-    const gameStateRefs: IGameStateRefs = {
+    const gameStateRefs: IGameStateRefs = useMemo(() => ({
         paddleXRef, ballsRef, powerUpsRef, scoreRef, goldRef, spawnablePowerUpsRef,
         paddleWidthRef, widenLevelRef, laserShotsRef, lasersRef, safetyNetCountRef,
         gameIsRunningRef, gameOverStateRef, gameSpeedFactorRef,
@@ -406,19 +406,48 @@ export function useGameLogic() {
         livesRef,
         bonusGoldTimerCountdownRef,
         initialBonusGoldDecrementCompleteRef,
-        firstTestRunCompletedRef, // Added to refs
-    };
+        firstTestRunCompletedRef,
+    }), [
+        paddleXRef, ballsRef, powerUpsRef, scoreRef, goldRef, spawnablePowerUpsRef,
+        paddleWidthRef, widenLevelRef, laserShotsRef, lasersRef, safetyNetCountRef,
+        gameIsRunningRef, gameOverStateRef, gameSpeedFactorRef,
+        collectionFieldHeightRef, collectionFieldWidthOffsetRef,
+        stickyPaddleChargesRef, stuckBallsRef, enabledPowerUpsRef, isGameStartedRef,
+        paddleShrinkCountdownRef,
+        collectionFieldShrinkTimerRef,
+        animationFrameIdRef, lastTimeRef,
+        gameModeRef,
+        currentLevelRef,
+        bricksRef,
+        targetScoreRef,
+        totalBricksRef,
+        brickColumnsRef,
+        brickRowsRef,
+        bonusGoldRef,
+        bonusCountdownStartedRef,
+        livesRef,
+        bonusGoldTimerCountdownRef,
+        initialBonusGoldDecrementCompleteRef,
+        firstTestRunCompletedRef,
+    ]);
 
-    const gameLoopCallbacks: GameLoopCallbacks = {
+    const drawEndMessageCallback = useCallback(() => { 
+        console.warn("drawEndMessage not implemented in useGameLogic"); 
+    }, []);
+
+    const gameLoopCallbacks: GameLoopCallbacks = useMemo(() => ({
         updateScoreCallback,
         setGameOverState,
         schedulePaddleShrink,
         executePaddleShrink,
         scheduleFieldShrink,
         resetLevelCallback,
-        drawEndMessage: () => { console.warn("drawEndMessage not implemented in useGameLogic"); },
+        drawEndMessage: drawEndMessageCallback, // Use memoized callback
         resetBonusGoldCallback,
-    };
+    }), [
+        updateScoreCallback, setGameOverState, schedulePaddleShrink, executePaddleShrink, 
+        scheduleFieldShrink, resetLevelCallback, drawEndMessageCallback, resetBonusGoldCallback
+    ]);
 
     return {
         gameOverState,
@@ -432,8 +461,8 @@ export function useGameLogic() {
         startGame,
         startNextLevel,
         addSpawnablePowerUp,
-        gameStateRefs,
-        gameLoopCallbacks,
+        gameStateRefs, // Now memoized
+        gameLoopCallbacks, // Now memoized
         lives: livesRef.current,
         score: scoreRef.current,
         gold: goldRef.current,

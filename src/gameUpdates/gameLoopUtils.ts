@@ -97,11 +97,23 @@ export const handleSpawnEvents = (
 
                 // Roll for spawn
                 if (Math.random() < spawnChance) {
-                    const possibleTypes = Array.from(availablePowerUps);
-                    if (possibleTypes.length > 0) { // Ensure there are types to choose from
-                        const type = possibleTypes[Math.floor(Math.random() * possibleTypes.length)];
-                        if (!newlySpawnedPowerUps) newlySpawnedPowerUps = []; // Create only when needed
-                        newlySpawnedPowerUps.push(createPowerUp(event.brickX, event.brickY, event.brickWidth, type, currentTime));
+                    if (availablePowerUps.size > 0) { // NEW: Check Set size directly
+                        // NEW: Efficiently pick a random item from Set without Array.from
+                        const randomIndex = Math.floor(Math.random() * availablePowerUps.size);
+                        let i = 0;
+                        let typeToSpawn: PowerUpType | undefined = undefined; 
+                        for (const item of availablePowerUps) { // Iterate the Set
+                            if (i === randomIndex) {
+                                typeToSpawn = item;
+                                break;
+                            }
+                            i++;
+                        }
+
+                        if (typeToSpawn) { // Check if a type was actually selected
+                           if (!newlySpawnedPowerUps) newlySpawnedPowerUps = [];
+                           newlySpawnedPowerUps.push(createPowerUp(event.brickX, event.brickY, event.brickWidth, typeToSpawn, currentTime));
+                        }
                     }
                 }
             }
