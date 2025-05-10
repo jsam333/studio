@@ -11,7 +11,7 @@ import {
 // Constants for spawn logic
 export const TEST_MODE_BASE_SPAWN_CHANCE = 1.0; // Base chance for test mode
 export const MAIN_GAME_BASE_SPAWN_CHANCE = 0.0; // Base chance for main game mode (0%)
-export const MAIN_GAME_CHANCE_INCREASE_PER_TYPE = 0.08; // +8% chance per available power-up type
+export const MAIN_GAME_CHANCE_INCREASE_PER_TYPE = 0.1; // +8% chance per available power-up type
 export const POWER_UP_SPAWN_THRESHOLD = 20; // Limit before chance reduction starts
 export const POWER_UP_CHANCE_REDUCTION_PER_EXTRA = 0.02; // Reduction factor per extra power-up
 
