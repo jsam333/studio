@@ -37,7 +37,6 @@ interface UseLevelLogicProps {
     setupInitialBall: () => void;
     isGameStartedRef: MutableRefObject<boolean>;
     spawnablePowerUpsRef: MutableRefObject<Set<PowerUpType>>;
-    // *** ADDED: Accept the new ref ***
     initialBonusGoldDecrementCompleteRef: MutableRefObject<boolean>;
 }
 
@@ -47,7 +46,6 @@ export function useLevelLogic({
     gameSpeedFactorRef, collectionFieldHeightRef, collectionFieldWidthOffsetRef,
     stickyPaddleChargesRef, paddleShrinkCountdownRef, setupInitialBall, isGameStartedRef,
     spawnablePowerUpsRef,
-    // *** ADDED: Destructure the new ref ***
     initialBonusGoldDecrementCompleteRef
 }: UseLevelLogicProps) {
     const bricksRef = useRef<Brick[][]>([]);
@@ -66,14 +64,13 @@ export function useLevelLogic({
         bonusGoldTimerRef.current = null;
         bonusGoldDecrementIntervalRef.current = null;
         bonusCountdownStartedRef.current = false;
-        // *** ADDED: Reset the decrement complete flag ***
         initialBonusGoldDecrementCompleteRef.current = false;
-    }, [initialBonusGoldDecrementCompleteRef]); // Add dependency
+    }, [initialBonusGoldDecrementCompleteRef]);
 
     const startBonusGoldCountdown = useCallback(() => {
         if (gameModeRef.current !== 'main' || bonusCountdownStartedRef.current) return;
         bonusCountdownStartedRef.current = true;
-        clearBonusGoldTimers(); // This already resets the decrement complete flag
+        clearBonusGoldTimers();
 
         const currentLevel = currentLevelRef.current;
         let startDelay;
@@ -92,12 +89,10 @@ export function useLevelLogic({
                 if (bonusGoldRef.current > MINIMUM_BONUS_GOLD_CONST && gameOverStateRef.current === 'playing') {
                     bonusGoldRef.current -= 1;
                 } else {
-                    // *** ADDED: Set decrement complete flag when minimum is reached (or game stops) ***
-                    if (gameOverStateRef.current === 'playing') { // Only set if game is still playing
+                    if (gameOverStateRef.current === 'playing') { 
                          initialBonusGoldDecrementCompleteRef.current = true;
                          console.log("Initial Bonus Gold Decrement Complete.");
                     }
-
                     if (bonusGoldDecrementIntervalRef.current) {
                         clearInterval(bonusGoldDecrementIntervalRef.current);
                         bonusGoldDecrementIntervalRef.current = null;
@@ -105,7 +100,7 @@ export function useLevelLogic({
                 }
             }, BONUS_GOLD_DECREMENT_INTERVAL);
         }, startDelay);
-    }, [clearBonusGoldTimers, gameModeRef, currentLevelRef, gameOverStateRef, initialBonusGoldDecrementCompleteRef]); // Add dependencies
+    }, [clearBonusGoldTimers, gameModeRef, currentLevelRef, gameOverStateRef, initialBonusGoldDecrementCompleteRef]);
 
 
     const resetLevel = useCallback((mode: GameMode | null, resetScoreAndGold: boolean = true) => {
@@ -114,19 +109,18 @@ export function useLevelLogic({
         let cols = BRICK_COLUMNS; let rows = BRICK_ROWS; let targetHeight = BRICK_HEIGHT;
         const level = currentLevelRef.current;
 
-        // Level layout logic (Unchanged)
-         if (currentMode === 'main') {
+        if (currentMode === 'main') {
              if (level === 1) { cols = 3; rows = 2; targetHeight = 20; }
              else if (level === 2) { cols = 4; rows = 3; targetHeight = 18; }
-             else if (level === 3) { cols = 5; rows = 4; targetHeight = TALL_BRICK_HEIGHT; }
-             else if (level === 4) { cols = 7; rows = 5; targetHeight = TALL_BRICK_HEIGHT; }
-             else if (level === 5) { cols = 9; rows = 6; targetHeight = TALL_BRICK_HEIGHT; }
+             else if (level === 3) { cols = 9; rows = 4; targetHeight = TALL_BRICK_HEIGHT; } 
+             else if (level === 4) { cols = 14; rows = 5; targetHeight = TALL_BRICK_HEIGHT; } 
+             else if (level === 5) { cols = 30; rows = 6; targetHeight = TALL_BRICK_HEIGHT; } // Changed cols to 30 for level 5
              else if (level === 6) { cols = 11; rows = 7; targetHeight = TALL_BRICK_HEIGHT; }
              else if (level === 7) { cols = 13; rows = 8; targetHeight = TALL_BRICK_HEIGHT; }
              else if (level === 8) { cols = 15; rows = 9; targetHeight = TALL_BRICK_HEIGHT; }
              else if (level === 9) { cols = 17; rows = 10; targetHeight = TALL_BRICK_HEIGHT; }
-             else { // Levels 10+ use calculated height
-                 cols = 4; // Default starting columns for calculated height levels
+             else { 
+                 cols = 4; 
                  if (level === 10) { cols = 20; rows = 11; }
                  else if (level === 11) { cols = 22; rows = 12; }
                  else if (level === 12) { cols = 25; rows = 13; }
@@ -138,25 +132,23 @@ export function useLevelLogic({
                  else if (level === 18) { cols = 50; rows = 19; }
                  else if (level === 19) { cols = 55; rows = 20; }
                  else if (level === 20) { cols = 60; rows = 21; }
-                 else { rows = 7; } // Default rows if level > 20 (adjust as needed)
+                 else { rows = 7; } 
 
                  if (rows > 0) {
                      targetHeight = (TARGET_TOTAL_BRICK_GRID_HEIGHT - (rows - 1) * BRICK_PADDING) / rows;
-                     targetHeight = Math.max(1, targetHeight); // Ensure minimum height
+                     targetHeight = Math.max(1, targetHeight); 
                  } else {
-                     targetHeight = BRICK_HEIGHT; // Fallback default height
+                     targetHeight = BRICK_HEIGHT; 
                  }
              }
         } else {
             cols = BRICK_COLUMNS; rows = BRICK_ROWS; targetHeight = BRICK_HEIGHT;
         }
 
-        // Initialize bricks (Unchanged)
         brickColumnsRef.current = cols;
         brickRowsRef.current = rows;
-        bricksRef.current = initializeBricks(cols, rows, targetHeight);
+        bricksRef.current = initializeBricks(cols, rows, targetHeight, currentLevelRef.current, gameModeRef.current);
 
-        // Calculate initial brick count (Unchanged)
         let count = 0;
         for (let c = 0; c < bricksRef.current.length; c++) {
             if (bricksRef.current[c]) {
@@ -169,26 +161,24 @@ export function useLevelLogic({
         }
         totalBricksRef.current = count;
 
-        // Set target score (Unchanged)
          let scoreGoal = count;
-        if (currentMode === 'main' && level === 6) { scoreGoal += 5; }
-        if (currentMode === 'main' && level === 7) { scoreGoal += 11; }
-        if (currentMode === 'main' && level === 8) { scoreGoal += 18; }
-        if (currentMode === 'main' && level === 9) { scoreGoal += 27; }
-        if (currentMode === 'main' && level === 10) { scoreGoal += 45; }
-        if (currentMode === 'main' && level === 11) { scoreGoal += 65; }
-        if (currentMode === 'main' && level === 12) { scoreGoal += 90; }
-        if (currentMode === 'main' && level === 13) { scoreGoal += 120; }
-        if (currentMode === 'main' && level === 14) { scoreGoal += 180; }
-        if (currentMode === 'main' && level === 15) { scoreGoal += 250; }
-        if (currentMode === 'main' && level === 16) { scoreGoal += 375; }
-        if (currentMode === 'main' && level === 17) { scoreGoal += 525; }
-        if (currentMode === 'main' && level === 18) { scoreGoal += 700; }
-        if (currentMode === 'main' && level === 19) { scoreGoal += 1000; }
-        if (currentMode === 'main' && level === 20) { scoreGoal += 1500; }
+        if (currentMode === 'main' && level === 6) { scoreGoal += 8; }
+        if (currentMode === 'main' && level === 7) { scoreGoal += 21; }
+        if (currentMode === 'main' && level === 8) { scoreGoal += 41; }
+        if (currentMode === 'main' && level === 9) { scoreGoal += 68; }
+        if (currentMode === 'main' && level === 10) { scoreGoal += 110; }
+        if (currentMode === 'main' && level === 11) { scoreGoal += 158; }
+        if (currentMode === 'main' && level === 12) { scoreGoal += 228; }
+        if (currentMode === 'main' && level === 13) { scoreGoal += 314; }
+        if (currentMode === 'main' && level === 14) { scoreGoal += 419; }
+        if (currentMode === 'main' && level === 15) { scoreGoal += 560; }
+        if (currentMode === 'main' && level === 16) { scoreGoal += 816; }
+        if (currentMode === 'main' && level === 17) { scoreGoal += 1134; }
+        if (currentMode === 'main' && level === 18) { scoreGoal += 1520; }
+        if (currentMode === 'main' && level === 19) { scoreGoal += 2090; }
+        if (currentMode === 'main' && level === 20) { scoreGoal += 2898; }
         targetScoreRef.current = scoreGoal;
 
-        // Reset other game state elements (Unchanged, except bonus flags)
         if (resetScoreAndGold) {
             scoreRef.current = 0;
             goldRef.current = 0;
@@ -207,11 +197,8 @@ export function useLevelLogic({
         setupInitialBall();
         isGameStartedRef.current = false;
         bonusGoldRef.current = INITIAL_BONUS_GOLD_CONST;
-        // bonusCountdownStartedRef is reset by clearBonusGoldTimers
-        // initialBonusGoldDecrementCompleteRef is reset by clearBonusGoldTimers
-        clearBonusGoldTimers(); // Reset bonus flags and timers
+        clearBonusGoldTimers();
 
-        // Spawn initial power-ups (Unchanged)
         if (currentMode === 'main') {
             const spawnableTypes = Array.from(spawnablePowerUpsRef.current);
             const totalSpawnable = spawnableTypes.length;
@@ -234,14 +221,13 @@ export function useLevelLogic({
             }
         }
 
-    }, [ // Dependencies
+    }, [ 
         gameModeRef, currentLevelRef, scoreRef, goldRef, powerUpsRef, lasersRef,
         widenLevelRef, laserShotsRef, safetyNetCountRef, gameSpeedFactorRef,
         collectionFieldHeightRef, collectionFieldWidthOffsetRef,
         stickyPaddleChargesRef, paddleShrinkCountdownRef,
         setupInitialBall, isGameStartedRef, clearBonusGoldTimers,
         spawnablePowerUpsRef,
-        // *** ADDED: Dependency for the new ref ***
         initialBonusGoldDecrementCompleteRef
     ]);
 
