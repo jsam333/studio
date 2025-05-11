@@ -1,12 +1,13 @@
 // src/gameUpdates/ballUpdates.ts
-import { Ball, PowerUp, Brick, PowerUpSpawnEvent } from '../interfaces';
+import { Ball, PowerUp, Brick, PowerUpSpawnEvent, PointsField } from '../interfaces';
 import { GameStateRefs, GameLoopCallbacks } from '../interfaces';
 import { checkBrickCollision } from '../gameLogic';
 import { createNewBall, findClosestBrick } from './gameLoopUtils';
 import {
     BOARD_WIDTH, BOARD_HEIGHT, PADDLE_Y, BALL_SIZE, MAX_BALL_SPEED_X, SAFETY_NET_HEIGHT,
     BIG_BALL_SIZE_INCREASE, BRICK_WIDTH, BRICK_HEIGHT, PADDLE_HEIGHT, BASE_BALL_SPEED_FACTOR,
-    PADDLE_EDGE_STICK_THRESHOLD, PADDLE_SIDE_SAVE_THRESHOLD
+    PADDLE_EDGE_STICK_THRESHOLD, PADDLE_SIDE_SAVE_THRESHOLD,
+    POINTS_FIELD_DURATION // Import POINTS_FIELD_DURATION
 } from '../constants';
 
 export const updateBalls = (
@@ -18,36 +19,31 @@ export const updateBalls = (
     deltaTime: number,
     columns: number,
     rows: number
-): void => { // Return void as we modify the array in place
+): void => {
     const currentMaxBallSpeedX = MAX_BALL_SPEED_X * gameSpeedFactor;
     let ballsToAdd: Ball[] = [];
-    let ballsToRemoveIds = new Set<number>(); // Use Set for efficient checking
+    let ballsToRemoveIds = new Set<number>();
 
-    // Update Stuck Balls
     refs.stuckBallsRef.current.forEach(stuckBall => {
         const currentBallSize = stuckBall.isBig ? BALL_SIZE + BIG_BALL_SIZE_INCREASE : BALL_SIZE;
         if (stuckBall.stuckSide) {
-            // Side Stuck Update
             const sideOffset = currentBallSize;
             stuckBall.x = stuckBall.stuckSide === 'left'
                 ? refs.paddleXRef.current - sideOffset
                 : refs.paddleXRef.current + refs.paddleWidthRef.current + sideOffset;
             stuckBall.y = PADDLE_Y + PADDLE_HEIGHT / 2 + (stuckBall.stuckSideOffset ?? -PADDLE_HEIGHT / 2);
         } else {
-            // Top Stuck Update
             const offset = stuckBall.stuckOffset ?? refs.paddleWidthRef.current / 2;
             stuckBall.x = refs.paddleXRef.current + offset;
             stuckBall.y = PADDLE_Y - currentBallSize;
         }
     });
 
-    // --- Process Active Balls & Identify Removals ---
     if (refs.isGameStartedRef.current) {
         for (let i = 0; i < refs.ballsRef.current.length; i++) {
             const ball = refs.ballsRef.current[i];
             let processBallUpdate = true;
 
-            // Effect Expiration Check
             if (ball.stuckOffset === undefined && !ball.stuckSide) {
                 if (ball.isBlack && ball.blackEndTime && currentTime >= ball.blackEndTime) { ball.isBlack = false; ball.blackEndTime = undefined; }
                 if (ball.isBlue && ball.blueEndTime && currentTime >= ball.blueEndTime) { ball.isBlue = false; ball.blueEndTime = undefined; }
@@ -58,7 +54,6 @@ export const updateBalls = (
             let currentSpeedX = ball.speedX, currentSpeedY = ball.speedY;
             const currentBallSize = ball.isBig ? BALL_SIZE + BIG_BALL_SIZE_INCREASE : BALL_SIZE;
 
-            // Brick Collision
             const brickCollisionResult = checkBrickCollision(ball, refs.bricksRef.current, columns, rows, deltaTime);
             if (brickCollisionResult.collision) {
                 currentSpeedX = brickCollisionResult.newSpeedX;
@@ -79,7 +74,6 @@ export const updateBalls = (
                 spawnRequests.push(...brickCollisionResult.spawnEvents);
             }
 
-            // Movement & Wall/Paddle Collision
             const effectiveSpeedX = currentSpeedX * deltaTime;
             const effectiveSpeedY = currentSpeedY * deltaTime;
             let nextX = ball.x + effectiveSpeedX;
@@ -87,7 +81,6 @@ export const updateBalls = (
             const paddleLeft = refs.paddleXRef.current;
             const paddleRight = paddleLeft + refs.paddleWidthRef.current;
 
-            // Wall collisions
             if (nextX > BOARD_WIDTH - currentBallSize || nextX < currentBallSize) {
                 const overshoot = nextX > BOARD_WIDTH - currentBallSize ? (nextX - (BOARD_WIDTH - currentBallSize)) : (currentBallSize - nextX);
                 currentSpeedX = -currentSpeedX;
@@ -98,7 +91,6 @@ export const updateBalls = (
                 currentSpeedY = -currentSpeedY;
                 nextY = currentBallSize + overshoot;
             }
-            // Bottom collision (or sticky side save)
             else if (nextY + currentBallSize > BOARD_HEIGHT) {
                 const isNearLeft = Math.abs(nextX - paddleLeft) < PADDLE_SIDE_SAVE_THRESHOLD;
                 const isNearRight = Math.abs(nextX - paddleRight) < PADDLE_SIDE_SAVE_THRESHOLD;
@@ -117,7 +109,7 @@ export const updateBalls = (
                     if (ball.isBlue && ball.blueEndTime) { ball.bluePausedDuration = ball.blueEndTime - currentTime; ball.blueEndTime = undefined; }
                     if (ball.isSplitting && ball.splittingEndTime) { ball.splittingPausedDuration = ball.splittingEndTime - currentTime; ball.splittingEndTime = undefined; }
                     refs.stuckBallsRef.current.push(ball);
-                    ballsToRemoveIds.add(ball.id); // Mark for removal
+                    ballsToRemoveIds.add(ball.id);
                     processBallUpdate = false;
                 } else if (refs.safetyNetCountRef.current > 0) {
                     currentSpeedY = -Math.abs(currentSpeedY);
@@ -125,11 +117,10 @@ export const updateBalls = (
                     refs.safetyNetCountRef.current--;
                     nextY = ball.y + currentSpeedY * deltaTime;
                 } else {
-                    ballsToRemoveIds.add(ball.id); // Mark for removal
+                    ballsToRemoveIds.add(ball.id);
                     processBallUpdate = false;
                 }
             }
-            // Paddle collision check (Top)
             else if (currentSpeedY > 0 && ball.y + currentBallSize <= PADDLE_Y && nextY + currentBallSize > PADDLE_Y) {
                 const timeToPaddleY = (PADDLE_Y - (ball.y + currentBallSize)) / effectiveSpeedY;
                 const collisionX = ball.x + effectiveSpeedX * timeToPaddleY;
@@ -162,12 +153,11 @@ export const updateBalls = (
                         if (ball.isBlue && ball.blueEndTime) { ball.bluePausedDuration = ball.blueEndTime - currentTime; ball.blueEndTime = undefined; }
                         if (ball.isSplitting && ball.splittingEndTime) { ball.splittingPausedDuration = ball.splittingEndTime - currentTime; ball.splittingEndTime = undefined; }
                         refs.stuckBallsRef.current.push(ball);
-                        ballsToRemoveIds.add(ball.id); // Mark for removal
+                        ballsToRemoveIds.add(ball.id);
                         processBallUpdate = false;
                         currentSpeedX = 0;
                         currentSpeedY = 0;
                     } else {
-                        // Normal Bounce
                         ball.y = PADDLE_Y - currentBallSize;
                         currentSpeedY = -Math.abs(currentSpeedY);
                         let deltaX = collisionX - (paddleLeft + refs.paddleWidthRef.current / 2);
@@ -202,6 +192,40 @@ export const updateBalls = (
                 }
             }
 
+            // Points Field Interaction
+            if (refs.pointsFieldsRef.current && refs.pointsFieldsRef.current.length > 0) {
+                for (let j = refs.pointsFieldsRef.current.length - 1; j >= 0; j--) { // Iterate backwards for safe removal
+                    const field = refs.pointsFieldsRef.current[j];
+                    // Check if ball is within the field boundaries
+                    if (
+                        ball.x + currentBallSize > field.x &&
+                        ball.x - currentBallSize < field.x + field.width &&
+                        ball.y + currentBallSize > field.y &&
+                        ball.y - currentBallSize < field.y + field.height
+                    ) {
+                        // Check if ball wasn't in this field last frame
+                        if (!ball.lastFramePointsFieldIds.has(field.id)) {
+                            callbacks.updateScoreCallback(1); // Award 1 point
+                            field.ballsPassed += 1;
+                            ball.lastFramePointsFieldIds.add(field.id); // Mark as entered this frame
+
+                            if (field.ballsPassed >= 5) {
+                                refs.pointsFieldsRef.current.splice(j, 1); // Remove field if 5 balls passed
+                                // Potentially remove from all ball.lastFramePointsFieldIds as well if field is gone
+                                refs.ballsRef.current.forEach(b => b.lastFramePointsFieldIds.delete(field.id));
+                                if (refs.stuckBallsRef.current) {
+                                    refs.stuckBallsRef.current.forEach(b => b.lastFramePointsFieldIds.delete(field.id));
+                                }
+                                continue; // Continue to next field as this one is removed
+                            }
+                        }
+                    } else {
+                        // If ball is outside the field, remove it from the set for this field
+                        ball.lastFramePointsFieldIds.delete(field.id);
+                    }
+                }
+            }
+
             if (processBallUpdate) {
                 ball.x = nextX;
                 ball.y = nextY;
@@ -211,7 +235,13 @@ export const updateBalls = (
         }
     }
 
-    // --- Remove Marked Balls & Add New Ones --- 
+    // Remove points fields that have expired by time (ballsPassed check is now inline)
+    if (refs.pointsFieldsRef.current && refs.pointsFieldsRef.current.length > 0) {
+        refs.pointsFieldsRef.current = refs.pointsFieldsRef.current.filter(field => {
+            return currentTime - field.createdAt < POINTS_FIELD_DURATION;
+        });
+    }
+
     if (ballsToRemoveIds.size > 0) {
         let writeIndex = 0;
         for (let readIndex = 0; readIndex < refs.ballsRef.current.length; readIndex++) {
@@ -222,11 +252,10 @@ export const updateBalls = (
                 writeIndex++;
             }
         }
-        refs.ballsRef.current.length = writeIndex; // Truncate the array
+        refs.ballsRef.current.length = writeIndex;
     }
 
     if (ballsToAdd.length > 0) {
          refs.ballsRef.current.push(...ballsToAdd);
     }
-    // No return needed as we modified refs.ballsRef.current directly
 };

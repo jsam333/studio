@@ -14,7 +14,8 @@ const createSinglePointsField = (currentTime: number): PointsField => ({
     height: POINTS_FIELD_HEIGHT,
     x: Math.random() * (BOARD_WIDTH - POINTS_FIELD_WIDTH),
     y: Math.random() * (BOARD_HEIGHT - POINTS_FIELD_HEIGHT - 50), // Avoid spawning too low
-    createdAt: currentTime
+    createdAt: currentTime,
+    ballsPassed: 0 // Initialize ballsPassed to 0
 });
 
 export const applyGameEffects = (

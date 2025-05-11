@@ -14,9 +14,12 @@ export const initializeBricks = (columns: number, rows: number, brickHeight: num
     let currentBrickOffsetLeft = BRICK_OFFSET_LEFT;
     let actualBoardWidth = BOARD_WIDTH;
 
-    if (gameMode === 'main' && currentLevel === 2) {
-        actualBoardWidth = BOARD_WIDTH * (2 / 3); // Changed from BOARD_WIDTH / 2
-        currentBrickOffsetLeft = (BOARD_WIDTH / 6) + BRICK_OFFSET_LEFT / 2; // Adjusted for 2/3 width centering
+    if (gameMode === 'main' && currentLevel === 1) { // Added this block
+        actualBoardWidth = BOARD_WIDTH * (4 / 5);
+        currentBrickOffsetLeft = (BOARD_WIDTH / 10) + BRICK_OFFSET_LEFT / 2; // Center within 4/5 width
+    } else if (gameMode === 'main' && currentLevel === 2) {
+        actualBoardWidth = BOARD_WIDTH * (2 / 3);
+        currentBrickOffsetLeft = (BOARD_WIDTH / 6) + BRICK_OFFSET_LEFT / 2; 
     }
 
     const availableWidth = actualBoardWidth - 2 * BRICK_OFFSET_LEFT;
@@ -27,35 +30,31 @@ export const initializeBricks = (columns: number, rows: number, brickHeight: num
     let skipColumns: number[] = [];
     if (gameMode === 'main') {
         if (currentLevel === 3) {
-            // For 9 columns (0-8), skip middle 5 (indices 2,3,4,5,6 which are columns 3-7)
             if (columns === 9) { 
                  skipColumns = [2, 3, 4, 5, 6];
             }
         } else if (currentLevel === 4) {
-            // For 14 columns (0-13), skip 3-6 (indices 2,3,4,5) and 9-12 (indices 8,9,10,11)
-            if (columns === 14) {
-                skipColumns = [2, 3, 4, 5, 8, 9, 10, 11];
+            if (columns === 13) {
+                skipColumns = [2, 3, 4, 5, 7, 8, 9, 10];
             } 
         } else if (currentLevel === 5) {
-            // For 30 columns (0-29), only spawn 4 on each side.
-            // This means columns 0,1,2,3 and 26,27,28,29 should spawn.
-            // So, skip columns 4 through 25 (indices 4-25).
-            if (columns === 30) { 
+            if (columns === 26) { 
                 skipColumns = [];
-                for (let i = 4; i <= 25; i++) {
+                for (let i = 4; i <= 21; i++) {
                     skipColumns.push(i);
                 }
+                skipColumns.push(0);
+                skipColumns.push(25);
             }
         }
     }
 
     for (let c = 0; c < columns; c++) {
       newBricks[c] = [];
-      // Apply skip logic only if the current level and column count match the condition for which skipColumns was defined.
       if (skipColumns.includes(c) && gameMode === 'main' && 
           ((currentLevel === 3 && columns === 9) || 
-           (currentLevel === 4 && columns === 14) || 
-           (currentLevel === 5 && columns === 30))) {
+           (currentLevel === 4 && columns === 13) || 
+           (currentLevel === 5 && columns === 26))) {
         continue; 
       }
 

@@ -109,6 +109,7 @@ export interface PointsField {
     width: number;
     height: number;
     createdAt: number; // Added createdAt timestamp
+    ballsPassed: number; // Added to track balls passed through
 }
 
 // Add 'level_reset' to GameState

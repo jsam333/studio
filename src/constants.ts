@@ -35,7 +35,7 @@ export const BRICK_COLUMNS = 53; // Default columns for Test mode
 export const BRICK_PADDING = 1;
 export const BRICK_WIDTH = 10; // Default width (used for test mode)
 export const BRICK_HEIGHT = 9; // Default height
-export const TALL_BRICK_HEIGHT = 15; // Taller height for specific main levels
+export const TALL_BRICK_HEIGHT = 18; // Taller height for specific main levels
 export const TARGET_TOTAL_BRICK_GRID_HEIGHT = 165; // Target height for levels 8+
 export const BRICK_OFFSET_TOP = 30; // Adjusted offset for space for info text
 export const BRICK_OFFSET_LEFT = (BOARD_WIDTH - (BRICK_COLUMNS * BRICK_WIDTH + (BRICK_COLUMNS - 1) * BRICK_PADDING)) / 2;
@@ -82,14 +82,14 @@ export const BLACK_BALL_DURATION = 10000;
 // Bonus Gold
 export const INITIAL_BONUS_GOLD = 30;
 export const MINIMUM_BONUS_GOLD = 5;
-export const BONUS_GOLD_START_DELAY_DEFAULT = 10000;
-export const BONUS_GOLD_START_DELAY_EXTENDED = 15000;
-export const BONUS_GOLD_START_DELAY_HIGH = 20000;
-export const BONUS_GOLD_START_DELAY_MAX = 30000;
-export const BONUS_GOLD_DECREMENT_INTERVAL = 1000; // Added this export
+// export const BONUS_GOLD_START_DELAY_DEFAULT = 10000; // Removed
+// export const BONUS_GOLD_START_DELAY_EXTENDED = 15000; // Removed
+// export const BONUS_GOLD_START_DELAY_HIGH = 20000; // Removed
+// export const BONUS_GOLD_START_DELAY_MAX = 30000; // Removed
+export const BONUS_GOLD_DECREMENT_INTERVAL = 500; // Added this export
 // *** ADDED: Constants for the new timer ***
 export const BONUS_GOLD_TARGET = 5; // Target bonus gold to trigger the timer
-export const BONUS_GOLD_TIMER_DURATION = 20000; // 20 seconds in milliseconds
+export const BONUS_GOLD_TIMER_DURATION = 5000; // 5 seconds in milliseconds
 
 
 // Collection Field
@@ -107,7 +107,7 @@ export const FIELD_SHRINK_INTERVAL = 16;
 export const POINTS_FIELD_WIDTH = 50; 
 export const POINTS_FIELD_HEIGHT = 50; 
 export const POINTS_FIELD_COLOR = 'rgba(0, 255, 0, 0.3)';
-export const POINTS_FIELD_DURATION = 5000;
+export const POINTS_FIELD_DURATION = 5000; // Set to 1000 seconds (1,000,000 ms)
 
 // *** All potentially spawnable power-ups (for UI and logic) ***
 // NOTE: Upgrades (L2/L3) are handled by ShopScreen, not listed here.

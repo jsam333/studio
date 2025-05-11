@@ -3,8 +3,7 @@ import { useRef, useCallback, MutableRefObject } from 'react';
 import {
     BRICK_COLUMNS, BRICK_ROWS, BRICK_HEIGHT, TALL_BRICK_HEIGHT,
     BRICK_PADDING, TARGET_TOTAL_BRICK_GRID_HEIGHT, INITIAL_BONUS_GOLD, MINIMUM_BONUS_GOLD,
-    BONUS_GOLD_START_DELAY_DEFAULT, BONUS_GOLD_START_DELAY_EXTENDED,
-    BONUS_GOLD_START_DELAY_HIGH, BONUS_GOLD_START_DELAY_MAX, BONUS_GOLD_DECREMENT_INTERVAL,
+    BONUS_GOLD_DECREMENT_INTERVAL,
     FIELD_INITIAL_HEIGHT_OFFSET,
     FIELD_INITIAL_WIDTH_OFFSET,
     BASE_BALL_SPEED_FACTOR,
@@ -73,15 +72,16 @@ export function useLevelLogic({
         clearBonusGoldTimers();
 
         const currentLevel = currentLevelRef.current;
-        let startDelay;
-        if (currentLevel >= 16 && currentLevel <= 20) {
-            startDelay = BONUS_GOLD_START_DELAY_MAX;
-        } else if (currentLevel >= 11 && currentLevel <= 15) {
-            startDelay = BONUS_GOLD_START_DELAY_HIGH;
-        } else if (currentLevel >= 6 && currentLevel <= 10) {
-            startDelay = BONUS_GOLD_START_DELAY_EXTENDED;
-        } else {
-            startDelay = BONUS_GOLD_START_DELAY_DEFAULT;
+        // Calculate startDelay: 3000ms for level 1, increasing by 500ms per level up to level 20
+        const baseDelay = 5000;
+        const incrementPerLevel = 600;
+        let startDelay = baseDelay + (currentLevel - 1) * incrementPerLevel;
+
+        // Ensure the delay does not exceed the maximum for level 20 if logic were to go beyond
+        // (though currentLevel is capped at 20 in the game)
+        const maxDelayForLevel20 = baseDelay + (20 - 1) * incrementPerLevel;
+        if (startDelay > maxDelayForLevel20 && currentLevel > 20) { // Defensive check
+            startDelay = maxDelayForLevel20;
         }
 
         bonusGoldTimerRef.current = setTimeout(() => {
@@ -110,28 +110,28 @@ export function useLevelLogic({
         const level = currentLevelRef.current;
 
         if (currentMode === 'main') {
-             if (level === 1) { cols = 3; rows = 2; targetHeight = 20; }
-             else if (level === 2) { cols = 4; rows = 3; targetHeight = 18; }
-             else if (level === 3) { cols = 9; rows = 4; targetHeight = TALL_BRICK_HEIGHT; } 
-             else if (level === 4) { cols = 14; rows = 5; targetHeight = TALL_BRICK_HEIGHT; } 
-             else if (level === 5) { cols = 30; rows = 6; targetHeight = TALL_BRICK_HEIGHT; } // Changed cols to 30 for level 5
-             else if (level === 6) { cols = 11; rows = 7; targetHeight = TALL_BRICK_HEIGHT; }
-             else if (level === 7) { cols = 13; rows = 8; targetHeight = TALL_BRICK_HEIGHT; }
-             else if (level === 8) { cols = 15; rows = 9; targetHeight = TALL_BRICK_HEIGHT; }
-             else if (level === 9) { cols = 17; rows = 10; targetHeight = TALL_BRICK_HEIGHT; }
+             if (level === 1) { cols = 2; rows = 2; targetHeight = 25; } // Changed cols to 2, rows to 2
+             else if (level === 2) { cols = 3; rows = 2; targetHeight = 25; } // Changed cols to 4, rows to 2
+             else if (level === 3) { cols = 9; rows = 2; targetHeight = 25; } 
+             else if (level === 4) { cols = 13; rows = 3; targetHeight = 21; } 
+             else if (level === 5) { cols = 26; rows = 4; targetHeight = TALL_BRICK_HEIGHT; } 
+             else if (level === 6) { cols = 8; rows = 5; targetHeight = TALL_BRICK_HEIGHT; }
+             else if (level === 7) { cols = 9; rows = 6; targetHeight = TALL_BRICK_HEIGHT; }
+             else if (level === 8) { cols = 10; rows = 7; targetHeight = TALL_BRICK_HEIGHT; }
+             else if (level === 9) { cols = 11; rows = 8; targetHeight = TALL_BRICK_HEIGHT; }
              else { 
                  cols = 4; 
-                 if (level === 10) { cols = 20; rows = 11; }
-                 else if (level === 11) { cols = 22; rows = 12; }
-                 else if (level === 12) { cols = 25; rows = 13; }
-                 else if (level === 13) { cols = 28; rows = 14; }
-                 else if (level === 14) { cols = 31; rows = 15; }
-                 else if (level === 15) { cols = 35; rows = 16; }
-                 else if (level === 16) { cols = 40; rows = 17; }
-                 else if (level === 17) { cols = 45; rows = 18; }
-                 else if (level === 18) { cols = 50; rows = 19; }
-                 else if (level === 19) { cols = 55; rows = 20; }
-                 else if (level === 20) { cols = 60; rows = 21; }
+                 if (level === 10) { cols = 13; rows = 8; }
+                 else if (level === 11) { cols = 15; rows = 9; }
+                 else if (level === 12) { cols = 17; rows = 10; }
+                 else if (level === 13) { cols = 19; rows = 11; }
+                 else if (level === 14) { cols = 21; rows = 12; }
+                 else if (level === 15) { cols = 24; rows = 12; }
+                 else if (level === 16) { cols = 27; rows = 13; }
+                 else if (level === 17) { cols = 30; rows = 14; }
+                 else if (level === 18) { cols = 34; rows = 14; }
+                 else if (level === 19) { cols = 38; rows = 15; }
+                 else if (level === 20) { cols = 43; rows = 16; }
                  else { rows = 7; } 
 
                  if (rows > 0) {
@@ -162,21 +162,21 @@ export function useLevelLogic({
         totalBricksRef.current = count;
 
          let scoreGoal = count;
-        if (currentMode === 'main' && level === 6) { scoreGoal += 6; }
-        if (currentMode === 'main' && level === 7) { scoreGoal += 16; }
-        if (currentMode === 'main' && level === 8) { scoreGoal += 30; }
-        if (currentMode === 'main' && level === 9) { scoreGoal += 51; }
-        if (currentMode === 'main' && level === 10) { scoreGoal += 83; }
-        if (currentMode === 'main' && level === 11) { scoreGoal += 119; }
-        if (currentMode === 'main' && level === 12) { scoreGoal += 171; }
-        if (currentMode === 'main' && level === 13) { scoreGoal += 235; }
-        if (currentMode === 'main' && level === 14) { scoreGoal += 314; }
-        if (currentMode === 'main' && level === 15) { scoreGoal += 420; }
-        if (currentMode === 'main' && level === 16) { scoreGoal += 612; }
-        if (currentMode === 'main' && level === 17) { scoreGoal += 851; }
-        if (currentMode === 'main' && level === 18) { scoreGoal += 1140; }
-        if (currentMode === 'main' && level === 19) { scoreGoal += 1568; }
-        if (currentMode === 'main' && level === 20) { scoreGoal += 2174; }
+        if (currentMode === 'main' && level === 6) { scoreGoal += 3; }
+        if (currentMode === 'main' && level === 7) { scoreGoal += 8; }
+        if (currentMode === 'main' && level === 8) { scoreGoal += 16; }
+        if (currentMode === 'main' && level === 9) { scoreGoal += 26; }
+        if (currentMode === 'main' && level === 10) { scoreGoal += 39; }
+        if (currentMode === 'main' && level === 11) { scoreGoal += 61; }
+        if (currentMode === 'main' && level === 12) { scoreGoal += 89; }
+        if (currentMode === 'main' && level === 13) { scoreGoal += 125; }
+        if (currentMode === 'main' && level === 14) { scoreGoal += 170; }
+        if (currentMode === 'main' && level === 15) { scoreGoal += 216; }
+        if (currentMode === 'main' && level === 16) { scoreGoal += 316; }
+        if (currentMode === 'main' && level === 17) { scoreGoal += 441; }
+        if (currentMode === 'main' && level === 18) { scoreGoal += 571; }
+        if (currentMode === 'main' && level === 19) { scoreGoal += 812; }
+        if (currentMode === 'main' && level === 20) { scoreGoal += 1185; }
         targetScoreRef.current = scoreGoal;
 
         if (resetScoreAndGold) {
