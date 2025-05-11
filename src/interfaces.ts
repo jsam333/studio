@@ -70,6 +70,15 @@ export interface Ball {
   stuckSide?: 'left' | 'right' | null; // For side sticking
   stuckSideOffset?: number; // Vertical offset for side sticking
   lastFramePointsFieldIds: Set<number>; // Added to track field entries
+
+  // Properties for zipping animation during sticky recovery
+  isZipping?: boolean;
+  zipTargetX?: number;
+  zipTargetY?: number;
+  zipStartTime?: number;
+  initialZipX?: number; 
+  initialZipY?: number;
+  targetStuckSideValue?: 'left' | 'right'; // The side it will stick to after zipping
 }
 
 export type SpawnMarker = 'PENDING' | 'SPAWN_SPECIAL' | 'SPAWN_BALL' | 'NONE';

@@ -28,6 +28,7 @@ export const MAX_HOMING_SPEED = 6;
 export const SPLIT_BALL_ANGLE_OFFSET = Math.PI / 6;
 export const BIG_BALL_SIZE_INCREASE = 4;
 export const PIERCE_BALL_HITS = 3;
+export const ZIP_TO_PADDLE_DURATION = 100; // milliseconds for the zip animation
 
 // Bricks
 export const BRICK_ROWS = 20; // Default rows for Test mode
