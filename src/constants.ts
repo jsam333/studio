@@ -107,7 +107,8 @@ export const FIELD_SHRINK_INTERVAL = 16;
 export const POINTS_FIELD_WIDTH = 50; 
 export const POINTS_FIELD_HEIGHT = 50; 
 export const POINTS_FIELD_COLOR = 'rgba(0, 255, 0, 0.3)';
-export const POINTS_FIELD_DURATION = 5000; // Set to 1000 seconds (1,000,000 ms)
+export const POINTS_FIELD_DURATION = 5000; // Duration in milliseconds
+export const POINTS_FIELD_MAX_BALLS = 5; // Max balls before field is destroyed
 
 // *** All potentially spawnable power-ups (for UI and logic) ***
 // NOTE: Upgrades (L2/L3) are handled by ShopScreen, not listed here.

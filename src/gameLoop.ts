@@ -11,8 +11,8 @@ import { handleSpawnEvents } from './gameUpdates/gameLoopUtils';
 import {
     BOARD_WIDTH, BOARD_HEIGHT, BASE_BALL_SPEED_FACTOR, POWER_UP_COLORS,
     TARGET_FPS, BONUS_GOLD_TARGET, BONUS_GOLD_TIMER_DURATION,
-    BALL_SIZE, BIG_BALL_SIZE_INCREASE, POINTS_FIELD_DURATION
-} from './constants';
+    BALL_SIZE, BIG_BALL_SIZE_INCREASE, POINTS_FIELD_DURATION, POINTS_FIELD_MAX_BALLS
+} from './constants'; // Added POINTS_FIELD_MAX_BALLS
 import { drawPaddle, drawBalls, drawBricks, drawGameInfo, drawPowerUps, drawLasers, drawSafetyNet, drawCollectionFieldRect, drawPowerUpPreviews, drawPointsFields } from './drawFunctions';
 
 // Function to handle paddle shrink countdown
@@ -52,13 +52,13 @@ const updateBonusGoldTimer = (
     }
 };
 
-// Function to update PointsFields (remove after duration)
+// Function to update PointsFields (remove after duration or max balls)
 const updatePointsFields = (pointsFields: PointsField[], currentTime: number) => {
     if (!pointsFields) return;
     for (let i = pointsFields.length - 1; i >= 0; i--) {
         const field = pointsFields[i];
-        if (currentTime - field.createdAt > POINTS_FIELD_DURATION) {
-            pointsFields.splice(i, 1); // Remove the field if its duration has expired
+        if (currentTime - field.createdAt > POINTS_FIELD_DURATION || field.ballsPassed >= POINTS_FIELD_MAX_BALLS) {
+            pointsFields.splice(i, 1); // Remove the field if its duration has expired or max balls reached
         }
     }
 };
@@ -76,9 +76,6 @@ const checkPointsFieldCollisions = (
         const currentFrameInteractions = new Set<number>();
 
         pointsFields.forEach(field => {
-            // Basic AABB collision detection for ball center (more accurate for small balls)
-            // or ball bounding box for larger ones.
-            // For simplicity, let's use ball center vs field rect.
             const ballCenterX = ball.x;
             const ballCenterY = ball.y;
 
@@ -92,6 +89,7 @@ const checkPointsFieldCollisions = (
                 // Check if this is a new entry
                 if (!ball.lastFramePointsFieldIds.has(field.id)) {
                     updateScoreCallback(1); // Award 1 point on entry
+                    field.ballsPassed += 1; // Increment balls passed for this field
                 }
             }
         });
@@ -137,6 +135,7 @@ export const gameUpdate = (
     updatePaddleShrinkTimer(refs, callbacks, elapsedTime);
     updateBonusGoldTimer(refs, callbacks, elapsedTime);
     updateBalls(refs, callbacks, spawnRequestsReusable, currentTime, gameSpeedFactor, scaledDeltaTime, columns, rows); 
+    // Update PointsFields BEFORE collision checks to ensure fields are valid
     updatePointsFields(refs.pointsFieldsRef.current, currentTime); 
     checkPointsFieldCollisions(refs.ballsRef.current, refs.pointsFieldsRef.current, callbacks.updateScoreCallback);
 
