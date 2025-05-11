@@ -61,14 +61,14 @@ export const applyPaddleEffects = (
              refs.laserShotsRef.current += shotsToAdd;
             break;
         }
-        case 'STICKY_PADDLE':
-        case 'STICKY_PADDLE_L2':
-        case 'STICKY_PADDLE_L3': {
+        case 'RECOVERY_PADDLE':
+        case 'RECOVERY_PADDLE_L2':
+        case 'RECOVERY_PADDLE_L3': {
              // Updated logic: Add 2, 4, or 6 charges based on level
              let chargesToAdd = 2; // L1 = 2 charges
-             if (type === 'STICKY_PADDLE_L2') {
+             if (type === 'RECOVERY_PADDLE_L2') {
                  chargesToAdd = 4; // L2 = 4 charges
-             } else if (type === 'STICKY_PADDLE_L3') {
+             } else if (type === 'RECOVERY_PADDLE_L3') {
                  chargesToAdd = 6; // L3 = 6 charges
              }
              refs.stickyPaddleChargesRef.current += chargesToAdd;

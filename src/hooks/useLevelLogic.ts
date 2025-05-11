@@ -74,7 +74,7 @@ export function useLevelLogic({
         const currentLevel = currentLevelRef.current;
         // Calculate startDelay: 3000ms for level 1, increasing by 500ms per level up to level 20
         const baseDelay = 5000;
-        const incrementPerLevel = 600;
+        const incrementPerLevel = 750;
         let startDelay = baseDelay + (currentLevel - 1) * incrementPerLevel;
 
         // Ensure the delay does not exceed the maximum for level 20 if logic were to go beyond

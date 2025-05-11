@@ -23,7 +23,7 @@ const getPowerUpTypeForLevel = (baseType: PowerUpType, level: number): PowerUpTy
 
 // Moved UPGRADABLE_POWER_UPS to be defined once, accessible by functions in this module scope
 const UPGRADABLE_POWER_UPS: PowerUpType[] = [
-    'MULTI_BALL', 'WIDEN_PADDLE', 'LASER_PADDLE', 'STICKY_PADDLE',
+    'MULTI_BALL', 'WIDEN_PADDLE', 'LASER_PADDLE', 'RECOVERY_PADDLE',
     'REGEN_BRICK', 'SAFETY_NET', 'REINFORCE_BRICK', 'MAKE_SPECIAL', 'BLACK_BALL',
     'PIERCE_BALL', 'UPGRADE_BRICK', 'BUILDER_BALL', 'BIG_BALL', 'SPLITTING_BALL',
     'COLLECTION_FIELD', 'HOMING_BALL', 'BOMB_BRICK',
@@ -355,30 +355,39 @@ export function useGameLogic() {
 
     const addSpawnablePowerUp = useCallback((typeToAdd: PowerUpType) => {
         const currentSpawnables = spawnablePowerUpsRef.current;
+        const gameMode = gameModeRef.current;
+
+        // Add the new power-up first
         currentSpawnables.add(typeToAdd);
 
-        const handleUpgrade = (baseTypeStr: string) => {
-            const baseType = baseTypeStr as PowerUpType;
-            if (typeToAdd.startsWith(baseType)) {
+        // If in 'main' game mode, manage upgrades: remove lower levels of the same power-up type
+        if (gameMode === 'main') {
+            const baseTypeStr = typeToAdd.split('_L')[0];
+            const isUpgradable = UPGRADABLE_POWER_UPS.some(up => up === baseTypeStr);
+
+            if (isUpgradable) {
+                const baseType = baseTypeStr as PowerUpType;
                 let levelAdded = 0;
-                if (typeToAdd === baseType) levelAdded = 1;
-                else {
+                if (typeToAdd === baseType) {
+                    levelAdded = 1;
+                } else {
                     const match = typeToAdd.match(/_L(\d+)$/);
                     if (match) levelAdded = parseInt(match[1], 10);
                 }
+
                 if (levelAdded > 0 && levelAdded <= MAX_UPGRADE_LEVEL) {
-                    for (let levelToRemove = 1; levelToRemove < levelAdded; levelToRemove++) {
-                        const lowerLevelType = getPowerUpTypeForLevel(baseType, levelToRemove);
-                        if (lowerLevelType) {
-                            currentSpawnables.delete(lowerLevelType);
+                    // Remove all other levels of this base type
+                    for (let levelToRemove = 1; levelToRemove <= MAX_UPGRADE_LEVEL; levelToRemove++) {
+                        if (levelToRemove !== levelAdded) {
+                            const otherLevelType = getPowerUpTypeForLevel(baseType, levelToRemove);
+                            if (otherLevelType && currentSpawnables.has(otherLevelType)) {
+                                currentSpawnables.delete(otherLevelType);
+                            }
                         }
                     }
                 }
             }
-        };
-        UPGRADABLE_POWER_UPS.forEach(baseType => {
-            handleUpgrade(baseType);
-        });
+        }
     }, []);
 
     const resetLevelCallback = useCallback((mode: GameMode | null, resetScoreAndGold: boolean) => {

@@ -27,7 +27,7 @@ let upgradeBrickImage: HTMLImageElement;
 let reinforceBrickImage: HTMLImageElement;
 let safetyNetImage: HTMLImageElement;
 let makeSpecialImage: HTMLImageElement;
-let stickyPaddleImage: HTMLImageElement;
+let recoveryPaddleImage: HTMLImageElement;
 let bombBrickImage: HTMLImageElement;
 let ballBrickImage: HTMLImageElement;
 let collectionFieldImage: HTMLImageElement;
@@ -56,8 +56,8 @@ if (typeof window !== 'undefined') {
     safetyNetImage.src = '/images/safety net.png';
     makeSpecialImage = new Image();
     makeSpecialImage.src = '/images/make special.png';
-    stickyPaddleImage = new Image();
-    stickyPaddleImage.src = '/images/sticky paddle.png';
+    recoveryPaddleImage = new Image();
+    recoveryPaddleImage.src = '/images/sticky paddle.png';
     bombBrickImage = new Image();
     bombBrickImage.src = '/images/bomb brick.png';
     ballBrickImage = new Image();
@@ -104,7 +104,7 @@ export const drawPaddle = (
   ctx.closePath();
 
   if (stickyCharges > 0) {
-      const stickyColor = POWER_UP_COLORS['STICKY_PADDLE'] || '#B8860B'; // Default sticky color
+      const stickyColor = POWER_UP_COLORS['RECOVERY_PADDLE'] || '#B8860B'; // Default sticky color
       
       // Calculate the width of the side indicators based on charges
       const totalIndicatorWidth = stickyCharges * STICKY_INDICATOR_WIDTH_PER_CHARGE;
@@ -383,7 +383,7 @@ export const drawPowerUps = (ctx: CanvasRenderingContext2D, powerUps: PowerUp[])
                 case 'REINFORCE_BRICK': imageToDraw = reinforceBrickImage; break;
                 case 'SAFETY_NET': imageToDraw = safetyNetImage; break;
                 case 'MAKE_SPECIAL': imageToDraw = makeSpecialImage; break;
-                case 'STICKY_PADDLE': imageToDraw = stickyPaddleImage; break;
+                case 'RECOVERY_PADDLE': imageToDraw = recoveryPaddleImage; break;
                 case 'BOMB_BRICK': imageToDraw = bombBrickImage; break;
                 case 'BALL_BRICK': imageToDraw = ballBrickImage; break;
                 case 'COLLECTION_FIELD': imageToDraw = collectionFieldImage; break;
@@ -408,7 +408,7 @@ export const drawPowerUps = (ctx: CanvasRenderingContext2D, powerUps: PowerUp[])
                     ctx.fillStyle = POWER_UP_COLORS[powerUp.type as PowerUpType] || POWER_UP_COLORS['NONE']!;
                 }
                 ctx.fill();
-                if (powerUp.type === 'BLACK_BALL' || powerUp.type === 'BOMB_BRICK' || powerUp.type === 'ALL_IN_ONE' || powerUp.type === 'STICKY_PADDLE') {
+                if (powerUp.type === 'BLACK_BALL' || powerUp.type === 'BOMB_BRICK' || powerUp.type === 'ALL_IN_ONE' || powerUp.type === 'RECOVERY_PADDLE') {
                     ctx.strokeStyle = (powerUp.type === 'ALL_IN_ONE') ? '#000000' : '#ffffff';
                     ctx.lineWidth = 1;
                     ctx.stroke();
@@ -445,7 +445,7 @@ export const drawPowerUpPreviews = (ctx: CanvasRenderingContext2D, spawnablePowe
             case 'REINFORCE_BRICK': imageToDraw = reinforceBrickImage; break;
             case 'SAFETY_NET': imageToDraw = safetyNetImage; break;
             case 'MAKE_SPECIAL': imageToDraw = makeSpecialImage; break;
-            case 'STICKY_PADDLE': imageToDraw = stickyPaddleImage; break;
+            case 'RECOVERY_PADDLE': imageToDraw = recoveryPaddleImage; break;
             case 'BOMB_BRICK': imageToDraw = bombBrickImage; break;
             case 'BALL_BRICK': imageToDraw = ballBrickImage; break;
             case 'COLLECTION_FIELD': imageToDraw = collectionFieldImage; break;

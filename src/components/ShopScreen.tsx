@@ -33,7 +33,7 @@ const getPowerUpTypeForLevel = (baseType: PowerUpType, level: number): PowerUpTy
 
 // Identify which base types are upgradable
 const UPGRADABLE_POWER_UPS: PowerUpType[] = [
-    'MULTI_BALL', 'WIDEN_PADDLE', 'LASER_PADDLE', 'STICKY_PADDLE',
+    'MULTI_BALL', 'WIDEN_PADDLE', 'LASER_PADDLE', 'RECOVERY_PADDLE',
     'REGEN_BRICK', 'SAFETY_NET', 'REINFORCE_BRICK', 'MAKE_SPECIAL', 'BLACK_BALL',
     'PIERCE_BALL', 'UPGRADE_BRICK', 'BUILDER_BALL', 'BIG_BALL', 'SPLITTING_BALL',
     'COLLECTION_FIELD', 'HOMING_BALL', 'BOMB_BRICK',
