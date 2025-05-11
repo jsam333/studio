@@ -4,6 +4,7 @@ import {
     BRICK_PADDING, BRICK_OFFSET_LEFT, BRICK_OFFSET_TOP, POWER_UP_SIZE,
     INITIAL_PADDLE_WIDTH, LASER_WIDTH, SAFETY_NET_HEIGHT,
     LASER_STRIPE_WIDTH_PER_SHOT,
+    STICKY_INDICATOR_WIDTH_PER_CHARGE, // Added import
     NORMAL_BRICK_COLOR, REINFORCED_BRICK_COLOR, UPGRADED_BRICK_COLOR, BUILDER_BRICK_COLOR,
     POWER_UP_COLORS,
     SPECIAL_BRICK_COLOR,
@@ -87,7 +88,7 @@ const getBasePowerUpType = (type: PowerUpType): PowerUpType => {
 };
 
 
-// Draw Paddle (Unchanged)
+// Draw Paddle (Updated for dynamic sticky indicator width)
 export const drawPaddle = (
     ctx: CanvasRenderingContext2D,
     paddleX: number,
@@ -95,21 +96,39 @@ export const drawPaddle = (
     laserShots: number = 0,
     stickyCharges: number = 0
 ) => {
-  ctx.fillStyle = "#ffffff";
+  // Always draw the base paddle in white first
+  ctx.fillStyle = "#ffffff"; 
   ctx.beginPath();
   ctx.rect(paddleX, PADDLE_Y, currentWidth, PADDLE_HEIGHT);
   ctx.fill();
   ctx.closePath();
 
   if (stickyCharges > 0) {
-      ctx.fillStyle = POWER_UP_COLORS['STICKY_PADDLE'] + '99';
+      const stickyColor = POWER_UP_COLORS['STICKY_PADDLE'] || '#B8860B'; // Default sticky color
+      
+      // Calculate the width of the side indicators based on charges
+      const totalIndicatorWidth = stickyCharges * STICKY_INDICATOR_WIDTH_PER_CHARGE;
+      // Clamp the indicator width to be at most half the paddle width (for each side, so total max is paddle_width)
+      // and at least a minimum visible width (e.g., 1 pixel if charges > 0)
+      const clampedIndicatorWidth = Math.max(1, Math.min(totalIndicatorWidth, currentWidth / 2));
+
+      // Draw left side indicator (on top of the white paddle)
+      ctx.fillStyle = stickyColor + '99'; // Apply transparency
       ctx.beginPath();
-      ctx.rect(paddleX, PADDLE_Y, currentWidth, PADDLE_HEIGHT);
+      ctx.rect(paddleX, PADDLE_Y, clampedIndicatorWidth, PADDLE_HEIGHT);
       ctx.fill();
       ctx.closePath();
+
+      // Draw right side indicator (on top of the white paddle)
+      ctx.beginPath();
+      ctx.rect(paddleX + currentWidth - clampedIndicatorWidth, PADDLE_Y, clampedIndicatorWidth, PADDLE_HEIGHT);
+      ctx.fill();
+      ctx.closePath();
+      
+      // Draw the charge count centered on the paddle
       ctx.save();
       ctx.font = "bold 12px Arial";
-      ctx.fillStyle = "#000000";
+      ctx.fillStyle = "#000000"; // Black text for better contrast on the white paddle
       ctx.textAlign = "center";
       ctx.textBaseline = "middle";
       ctx.fillText(`${stickyCharges}`, paddleX + currentWidth / 2, PADDLE_Y + PADDLE_HEIGHT / 2 + 1);
@@ -118,7 +137,7 @@ export const drawPaddle = (
 
   if (laserShots > 0) {
       const stripeTotalWidth = laserShots * LASER_STRIPE_WIDTH_PER_SHOT;
-      const clampedStripeWidth = Math.min(stripeTotalWidth, currentWidth - 2);
+      const clampedStripeWidth = Math.min(stripeTotalWidth, currentWidth - 2); // Ensure stripe doesn't exceed paddle width (minus padding)
       const stripeX = paddleX + (currentWidth / 2) - (clampedStripeWidth / 2);
       const stripePixelExtendAbove = 4;
       const stripeY = PADDLE_Y - stripePixelExtendAbove;

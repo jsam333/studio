@@ -81,20 +81,22 @@ export const updateBalls = (
             const paddleLeft = refs.paddleXRef.current;
             const paddleRight = paddleLeft + refs.paddleWidthRef.current;
 
-            if (nextX > BOARD_WIDTH - currentBallSize || nextX < currentBallSize) {
+            if (nextX > BOARD_WIDTH - currentBallSize || nextX < currentBallSize) { // Wall bounce (left/right)
                 const overshoot = nextX > BOARD_WIDTH - currentBallSize ? (nextX - (BOARD_WIDTH - currentBallSize)) : (currentBallSize - nextX);
                 currentSpeedX = -currentSpeedX;
                 nextX = (nextX > BOARD_WIDTH - currentBallSize) ? (BOARD_WIDTH - currentBallSize) - overshoot : currentBallSize + overshoot;
             }
-            if (nextY < currentBallSize) {
+            if (nextY < currentBallSize) { // Wall bounce (top)
                 const overshoot = currentBallSize - nextY;
                 currentSpeedY = -currentSpeedY;
                 nextY = currentBallSize + overshoot;
             }
+            // Ball is below paddle level / going off screen (bottom)
             else if (nextY + currentBallSize > BOARD_HEIGHT) {
                 const isNearLeft = Math.abs(nextX - paddleLeft) < PADDLE_SIDE_SAVE_THRESHOLD;
                 const isNearRight = Math.abs(nextX - paddleRight) < PADDLE_SIDE_SAVE_THRESHOLD;
 
+                // SIDE STICKING LOGIC (REMAINS UNCHANGED)
                 if (refs.stickyPaddleChargesRef.current > 0 && !ball.isBig && (isNearLeft || isNearRight)) {
                     refs.stickyPaddleChargesRef.current--;
                     ball.stuckSide = isNearLeft ? 'left' : 'right';
@@ -111,84 +113,63 @@ export const updateBalls = (
                     refs.stuckBallsRef.current.push(ball);
                     ballsToRemoveIds.add(ball.id);
                     processBallUpdate = false;
-                } else if (refs.safetyNetCountRef.current > 0) {
+                } else if (refs.safetyNetCountRef.current > 0) { // Safety net
                     currentSpeedY = -Math.abs(currentSpeedY);
                     ball.y = BOARD_HEIGHT - currentBallSize - refs.safetyNetCountRef.current * SAFETY_NET_HEIGHT;
                     refs.safetyNetCountRef.current--;
                     nextY = ball.y + currentSpeedY * deltaTime;
-                } else {
+                } else { // Ball lost
                     ballsToRemoveIds.add(ball.id);
                     processBallUpdate = false;
                 }
             }
+            // Potential collision with paddle top
             else if (currentSpeedY > 0 && ball.y + currentBallSize <= PADDLE_Y && nextY + currentBallSize > PADDLE_Y) {
                 const timeToPaddleY = (PADDLE_Y - (ball.y + currentBallSize)) / effectiveSpeedY;
                 const collisionX = ball.x + effectiveSpeedX * timeToPaddleY;
 
+                // Check if collisionX is within paddle horizontal bounds
                 if (collisionX + currentBallSize > paddleLeft && collisionX - currentBallSize < paddleRight) {
-                    if (refs.stickyPaddleChargesRef.current > 0 && !ball.isBig) {
-                        refs.stickyPaddleChargesRef.current--;
-                        const relativeCollisionX = collisionX - paddleLeft;
-                        const edgeThreshold = PADDLE_EDGE_STICK_THRESHOLD * refs.paddleWidthRef.current;
-                        if (relativeCollisionX < edgeThreshold) {
-                            ball.stuckSide = 'left';
-                            ball.stuckSideOffset = -PADDLE_HEIGHT / 2;
-                            ball.x = paddleLeft - currentBallSize;
-                            ball.y = PADDLE_Y + PADDLE_HEIGHT / 2 + ball.stuckSideOffset;
-                        } else if (relativeCollisionX > refs.paddleWidthRef.current - edgeThreshold) {
-                            ball.stuckSide = 'right';
-                            ball.stuckSideOffset = -PADDLE_HEIGHT / 2;
-                            ball.x = paddleRight + currentBallSize;
-                            ball.y = PADDLE_Y + PADDLE_HEIGHT / 2 + ball.stuckSideOffset;
-                        } else {
-                            ball.stuckSide = null;
-                            ball.stuckSideOffset = undefined;
-                            ball.stuckOffset = relativeCollisionX;
-                            ball.x = paddleLeft + ball.stuckOffset;
-                            ball.y = PADDLE_Y - currentBallSize;
-                        }
-                        ball.speedX = 0; ball.speedY = 0;
-                        if (ball.isHoming) { ball.isHoming = false; }
-                        if (ball.isBlack && ball.blackEndTime) { ball.blackPausedDuration = ball.blackEndTime - currentTime; ball.blackEndTime = undefined; }
-                        if (ball.isBlue && ball.blueEndTime) { ball.bluePausedDuration = ball.blueEndTime - currentTime; ball.blueEndTime = undefined; }
-                        if (ball.isSplitting && ball.splittingEndTime) { ball.splittingPausedDuration = ball.splittingEndTime - currentTime; ball.splittingEndTime = undefined; }
-                        refs.stuckBallsRef.current.push(ball);
-                        ballsToRemoveIds.add(ball.id);
-                        processBallUpdate = false;
-                        currentSpeedX = 0;
-                        currentSpeedY = 0;
-                    } else {
-                        ball.y = PADDLE_Y - currentBallSize;
-                        currentSpeedY = -Math.abs(currentSpeedY);
-                        let deltaX = collisionX - (paddleLeft + refs.paddleWidthRef.current / 2);
-                        let speedAdjustment = deltaX * 0.1;
-                        currentSpeedX = Math.max(-currentMaxBallSpeedX, Math.min(currentMaxBallSpeedX, currentSpeedX + speedAdjustment));
-                        if (ball.isHoming) {
-                            const closestBrick = findClosestBrick(ball, refs.bricksRef.current, columns, rows);
-                            if (closestBrick) {
-                                const targetX = closestBrick.x + BRICK_WIDTH / 2;
-                                const targetY = closestBrick.y + BRICK_HEIGHT / 2;
-                                const vectorX = targetX - ball.x; const vectorY = targetY - ball.y;
-                                const magnitude = Math.sqrt(vectorX * vectorX + vectorY * vectorY);
-                                const currentSpeedMagnitude = Math.sqrt(currentSpeedX * currentSpeedX + currentSpeedY * currentSpeedY);
-                                if (magnitude > 0) {
-                                    currentSpeedX = (vectorX / magnitude) * currentSpeedMagnitude;
-                                    currentSpeedY = (vectorY / magnitude) * currentSpeedMagnitude;
-                                    currentSpeedY = -Math.abs(currentSpeedY);
-                                }
+                    // Ball hits the top of the paddle. ALWAYS bounce. Side-sticking is separate.
+                    ball.y = PADDLE_Y - currentBallSize; // Position ball right above paddle
+                    currentSpeedY = -Math.abs(currentSpeedY); // Reverse Y speed
+
+                    // Adjust horizontal speed based on where it hit the paddle (spin effect)
+                    let deltaX = collisionX - (paddleLeft + refs.paddleWidthRef.current / 2);
+                    let speedAdjustment = deltaX * 0.1; // More off-center = more spin
+                    currentSpeedX = Math.max(-currentMaxBallSpeedX, Math.min(currentMaxBallSpeedX, currentSpeedX + speedAdjustment));
+
+                    // Homing ball logic (if applicable)
+                    if (ball.isHoming) {
+                        const closestBrick = findClosestBrick(ball, refs.bricksRef.current, columns, rows);
+                        if (closestBrick) {
+                            const targetX = closestBrick.x + BRICK_WIDTH / 2;
+                            const targetY = closestBrick.y + BRICK_HEIGHT / 2;
+                            const vectorX = targetX - ball.x;
+                            const vectorY = targetY - ball.y;
+                            const magnitude = Math.sqrt(vectorX * vectorX + vectorY * vectorY);
+                            const currentSpeedMagnitude = Math.sqrt(currentSpeedX * currentSpeedX + currentSpeedY * currentSpeedY);
+                            if (magnitude > 0) {
+                                currentSpeedX = (vectorX / magnitude) * currentSpeedMagnitude;
+                                currentSpeedY = (vectorY / magnitude) * currentSpeedMagnitude;
+                                currentSpeedY = -Math.abs(currentSpeedY); // Ensure it moves up
                             }
-                            ball.isHoming = false;
                         }
-                        if (ball.isBig) {
-                            let sx = (Math.random() - 0.5) * 6;
-                            let sy = -3 - Math.random() * 2;
-                            const newBall = createNewBall(collisionX, PADDLE_Y - BALL_SIZE - 5, sx, sy, BASE_BALL_SPEED_FACTOR);
-                            ballsToAdd.push(newBall);
-                        }
-                        const remainingTimeFactor = Math.max(0, 1 - timeToPaddleY);
-                        nextX = collisionX + currentSpeedX * remainingTimeFactor * deltaTime;
-                        nextY = ball.y + currentSpeedY * remainingTimeFactor * deltaTime;
+                        ball.isHoming = false; // Homing effect consumed
                     }
+
+                    // Big ball effect (spawns new ball on paddle hit)
+                    if (ball.isBig) {
+                        let sx = (Math.random() - 0.5) * 6; // Random X speed for new ball
+                        let sy = -3 - Math.random() * 2;   // Upward Y speed for new ball
+                        const newBall = createNewBall(collisionX, PADDLE_Y - BALL_SIZE - 5, sx, sy, BASE_BALL_SPEED_FACTOR);
+                        ballsToAdd.push(newBall);
+                    }
+
+                    // Update ball's position for the remainder of the frame after collision
+                    const remainingTimeFactor = Math.max(0, 1 - timeToPaddleY); // Remaining fraction of the frame
+                    nextX = collisionX + currentSpeedX * remainingTimeFactor * deltaTime;
+                    nextY = ball.y + currentSpeedY * remainingTimeFactor * deltaTime; // ball.y is PADDLE_Y - currentBallSize
                 }
             }
 
@@ -201,7 +182,7 @@ export const updateBalls = (
         }
     }
 
-    // Remove points fields that have expired by time (ballsPassed check is now inline)
+    // Remove points fields that have expired by time
     if (refs.pointsFieldsRef.current && refs.pointsFieldsRef.current.length > 0) {
         refs.pointsFieldsRef.current = refs.pointsFieldsRef.current.filter(field => {
             return currentTime - field.createdAt < POINTS_FIELD_DURATION;
