@@ -192,40 +192,6 @@ export const updateBalls = (
                 }
             }
 
-            // Points Field Interaction
-            if (refs.pointsFieldsRef.current && refs.pointsFieldsRef.current.length > 0) {
-                for (let j = refs.pointsFieldsRef.current.length - 1; j >= 0; j--) { // Iterate backwards for safe removal
-                    const field = refs.pointsFieldsRef.current[j];
-                    // Check if ball is within the field boundaries
-                    if (
-                        ball.x + currentBallSize > field.x &&
-                        ball.x - currentBallSize < field.x + field.width &&
-                        ball.y + currentBallSize > field.y &&
-                        ball.y - currentBallSize < field.y + field.height
-                    ) {
-                        // Check if ball wasn't in this field last frame
-                        if (!ball.lastFramePointsFieldIds.has(field.id)) {
-                            callbacks.updateScoreCallback(1); // Award 1 point
-                            field.ballsPassed += 1;
-                            ball.lastFramePointsFieldIds.add(field.id); // Mark as entered this frame
-
-                            if (field.ballsPassed >= 5) {
-                                refs.pointsFieldsRef.current.splice(j, 1); // Remove field if 5 balls passed
-                                // Potentially remove from all ball.lastFramePointsFieldIds as well if field is gone
-                                refs.ballsRef.current.forEach(b => b.lastFramePointsFieldIds.delete(field.id));
-                                if (refs.stuckBallsRef.current) {
-                                    refs.stuckBallsRef.current.forEach(b => b.lastFramePointsFieldIds.delete(field.id));
-                                }
-                                continue; // Continue to next field as this one is removed
-                            }
-                        }
-                    } else {
-                        // If ball is outside the field, remove it from the set for this field
-                        ball.lastFramePointsFieldIds.delete(field.id);
-                    }
-                }
-            }
-
             if (processBallUpdate) {
                 ball.x = nextX;
                 ball.y = nextY;
