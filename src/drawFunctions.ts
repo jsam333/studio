@@ -88,7 +88,7 @@ const getBasePowerUpType = (type: PowerUpType): PowerUpType => {
 };
 
 
-// Draw Paddle (Updated for dynamic sticky indicator width)
+// Draw Paddle (Updated to remove sticky charge count)
 export const drawPaddle = (
     ctx: CanvasRenderingContext2D,
     paddleX: number,
@@ -125,14 +125,7 @@ export const drawPaddle = (
       ctx.fill();
       ctx.closePath();
       
-      // Draw the charge count centered on the paddle
-      ctx.save();
-      ctx.font = "bold 12px Arial";
-      ctx.fillStyle = "#000000"; // Black text for better contrast on the white paddle
-      ctx.textAlign = "center";
-      ctx.textBaseline = "middle";
-      ctx.fillText(`${stickyCharges}`, paddleX + currentWidth / 2, PADDLE_Y + PADDLE_HEIGHT / 2 + 1);
-      ctx.restore();
+      // Removed the code for drawing the charge count text
   }
 
   if (laserShots > 0) {
