@@ -5,19 +5,15 @@ import React, { useRef, useEffect, useCallback } from 'react';
 import {
     BOARD_WIDTH, BOARD_HEIGHT,
 } from '../constants';
-// MODIFIED: Import GameLoopCallbacks type
-import { GameLoopCallbacks, GameState, GameStateRefs } from '../interfaces'; // Added GameStateRefs
+import { GameLoopCallbacks, GameState, GameStateRefs, PowerUpType } from '../interfaces';
 import { gameUpdate } from '../gameLoop';
 import { setupGameCanvas } from '../gameCanvas';
 import { useGameLogic } from '../hooks/useGameLogic';
 import { useIsMobile } from '../hooks/use-mobile';
 import { GameMenu } from '../components/GameMenu';
-// import { ShopScreen } from '../components/ShopScreen'; // ShopScreen is now part of GameView
 import { GameView } from '../components/GameView';
-import { PowerUpType } from '../interfaces'; // For ShopScreen props
 
 const SIDEBAR_WIDTH_PX = 192;
-const MAX_DELTA_TIME_FACTOR = 3; // Retained for potential future use or reference
 
 export default function Home() {
     const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -27,31 +23,23 @@ export default function Home() {
     const lastTimeRef = useRef<number>(0);
     const isMobile = useIsMobile();
 
-    // --- MODIFIED: Destructure gameLoopCallbacks (not partial) ---
     const {
         gameOverState,
         enabledPowerUps,
         showSidebar,
-        currentLevel,
-        lives,
-        score,
-        gold,
-        setGameOverState,
+        currentLevel, // Assuming this is restored/available from useGameLogic
         handleResetGame,
         launchStuckBalls,
         handlePowerUpToggle,
         startGame,
-        startNextLevel,
-        addSpawnablePowerUp,
+        startNextLevel, // Assuming this is restored/available from useGameLogic
+        addSpawnablePowerUp, // Assuming this is restored/available from useGameLogic
         gameStateRefs,
-        gameLoopCallbacks, // <<< Destructure the correct object name
+        gameLoopCallbacks,
     } = useGameLogic();
-    // --- END MODIFICATION ---
 
-    // Draw end message callback (remains the same)
     const drawEndMessageCallback = useCallback((context: CanvasRenderingContext2D, state: GameState, finalScore: number) => {
         if (state !== 'won' && state !== 'lost') return;
-
         const message = state === 'won' ? `You Win! Score: ${finalScore}` : 'Game Over!';
         const subMessage = 'Click to Restart';
         const logicalCenterX = BOARD_WIDTH / 2;
@@ -70,12 +58,10 @@ export default function Home() {
 
     const gameLoopRef = useRef<(timestamp: number) => void>();
 
-    // Main game loop effect (logic remains similar)
     useEffect(() => {
         const gameLoop = (timestamp: number) => {
             const currentGameState = gameStateRefs.gameOverStateRef.current;
-
-            if (currentGameState === 'menu' || currentGameState === 'shop') {
+            if (currentGameState === 'menu' || currentGameState === 'shop') { // 'shop' state will pause the game loop
                  lastTimeRef.current = 0;
                  if (animationFrameIdRef.current) {
                      cancelAnimationFrame(animationFrameIdRef.current);
@@ -83,7 +69,6 @@ export default function Home() {
                  }
                  return;
              }
-
             if (currentGameState === 'won' || currentGameState === 'lost') {
                  lastTimeRef.current = 0;
                  const canvas = canvasRef.current;
@@ -97,22 +82,16 @@ export default function Home() {
                  }
                  return;
              }
-
             if (!lastTimeRef.current) lastTimeRef.current = timestamp;
             const elapsed = timestamp - lastTimeRef.current;
             lastTimeRef.current = timestamp;
-
             const clampedElapsed = Math.min(elapsed, 100);
-
             const canvas = canvasRef.current;
             const ctx = canvas?.getContext('2d');
-            // *** Ensure gameLoopCallbacksRef.current is populated before calling gameUpdate ***
             if (ctx && gameLoopCallbacksRef.current) {
                 gameUpdate(ctx, gameStateRefs, gameLoopCallbacksRef.current, clampedElapsed);
             }
-
             if (gameStateRefs.gameOverStateRef.current === 'playing' || gameStateRefs.gameOverStateRef.current === 'level_reset') {
-               // Check if gameLoopRef.current is defined before requesting frame
                if(gameLoopRef.current) {
                    animationFrameIdRef.current = requestAnimationFrame(gameLoopRef.current);
                }
@@ -124,23 +103,17 @@ export default function Home() {
             }
         };
         gameLoopRef.current = gameLoop;
-    }, [gameStateRefs]); // Removed drawEndMessageCallback from dependencies as it's stable via useCallback
+    }, [gameStateRefs]);
 
-    // Game loop callbacks ref
     const gameLoopCallbacksRef = useRef<GameLoopCallbacks>();
 
-    // --- MODIFIED: Create the full callbacks object using the correct variable ---
     useEffect(() => {
-        // Combine the object from the hook with the locally defined draw function
         gameLoopCallbacksRef.current = {
-            ...gameLoopCallbacks, // <<< Use the correct variable name here
+            ...gameLoopCallbacks,
             drawEndMessage: drawEndMessageCallback,
         };
-    // Update if the object from the hook or the draw function changes
-    }, [gameLoopCallbacks, drawEndMessageCallback]); // <<< Update dependency array
-    // --- END MODIFICATION ---
+    }, [gameLoopCallbacks, drawEndMessageCallback]);
 
-    // Effect to setup canvas, handle game state transitions, and add cheat code
     useEffect(() => {
         const handleKeyDown = (event: KeyboardEvent) => {
             if (event.key === 'c' && gameStateRefs.gameOverStateRef.current === 'playing' && gameLoopCallbacksRef.current?.updateScoreCallback) {
@@ -150,16 +123,18 @@ export default function Home() {
         };
         window.addEventListener('keydown', handleKeyDown);
 
-        // If game state is menu or shop, don't setup game canvas, just clear it
-        if (gameOverState === 'menu' || gameOverState === 'shop') {
+        if (gameOverState === 'menu' || gameOverState === 'shop') { // 'shop' state will prevent canvas setup/resetup, relying on GameView to show overlay
             if (animationFrameIdRef.current) {
                 cancelAnimationFrame(animationFrameIdRef.current);
                 animationFrameIdRef.current = null;
             }
-            const canvas = canvasRef.current;
-            const ctx = canvas?.getContext('2d');
-            if (ctx) {
-                 ctx.clearRect(0, 0, canvas.width, canvas.height);
+            // Don't clear canvas if it's shop state, to keep the last frame visible under the overlay
+            if (gameOverState === 'menu') {
+                const canvas = canvasRef.current;
+                const ctx = canvas?.getContext('2d');
+                if (ctx) {
+                    ctx.clearRect(0, 0, canvas.width, canvas.height);
+                }
             }
              return () => {
                 window.removeEventListener('keydown', handleKeyDown);
@@ -175,7 +150,6 @@ export default function Home() {
         const sidebarWidthForSetup = showSidebar ? SIDEBAR_WIDTH_PX : 0;
         const totalSidebarSpaceForSetup = sidebarWidthForSetup;
 
-        // Ensure gameLoopCallbacksRef.current is defined before passing
         if (!gameLoopCallbacksRef.current) {
              console.warn("gameLoopCallbacksRef not ready for setupGameCanvas");
              return () => {
@@ -191,7 +165,7 @@ export default function Home() {
             animationFrameIdRef,
             handleResetGame,
             gameStateRefs,
-            gameLoopCallbacks: gameLoopCallbacksRef.current, // Pass the ref's current value
+            gameLoopCallbacks: gameLoopCallbacksRef.current,
             lastTimeRef: lastTimeRef,
             totalSidebarSpace: totalSidebarSpaceForSetup,
             sidebarWidthPx: sidebarWidthForSetup,
@@ -202,7 +176,7 @@ export default function Home() {
         const handleContextMenu = (event: MouseEvent) => {
             event.preventDefault();
             if (gameStateRefs.gameOverStateRef.current === 'playing' && gameStateRefs.isGameStartedRef.current) {
-                launchStuckBalls(false); // Right-click to launch
+                launchStuckBalls(false);
             }
         };
 
@@ -237,30 +211,12 @@ export default function Home() {
             }
              window.removeEventListener('keydown', handleKeyDown);
         };
-        // --- MODIFIED: Update dependencies ---
-        // Use gameLoopCallbacks instead of gameLoopCallbacksPartial
     }, [gameOverState, handleResetGame, launchStuckBalls, gameStateRefs, showSidebar, isMobile, drawEndMessageCallback, gameLoopCallbacks]);
-    // --- END MODIFICATION ---
 
-    // --- Render Logic ---
     if (gameOverState === 'menu') {
         return <GameMenu onStartGame={startGame} />;
     }
 
-    // Shop is now rendered inside GameView
-    // if (gameOverState === 'shop') {
-    //     return (
-    //         <ShopScreen
-    //             gameStateRefs={gameStateRefs}
-    //             currentLevel={currentLevel}
-    //             addSpawnablePowerUp={addSpawnablePowerUp}
-    //             startNextLevel={startNextLevel}
-    //             handleResetGame={handleResetGame}
-    //         />
-    //     );
-    // }
-
-    // Render Game View (Playing, Won, Lost, Shop)
     return (
         <GameView
             gameContainerRef={gameContainerRef}
@@ -270,12 +226,16 @@ export default function Home() {
             enabledPowerUps={enabledPowerUps}
             onTogglePowerUp={handlePowerUpToggle}
             handleResetGame={handleResetGame}
-            // Props for ShopScreen
-            gameStateRefs={gameStateRefs} // Pass gameStateRefs
-            currentLevel={currentLevel}
-            addSpawnablePowerUp={addSpawnablePowerUp}
-            startNextLevel={startNextLevel}
-            // Removed gold and lives as they are in gameStateRefs
+            // Props for ShopScreen overlay
+            gameStateRefs={gameStateRefs}
+            currentLevel={currentLevel} // Assuming currentLevel is available from useGameLogic
+            addSpawnablePowerUp={addSpawnablePowerUp} // Assuming addSpawnablePowerUp is available
+            startNextLevel={startNextLevel} // Assuming startNextLevel is available
+            // Pass scaleRef if ShopScreen overlay needs to react to scaling, or for positioning
+            // For now, let's assume ShopScreen is styled to fit, but gameContainerRef itself will be scaled.
+            scaleRef={scaleRef} 
+            gameWidth={BOARD_WIDTH}
+            gameHeight={BOARD_HEIGHT}
         />
     );
 }
