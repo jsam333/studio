@@ -5,6 +5,10 @@ export const BOARD_WIDTH = 600;
 export const BOARD_HEIGHT = 400;
 export const TARGET_FPS = 60; // Define target FPS
 
+// Shop Screen Base Dimensions
+export const BASE_SHOP_WIDTH = 800;
+export const BASE_SHOP_HEIGHT = 600;
+
 // Paddle
 export const INITIAL_PADDLE_WIDTH = 80;
 export const PADDLE_HEIGHT = 15;
