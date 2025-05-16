@@ -16,6 +16,7 @@ import {
     TooltipProvider,
     TooltipTrigger,
 } from './ui/tooltip'; 
+import { addPowerUpToLocalStorage, getPowerUpsFromLocalStorage } from '../utils/localStorage'; // Added getPowerUpsFromLocalStorage
 
 const SHOP_ITEMS_COUNT = 5;
 const MAX_LEVEL = 3; 
@@ -78,6 +79,7 @@ export const ShopScreen: React.FC<ShopScreenProps> = ({
   const [goldDisplay, setGoldDisplay] = useState(gameStateRefs.goldRef.current);
   const [currentSpawnChance, setCurrentSpawnChance] = useState(0);
   const [displaySpawnablePowerUps, setDisplaySpawnablePowerUps] = useState<PowerUpType[]>([]);
+  const [knownPowerUps, setKnownPowerUps] = useState<string[]>([]); // Added state for known power-ups
 
   useEffect(() => {
     const ownedPowerUps = gameStateRefs.spawnablePowerUpsRef.current;
@@ -90,6 +92,7 @@ export const ShopScreen: React.FC<ShopScreenProps> = ({
     const chance = calculateBaseSpawnChance(ownedPowerUps, 'main');
     setCurrentSpawnChance(chance);
     setDisplaySpawnablePowerUps(Array.from(ownedPowerUps).sort());
+    setKnownPowerUps(getPowerUpsFromLocalStorage()); // Load known power-ups on mount/update
   }, [gameStateRefs.goldRef, gameStateRefs.spawnablePowerUpsRef]);
 
   const handlePurchase = (itemToPurchase: PowerUpType) => {
@@ -120,6 +123,13 @@ export const ShopScreen: React.FC<ShopScreenProps> = ({
     gameStateRefs.goldRef.current -= cost;
     setGoldDisplay(gameStateRefs.goldRef.current);
     addSpawnablePowerUp(actualItemToAdd);
+
+    const baseOfAddedItem = getBasePowerUpType(actualItemToAdd);
+    if (getPowerUpLevelFromString(actualItemToAdd) === 1 && !knownPowerUps.includes(baseOfAddedItem)) {
+      addPowerUpToLocalStorage(baseOfAddedItem);
+      setKnownPowerUps(prev => [...prev, baseOfAddedItem]); // Update known power-ups state
+    }
+
     if (isUpgradePurchase && baseTypeOfUpgrade) {
         setPurchasedInSession(prev => new Map(prev).set(baseTypeOfUpgrade!, true));
     }
@@ -195,7 +205,7 @@ export const ShopScreen: React.FC<ShopScreenProps> = ({
                         let buttonStyle = 'bg-gray-800 hover:bg-gray-700';
                         let itemToPurchaseOnClick = item;
                         let descriptionType : PowerUpType | string = item; 
-                        let baseItemForImage = getBasePowerUpType(item);
+                        let baseItemForImage = getBasePowerUpType(item); // This is the base type
                         let offeredLevel = 1;
 
                         if (UPGRADABLE_POWER_UPS.includes(item)) {
@@ -257,6 +267,9 @@ export const ShopScreen: React.FC<ShopScreenProps> = ({
                         
                         const imagePath = POWER_UP_IMAGE_PATHS[baseItemForImage as PowerUpType];
                         const description = POWER_UP_DESCRIPTIONS[descriptionType] ?? "No description available.";
+                        
+                        // Check if the base power-up is known
+                        const isKnown = knownPowerUps.includes(baseItemForImage);
 
                         return (
                             <Tooltip key={itemKey}>
@@ -285,7 +298,11 @@ export const ShopScreen: React.FC<ShopScreenProps> = ({
                                     </Button>
                                 </TooltipTrigger>
                                 <TooltipContent>
-                                    <p>{displayName} - {description}</p> 
+                                    {isKnown ? (
+                                        <p>{displayName} - {description}</p> 
+                                    ) : (
+                                        <p>???</p>
+                                    )}
                                 </TooltipContent>
                             </Tooltip>
                         );
