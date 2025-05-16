@@ -130,8 +130,8 @@ export const ShopScreen: React.FC<ShopScreenProps> = ({
 
   return (
     <TooltipProvider>
-        <div className="flex flex-col items-center justify-between h-full w-full bg-gray-800 text-white p-4 sm:p-6 md:p-8 pt-0 overflow-y-auto">
-            <div className="w-full max-w-4xl mb-4">
+        <div className="flex flex-col items-center justify-start h-full w-full bg-gray-800 text-white p-0 overflow-y-auto">
+            <div className="w-full max-w-4xl mb-0">
                 {displaySpawnablePowerUps.length > 0 ? (
                     <div className="flex flex-wrap justify-center gap-2 p-2 pt-0 bg-black bg-opacity-20 rounded">
                         {displaySpawnablePowerUps.map(powerUp => {
@@ -183,7 +183,7 @@ export const ShopScreen: React.FC<ShopScreenProps> = ({
                 </p>
             </div>
 
-            <div className="grid grid-cols-3 sm:grid-cols-5 gap-2 sm:gap-3 md:gap-4 mb-6 sm:mb-10 w-full max-w-2xl px-2 sm:px-4">
+            <div className="grid grid-cols-3 sm:grid-cols-5 gap-2 sm:gap-3 md:gap-4 mb-6 sm:mb-10 w-full max-w-2xl">
                 {shopItems.length > 0 ? (
                     shopItems.map(item => {
                         const ownedPowerUps = gameStateRefs.spawnablePowerUpsRef.current;
@@ -192,7 +192,7 @@ export const ShopScreen: React.FC<ShopScreenProps> = ({
                         let displayCost = POWER_UP_COSTS[item as keyof typeof POWER_UP_COSTS] ?? 999;
                         let isDisabled = false;
                         let buttonText = `Cost: ${displayCost}`;
-                        let buttonStyle = 'bg-blue-600 hover:bg-blue-700';
+                        let buttonStyle = 'bg-gray-800 hover:bg-gray-700';
                         let itemToPurchaseOnClick = item;
                         let descriptionType : PowerUpType | string = item; 
                         let baseItemForImage = getBasePowerUpType(item);
@@ -264,7 +264,7 @@ export const ShopScreen: React.FC<ShopScreenProps> = ({
                                     <Button
                                         onClick={() => handlePurchase(itemToPurchaseOnClick)}
                                         disabled={isDisabled}
-                                        className={`py-2 px-1 text-xs flex flex-col h-20 sm:h-24 md:h-28 justify-around items-center ${buttonStyle} border border-white`}
+                                        className={`py-2 px-1 text-xs text-white flex flex-col h-20 sm:h-24 md:h-28 justify-around items-center ${buttonStyle} border border-white`}
                                     >
                                         {imagePath ? (
                                             <img 
@@ -301,13 +301,13 @@ export const ShopScreen: React.FC<ShopScreenProps> = ({
                 </div> */}
                 <Button
                     onClick={startNextLevel}
-                    className="w-full mb-3 px-6 py-3 text-lg bg-purple-600 hover:bg-purple-700"
+                    className="w-full mb-3 px-6 py-3 text-lg text-white bg-gray-800 hover:bg-gray-700 border border-purple-600"
                 >
-                    Start Next Level
+                    Start Level {currentLevel + 1}
                 </Button>
                 <Button
                     onClick={handleResetGame}
-                    className="w-full px-6 py-3 text-lg bg-yellow-600 hover:bg-yellow-700"
+                    className="w-full px-6 py-3 text-lg text-white bg-gray-800 hover:bg-gray-700 border border-yellow-600"
                 >
                     Back to Menu
                 </Button>

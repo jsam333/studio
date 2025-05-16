@@ -57,7 +57,7 @@ export const GameView: React.FC<GameViewProps> = ({
             className="absolute top-0 left-0 w-full h-full flex items-center justify-center bg-black bg-opacity-75"
           >
             {/* Restored p-4, rounded-lg, shadow-xl */}
-            <div className="bg-gray-800 p-4 rounded-lg shadow-xl overflow-y-auto w-full h-full">
+            <div className="bg-gray-800 p-0 rounded-lg shadow-xl overflow-y-auto w-full h-full">
                 <ShopScreen 
                     gameStateRefs={gameStateRefs}
                     currentLevel={currentLevel}
