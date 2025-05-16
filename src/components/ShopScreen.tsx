@@ -130,10 +130,10 @@ export const ShopScreen: React.FC<ShopScreenProps> = ({
 
   return (
     <TooltipProvider>
-        <div className="flex flex-col items-center justify-between h-full w-full bg-gray-800 text-white p-4 sm:p-6 md:p-8 overflow-y-auto">
+        <div className="flex flex-col items-center justify-between h-full w-full bg-gray-800 text-white p-4 sm:p-6 md:p-8 pt-0 overflow-y-auto">
             <div className="w-full max-w-4xl mb-4">
                 {displaySpawnablePowerUps.length > 0 ? (
-                    <div className="flex flex-wrap justify-center gap-2 p-2 bg-black bg-opacity-20 rounded">
+                    <div className="flex flex-wrap justify-center gap-2 p-2 pt-0 bg-black bg-opacity-20 rounded">
                         {displaySpawnablePowerUps.map(powerUp => {
                             const baseType = getBasePowerUpType(powerUp);
                             const imagePath = POWER_UP_IMAGE_PATHS[baseType];
@@ -172,7 +172,7 @@ export const ShopScreen: React.FC<ShopScreenProps> = ({
                 )}
             </div>
 
-            <h1 className="text-3xl sm:text-4xl font-bold my-4 sm:my-6 text-center">Buy Something!</h1>
+            <h1 className="text-3xl sm:text-4xl font-bold my-4 sm:my-6 mt-0 text-center">Buy Something!</h1>
             
             <div className="flex flex-col sm:flex-row items-center space-y-2 sm:space-y-0 sm:space-x-6 mb-4 sm:mb-6">
                 <p className="text-2xl sm:text-3xl" style={{ color: GOLD_COLOR || '#FFD700' }}>
@@ -248,6 +248,12 @@ export const ShopScreen: React.FC<ShopScreenProps> = ({
                                 buttonStyle = 'bg-red-800 opacity-50';
                             }
                         }
+
+                        let levelToShowOnButton = offeredLevel;
+                        if (UPGRADABLE_POWER_UPS.includes(item) && purchasedInSession.get(item)) {
+                            // If purchased in this session, show the level that was just acquired
+                            levelToShowOnButton = getCurrentLevel(ownedPowerUps, item);
+                        }
                         
                         const imagePath = POWER_UP_IMAGE_PATHS[baseItemForImage as PowerUpType];
                         const description = POWER_UP_DESCRIPTIONS[descriptionType] ?? "No description available.";
@@ -272,8 +278,8 @@ export const ShopScreen: React.FC<ShopScreenProps> = ({
                                                 aria-label={displayName} 
                                             >?</div>
                                         )}
-                                        {offeredLevel > 1 && (
-                                            <span className="text-xs font-bold mt-0.5">L{offeredLevel}</span>
+                                        {UPGRADABLE_POWER_UPS.includes(item) && levelToShowOnButton > 1 && (
+                                            <span className="text-xs font-bold mt-0.5">L{levelToShowOnButton}</span>
                                         )}
                                         <span className="text-xs">{buttonText}</span> {/* mt-0.5 removed here */}
                                     </Button>
@@ -290,9 +296,9 @@ export const ShopScreen: React.FC<ShopScreenProps> = ({
             </div>
 
             <div className="flex flex-col items-center w-full max-w-xs">
-                <div className="border border-white px-4 py-2 mb-4 text-lg rounded">
+                {/* <div className="border border-white px-4 py-2 mb-4 text-lg rounded">
                     Level {currentLevel + 1} 
-                </div>
+                </div> */}
                 <Button
                     onClick={startNextLevel}
                     className="w-full mb-3 px-6 py-3 text-lg bg-purple-600 hover:bg-purple-700"
