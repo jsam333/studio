@@ -261,6 +261,31 @@ export const POWER_UP_DESCRIPTIONS: { [key in PowerUpType | string]?: string } =
     NONE: "No power-up."
 };
 
+// *** Power-up Image Paths ***
+export const POWER_UP_IMAGE_PATHS: { [key in PowerUpType]?: string } = {
+    MULTI_BALL: '/images/multiball.png',
+    WIDEN_PADDLE: '/images/widen paddle.png',
+    LASER_PADDLE: '/images/laser paddle.png',
+    REGEN_BRICK: '/images/regen brick.png',
+    SAFETY_NET: '/images/safety net.png',
+    REINFORCE_BRICK: '/images/reinforce brick.png',
+    MAKE_SPECIAL: '/images/make special.png',
+    BLACK_BALL: '/images/black ball.png',
+    PIERCE_BALL: '/images/pierce ball.png',
+    UPGRADE_BRICK: '/images/upgrade brick.png',
+    BUILDER_BALL: '/images/builder ball.png',
+    BIG_BALL: '/images/big ball.png',
+    SPLITTING_BALL: '/images/splitting ball.png',
+    COLLECTION_FIELD: '/images/collection field.png',
+    HOMING_BALL: '/images/homing ball.png',
+    BOMB_BRICK: '/images/bomb brick.png',
+    RECOVERY_PADDLE: '/images/sticky paddle.png', // Assuming 'sticky paddle.png' is for RECOVERY_PADDLE
+    BALL_BRICK: '/images/ball brick.png',
+    POINTS_FIELD: '/images/points field.png',
+    // Note: L2/L3 versions will use the same base image for now. 
+    // If L2/L3 have different images, those need to be added here with their specific keys.
+};
+
 
 // Power-up specific constants
 export const PADDLE_WIDEN_INCREMENT = INITIAL_PADDLE_WIDTH * 0.1;
