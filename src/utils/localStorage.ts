@@ -28,14 +28,31 @@ export const removeData = (key: string): void => {
   }
 };
 
+// Power-up specific local storage functions
+const KEY_PURCHASED_POWER_UPS = 'purchasedPowerUps';
+
 export const addPowerUpToLocalStorage = (powerUp: string): void => {
-  const powerUps = loadData<string[]>('purchasedPowerUps') || [];
+  const powerUps = loadData<string[]>(KEY_PURCHASED_POWER_UPS) || [];
   if (!powerUps.includes(powerUp)) {
     powerUps.push(powerUp);
-    saveData('purchasedPowerUps', powerUps);
+    saveData(KEY_PURCHASED_POWER_UPS, powerUps);
   }
 };
 
 export const getPowerUpsFromLocalStorage = (): string[] => {
-  return loadData<string[]>('purchasedPowerUps') || [];
+  return loadData<string[]>(KEY_PURCHASED_POWER_UPS) || [];
+};
+
+// Highest level specific local storage functions
+const KEY_HIGHEST_LEVEL = 'highestLevelReached';
+
+export const saveHighestLevel = (level: number): void => {
+  const currentHighest = loadData<number>(KEY_HIGHEST_LEVEL) || 0;
+  if (level > currentHighest) {
+    saveData(KEY_HIGHEST_LEVEL, level);
+  }
+};
+
+export const getHighestLevel = (): number => {
+  return loadData<number>(KEY_HIGHEST_LEVEL) || 0;
 };

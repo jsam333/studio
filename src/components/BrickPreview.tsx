@@ -1,5 +1,16 @@
 import React from 'react';
 import { Brick } from '../interfaces';
+import {
+    NORMAL_BRICK_COLOR,
+    REINFORCED_BRICK_COLOR,
+    UPGRADED_BRICK_COLOR,
+    SPECIAL_BRICK_COLOR,
+    BOMB_BRICK_COLOR,
+    BALL_BRICK_COLOR,
+    NORMAL_BRICK_STRENGTH,
+    REINFORCED_BRICK_STRENGTH,
+    UPGRADED_BRICK_STRENGTH
+} from '../constants';
 
 interface BrickPreviewProps {
   bricks: Brick[][];
@@ -7,16 +18,22 @@ interface BrickPreviewProps {
   previewHeight?: number;
 }
 
-const BrickPreview: React.FC<BrickPreviewProps> = ({ bricks, previewWidth = 150, previewHeight = 75 }) => {
+const BrickPreview: React.FC<BrickPreviewProps> = ({ bricks, previewWidth = 300, previewHeight = 75 }) => {
   if (!bricks || bricks.length === 0) {
-    return <div>No preview available</div>;
+    return <div style={{ width: previewWidth, height: previewHeight, display: 'flex', alignItems: 'center', justifyContent: 'center' }} className="border border-gray-400 bg-gray-700 text-gray-300">No preview data</div>;
   }
 
-  const numRows = bricks.length;
-  const numCols = bricks[0]?.length || 0;
+  const numCols = bricks.length;
+  let numRows = 0;
+  // Find the number of rows from the first non-empty column
+  const firstPopulatedColumn = bricks.find(col => col && col.length > 0);
+  if (firstPopulatedColumn) {
+    numRows = firstPopulatedColumn.length;
+  }
 
-  if (numRows === 0 || numCols === 0) {
-    return <div>No preview available</div>;
+  // If no rows were found in any column (e.g., all columns are empty or rows per column is 0)
+  if (numRows === 0) {
+    return <div style={{ width: previewWidth, height: previewHeight, display: 'flex', alignItems: 'center', justifyContent: 'center' }} className="border border-gray-400 bg-gray-700 text-gray-300">Level design has no rows</div>;
   }
 
   const brickWidth = previewWidth / numCols;
@@ -27,31 +44,35 @@ const BrickPreview: React.FC<BrickPreviewProps> = ({ bricks, previewWidth = 150,
       className="border border-gray-400 bg-gray-700" 
       style={{ width: previewWidth, height: previewHeight, position: 'relative' }}
     >
-      {bricks.map((row, rowIndex) =>
-        row.map((brick, colIndex) => {
+      {bricks.map((column, colIndex) =>
+        column.map((brick, rowIndex) => {
           if (brick && brick.status > 0) {
-            let brickColor = 'bg-gray-500'; // Default color for normal bricks
-            if (brick.isSpecial) {
-              brickColor = 'bg-yellow-500'; // Special bricks
-            }
+            let brickColor = NORMAL_BRICK_COLOR; // Default
+
             if (brick.isBomb) {
-              brickColor = 'bg-red-600'; // Bomb bricks
+              brickColor = BOMB_BRICK_COLOR;
+            } else if (brick.isSpecial) {
+              brickColor = SPECIAL_BRICK_COLOR;
+            } else if (brick.holdsBall) {
+              brickColor = BALL_BRICK_COLOR;
+            } else if (brick.strength === REINFORCED_BRICK_STRENGTH) {
+              brickColor = REINFORCED_BRICK_COLOR;
+            } else if (brick.strength === UPGRADED_BRICK_STRENGTH || (brick.upgradeLevel && brick.upgradeLevel > 0)) {
+              brickColor = UPGRADED_BRICK_COLOR;
+            } else if (brick.strength === NORMAL_BRICK_STRENGTH) {
+              brickColor = NORMAL_BRICK_COLOR;
             }
-            if (brick.holdsBall) {
-              brickColor = 'bg-blue-500'; // Bricks holding a ball
-            }
-            // Add more conditions for other brick types if needed
 
             return (
               <div
-                key={`${rowIndex}-${colIndex}`}
-                className={`absolute ${brickColor}`}
+                key={`${colIndex}-${rowIndex}`}
+                className={`absolute`}
                 style={{
                   left: colIndex * brickWidth,
                   top: rowIndex * brickHeight,
-                  width: brickWidth -1, // -1 for a small gap
-                  height: brickHeight -1, // -1 for a small gap
-                  opacity: brick.strength / 3, // Example: Dimmer for lower strength
+                  width: Math.max(1, brickWidth -1),
+                  height: Math.max(1, brickHeight -1),
+                  backgroundColor: brickColor,
                 }}
               />
             );
