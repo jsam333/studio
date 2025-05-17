@@ -228,11 +228,11 @@ export const ShopScreen: React.FC<ShopScreenProps> = ({
             style={{ fontSize: scaled.fontSize(16) }} // Base font size for the screen
         >
             {/* Scrollable Content Area */}
-            <div className="flex-grow overflow-y-auto">
+            <div className="flex-grow overflow-auto"> 
                 {/* Owned PowerUps Display */}
                 <div
                     className="w-full mb-4 mx-auto"
-                    style={{ maxWidth: scaled.w(672), marginBottom: scaled.mb(16) }} // max-w-4xl
+                    style={{ maxWidth: scaled.w(672), marginBottom: scaled.mb(16) }}
                 >
                     {displaySpawnablePowerUps.length > 0 ? (
                         <div
@@ -301,7 +301,7 @@ export const ShopScreen: React.FC<ShopScreenProps> = ({
                 >Buy Something!</h1>
 
                 <div
-                    className="flex flex-col sm:flex-row items-center justify-center mb-6"
+                    className="flex flex-row items-center justify-center mb-6"
                     style={{
                         gap: scaled.gap(12),
                         marginBottom: scaled.mb(24)
@@ -321,17 +321,18 @@ export const ShopScreen: React.FC<ShopScreenProps> = ({
                             fontSize: scaled.fontSize(18)
                         }}
                     >
-                        Spawn Chance: {(currentSpawnChance * 100).toFixed(0)}%
+                        Powerup Spawn Chance: {(currentSpawnChance * 100).toFixed(0)}%
                     </p>
                 </div>
 
                 <div
-                    className="grid grid-cols-3 sm:grid-cols-5 mx-auto"
+                    className="grid grid-cols-5 mx-auto" 
                     style={{
                         gap: scaled.gap(12),
                         marginBottom: scaled.mb(32),
                         width: '100%',
-                        maxWidth: scaled.w(576)
+                        maxWidth: scaled.w(576),
+                        minWidth: scaled.w(480),
                     }}
                 >
                     {shopItems.length > 0 ? (
@@ -407,6 +408,7 @@ export const ShopScreen: React.FC<ShopScreenProps> = ({
                             const imagePath = POWER_UP_IMAGE_PATHS[baseItemForImage as PowerUpType];
                             const description = POWER_UP_DESCRIPTIONS[descriptionType] ?? "No description available.";
                             const isKnown = knownPowerUps.includes(baseItemForImage);
+                            const showLevelIndicator = UPGRADABLE_POWER_UPS.includes(item) && levelToShowOnButton > 1;
 
                             return (
                                 <Tooltip key={itemKey}>
@@ -414,16 +416,17 @@ export const ShopScreen: React.FC<ShopScreenProps> = ({
                                         <Button
                                             onClick={() => handlePurchase(itemToPurchaseOnClick)}
                                             disabled={isDisabled}
-                                            className={`text-white flex flex-col justify-around items-center border border-white ${buttonBgColor}`}
+                                            className={`text-white flex flex-col justify-center items-center border border-white ${buttonBgColor}`}
                                             style={{
                                                 paddingTop: scaled.py(8),
                                                 paddingBottom: scaled.py(8),
                                                 paddingLeft: scaled.px(4),
                                                 paddingRight: scaled.px(4),
                                                 fontSize: scaled.fontSize(12),
-                                                height: scaled.buttonHeightMd, // This is for shop item buttons
+                                                height: scaled.buttonHeightMd,
                                             }}
                                         >
+                                            {/* Icon */}
                                             {imagePath ? (
                                                 <img
                                                     src={imagePath}
@@ -444,13 +447,24 @@ export const ShopScreen: React.FC<ShopScreenProps> = ({
                                                     }}
                                                 >?</div>
                                             )}
-                                            {UPGRADABLE_POWER_UPS.includes(item) && levelToShowOnButton > 1 && (
-                                                <span
-                                                    className="font-bold"
-                                                    style={{ fontSize: scaled.fontSize(12), marginTop: scaled.px(2) }}
-                                                >L{levelToShowOnButton}</span>
-                                            )}
-                                            <span style={{ fontSize: scaled.fontSize(12) }}>{buttonText}</span>
+
+                                            {/* Text block wrapper */}
+                                            <div style={{ marginTop: 0 }} className="flex flex-col items-center"> {/* MODIFIED HERE */}
+                                                {showLevelIndicator && (
+                                                    <span
+                                                        className="font-bold block"
+                                                        style={{ fontSize: scaled.fontSize(12) }}
+                                                    >
+                                                        L{levelToShowOnButton}
+                                                    </span>
+                                                )}
+                                                <span 
+                                                    className="block"
+                                                    style={{ fontSize: scaled.fontSize(12) }}
+                                                >
+                                                    {buttonText}
+                                                </span>
+                                            </div>
                                         </Button>
                                     </TooltipTrigger>
                                     <TooltipContent style={{fontSize: scaled.fontSize(12)}}>
@@ -488,10 +502,9 @@ export const ShopScreen: React.FC<ShopScreenProps> = ({
                         style={{
                             paddingLeft: scaled.px(24),
                             paddingRight: scaled.px(24),
-                            // paddingTop and paddingBottom are removed to allow explicit height to control vertical size
                             fontSize: scaled.fontSize(18),
-                            height: scaled.footerButtonHeight, // Explicitly scaled height
-                            minHeight: scaled.h(36) // Minimum height safeguard
+                            height: scaled.footerButtonHeight,
+                            minHeight: scaled.h(36)
                         }}
                     >
                         Start Level {currentLevel + 1}
@@ -502,10 +515,9 @@ export const ShopScreen: React.FC<ShopScreenProps> = ({
                         style={{
                             paddingLeft: scaled.px(24),
                             paddingRight: scaled.px(24),
-                            // paddingTop and paddingBottom are removed
                             fontSize: scaled.fontSize(18),
-                            height: scaled.footerButtonHeight, // Explicitly scaled height
-                            minHeight: scaled.h(36) // Minimum height safeguard
+                            height: scaled.footerButtonHeight,
+                            minHeight: scaled.h(36)
                         }}
                     >
                         Back to Menu
@@ -530,7 +542,7 @@ export const ShopScreen: React.FC<ShopScreenProps> = ({
                     <div style={{ flexShrink: 0 }}> 
                         <BrickPreview
                             bricks={nextLevelBricksPreview}
-                            previewWidth={scaled.w(150)}
+                            previewWidth={scaled.w(225)} 
                             previewHeight={scaled.h(50)}
                         />
                     </div>
