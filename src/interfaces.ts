@@ -159,6 +159,7 @@ export interface GameStateRefsBase {
     // *** ADDED: Flag for initial bonus gold decrement completion ***
     initialBonusGoldDecrementCompleteRef: React.MutableRefObject<boolean>;
     pointsFieldsRef: React.MutableRefObject<PointsField[]>; // Added pointsFieldsRef
+    levelCompletionProcessedRef: React.MutableRefObject<boolean>; // *** ADDED LINE ***
 }
 
 export interface GameStateRefs extends GameStateRefsBase {

@@ -97,6 +97,7 @@ export const ShopScreen: React.FC<ShopScreenProps> = ({
   const [knownPowerUps, setKnownPowerUps] = useState<string[]>([]);
   const [nextLevelBricksPreview, setNextLevelBricksPreview] = useState<Brick[][] | null>(null);
   const [nextLevelInfo, setNextLevelInfo] = useState<NextLevelInfo | null>(null);
+  const [nextLevelBeatTime, setNextLevelBeatTime] = useState<number | null>(null);
   const [highestLevelReachedByPlayer, setHighestLevelReachedByPlayer] = useState<number>(0);
   const [scaleFactor, setScaleFactor] = useState(1);
 
@@ -143,9 +144,22 @@ export const ShopScreen: React.FC<ShopScreenProps> = ({
       }
       const stats = getLevelStats(nextLevelVal, gameMode);
       setNextLevelInfo(stats);
+
+      // Calculate time to beat
+      const baseDelay = 5000; 
+      const incrementPerLevel = 750;
+      let startDelayForNextLevel = baseDelay + (nextLevelVal - 1) * incrementPerLevel;
+      const maxDelayForLevel20 = baseDelay + (20 - 1) * incrementPerLevel;
+      if (startDelayForNextLevel > maxDelayForLevel20 && nextLevelVal > 20) {
+        startDelayForNextLevel = maxDelayForLevel20;
+      }
+      const totalTimeToBeat = startDelayForNextLevel + 17500; // 17500ms includes bonus gold timer and final countdown
+      setNextLevelBeatTime(totalTimeToBeat);
+
     } else {
       setNextLevelBricksPreview(null);
       setNextLevelInfo(null);
+      setNextLevelBeatTime(null);
     }
   }, [currentLevel, gameStateRefs.gameModeRef, highestLevelReachedByPlayer]);
 
@@ -449,7 +463,7 @@ export const ShopScreen: React.FC<ShopScreenProps> = ({
                                             )}
 
                                             {/* Text block wrapper */}
-                                            <div style={{ marginTop: 0 }} className="flex flex-col items-center"> {/* MODIFIED HERE */}
+                                            <div style={{ marginTop: 0 }} className="flex flex-col items-center">
                                                 {showLevelIndicator && (
                                                     <span
                                                         className="font-bold block"
@@ -535,6 +549,9 @@ export const ShopScreen: React.FC<ShopScreenProps> = ({
                         ) : (
                             <p>Loading info...</p>
                         )}
+                        {nextLevelBeatTime !== null && (
+                            <p>Time to Beat: {(nextLevelBeatTime / 1000).toFixed(1)}s</p>
+                        )}
                     </div>
                 )}
 
@@ -542,7 +559,7 @@ export const ShopScreen: React.FC<ShopScreenProps> = ({
                     <div style={{ flexShrink: 0 }}> 
                         <BrickPreview
                             bricks={nextLevelBricksPreview}
-                            previewWidth={scaled.w(225)} 
+                            previewWidth={scaled.w(293)} 
                             previewHeight={scaled.h(50)}
                         />
                     </div>
