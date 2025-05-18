@@ -183,14 +183,15 @@ export const checkBrickCollision = ( ball: Ball, bricks: Brick[][], columns: num
                          newSpeedX = tempSpeedX; 
                          newSpeedY = tempSpeedY;
                      } else {
+                         // Damage the primary brick
                          const pointsFromHit = damageBrick(brick, bricks, columns, rows, spawnEvents);
                          pointsAwarded += pointsFromHit;
-                         const brickDestroyed = brick.status === 0;
+                         const brickDestroyed = brick.status === 0; // Check if primary brick was destroyed (for bomb logic)
                          newSpeedX = tempSpeedX; 
                          newSpeedY = tempSpeedY;
-                         if (brick.isBomb && brickDestroyed) {
-                             pointsAwarded += handleBombExplosion(c, r, bricks, columns, rows, spawnEvents);
-                         } else if (brickDestroyed && ball.isBlack) { 
+
+                         // If ball is black, apply splash damage to a neighbor
+                         if (ball.isBlack) {
                              const neighbors = [{ nc: c + 1, nr: r }, { nc: c - 1, nr: r }, { nc: c, nr: r + 1 }, { nc: c, nr: r - 1 }];
                              const validNeighbors: { brick: Brick, col: number, row: number }[] = [];
                              neighbors.forEach(n => {
@@ -210,6 +211,11 @@ export const checkBrickCollision = ( ball: Ball, bricks: Brick[][], columns: num
                                       pointsAwarded += handleBombExplosion(targetNeighborData.col, targetNeighborData.row, bricks, columns, rows, spawnEvents);
                                  }
                              }
+                         }
+
+                         // If the primary brick was a bomb and was destroyed by the initial hit, handle its explosion
+                         if (brick.isBomb && brickDestroyed) {
+                             pointsAwarded += handleBombExplosion(c, r, bricks, columns, rows, spawnEvents);
                          }
                      }
                      return { collision: true, newSpeedX, newSpeedY, spawnEvents, pointsAwarded, pierceOccurred, builderHitOccurred, brickHit: true };
