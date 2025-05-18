@@ -2,7 +2,8 @@ import { Laser, Brick, PowerUp, SpawnMarker, PowerUpSpawnEvent, PowerUpType } fr
 import { GameStateRefs } from '../interfaces'; 
 import { GameLoopCallbacks } from '../interfaces';
 import {
-    BOMB_BRICK_POINTS
+    BOMB_BRICK_POINTS,
+    POWER_UP_SPAWN_THRESHOLD // Added for main mode spawn chance
 } from '../constants';
 import { handleBombExplosion } from '../gameLogic';
 
@@ -21,9 +22,7 @@ export const updateLasers = (
         const movement = laser.speed * deltaTime;
         const nextLaserY = laser.y - movement;
         let brickDestroyed = false;
-        // --- MODIFIED: Added dBrickHeight and dBrickHoldsBall ---
         let dBrickX = 0, dBrickY = 0, dBrickWidth = 0, dBrickHeight = 0, dBrickWasSpecial = false, dBrickWasBomb = false, dBrickHoldsBall = false, hitBrickC = -1, hitBrickR = -1;
-        // --- END MODIFICATION ---
 
         for (let c = 0; c < columns && !laserHit; c++) {
              if (!refs.bricksRef.current[c]) continue; 
@@ -39,34 +38,31 @@ export const updateLasers = (
                     let pointsFromHit = 0;
 
                     if (brick.isSpecial) {
-                        pointsFromHit = 1; // Special bricks might have different point values later
+                        pointsFromHit = 1; 
                         brick.status = 0;
                         brickDestroyed = true;
                         dBrickWasSpecial = true;
-                        dBrickHoldsBall = false; // Explicitly false if special
-                    // --- MODIFIED: Added check for holdsBall ---
+                        dBrickHoldsBall = false; 
                     } else if (brick.holdsBall) {
-                         pointsFromHit = 1; // Or specific points for BALL_BRICK if desired
+                         pointsFromHit = 1; 
                          brick.status = 0;
                          brickDestroyed = true;
                          dBrickHoldsBall = true;
-                         dBrickWasSpecial = false; // Explicitly false if holds ball
-                    // --- END MODIFICATION ---
+                         dBrickWasSpecial = false; 
                     } else if (brick.isBomb) {
-                        pointsFromHit = BOMB_BRICK_POINTS; // Points for the direct hit
+                        pointsFromHit = BOMB_BRICK_POINTS; 
                         brick.status = 0;
                         brickDestroyed = true;
                         dBrickWasBomb = true;
-                        dBrickWasSpecial = false; // Explicitly false if bomb
-                        dBrickHoldsBall = false; // Explicitly false if bomb
-                        hitBrickC = c; // Store coords for explosion
+                        dBrickWasSpecial = false; 
+                        dBrickHoldsBall = false; 
+                        hitBrickC = c; 
                         hitBrickR = r;
-                        pointsFromHit += handleBombExplosion(c, r, refs.bricksRef.current, columns, rows, spawnRequests);
-                    } else { // Regular brick or upgradeable brick
+                        pointsFromHit += handleBombExplosion(c, r, refs.bricksRef.current, columns, rows, spawnRequests, refs); // Pass refs
+                    } else { 
                         pointsFromHit = 1;
                         if (brick.upgradeLevel && brick.upgradeLevel > 0) {
                             brick.upgradeLevel--; 
-                            // Brick is damaged but not destroyed
                         } else {
                             brick.status = 0; 
                             brickDestroyed = true;
@@ -83,27 +79,38 @@ export const updateLasers = (
                         dBrickX = brick.x;
                         dBrickY = brick.y;
                         dBrickWidth = brick.width;
-                        // --- MODIFIED: Capture height ---
                         dBrickHeight = brick.height;
-                        // --- END MODIFICATION ---
                     }
                 }
             }
         }
 
-        // --- MODIFIED: Updated spawn logic ---
         if (brickDestroyed && !dBrickWasBomb) {
-            let marker: SpawnMarker = 'PENDING'; // Default for normal bricks
+            let marker: SpawnMarker = 'NONE'; // Default to NONE
+
             if (dBrickHoldsBall) {
                 marker = 'SPAWN_BALL';
             } else if (dBrickWasSpecial) {
                 marker = 'SPAWN_SPECIAL';
+            } else { // Regular brick destroyed by laser, not a bomb itself
+                const gameMode = refs.gameModeRef.current;
+                if (gameMode === 'test') {
+                    if (Math.random() < refs.testPowerUpSpawnChanceRef.current) {
+                        marker = 'PENDING';
+                    }
+                } else { // Main game mode or if gameMode is somehow null
+                    // if (Math.random() < POWER_UP_SPAWN_THRESHOLD) { // Using constant for main mode
+                    //    marker = 'PENDING';
+                    // }
+                    // Fallback to original behavior for main game (always PENDING if not special/bomb/ball)
+                     marker = 'PENDING'; 
+                }
             }
-            // Pass height to the event
-            spawnRequests.push({ marker, brickX: dBrickX, brickY: dBrickY, brickWidth: dBrickWidth, brickHeight: dBrickHeight }); 
+            
+            if (marker !== 'NONE') {
+                spawnRequests.push({ marker, brickX: dBrickX, brickY: dBrickY, brickWidth: dBrickWidth, brickHeight: dBrickHeight }); 
+            }
         }
-        // --- END MODIFICATION ---
-
 
         if (!laserHit && nextLaserY + laser.height > 0) {
             nextLasersArray.push({ ...laser, y: nextLaserY });

@@ -46,6 +46,8 @@ export default function Home() {
         addSpawnablePowerUp,
         gameStateRefs,
         gameLoopCallbacks, 
+        testPowerUpSpawnChance, // Added for slider
+        setTestPowerUpSpawnChance, // Added for slider
     } = useGameLogic();
 
     useEffect(() => {
@@ -234,8 +236,7 @@ export default function Home() {
              display: 'flex', 
              flexDirection: 'column', 
              alignItems: 'center', 
-             minHeight: '100vh', // Ensure it takes at least full screen height
-             // overflowY: 'auto' // REMOVED: Let body/html handle scrolling
+             minHeight: '100vh', 
         }}>
             {gameOverState === 'menu' && (
                 <GameMenu 
@@ -264,21 +265,34 @@ export default function Home() {
                         gameHeight={BOARD_HEIGHT}
                         isTestPreview={true} 
                     />
-                    {/* New empty div for content below the test game window */}
                     <div 
                         style={{
-                            width: `${BOARD_WIDTH * testScaleRef.current}px`, // Match width of the canvas
-                            height: '100px', // Placeholder height
-                            backgroundColor: '#111927', // Updated background color
-                            // border: '1px solid #ccc', // REMOVED: Placeholder border
-                            // marginTop: '10px', // REMOVED: Space between canvas and this div
+                            width: `${BOARD_WIDTH * testScaleRef.current}px`, 
+                            height: 'auto', // Auto height to fit content
+                            minHeight: '50px', // Minimum height for the div
+                            padding: '10px',
+                            backgroundColor: '#111927', 
                             display: 'flex',
+                            flexDirection: 'column', // Stack label and slider vertically
                             alignItems: 'center',
                             justifyContent: 'center',
-                            color: '#FFFFFF' // Text color white for contrast
+                            color: '#FFFFFF',
+                            boxSizing: 'border-box'
                         }}
                     >
-                        Placeholder content below test game window.
+                        <label htmlFor="powerUpSpawnChance" style={{ marginBottom: '5px' }}>
+                            Power-up Spawn Chance: {Math.round(testPowerUpSpawnChance * 100)}%
+                        </label>
+                        <input 
+                            type="range" 
+                            id="powerUpSpawnChance" 
+                            min="0" 
+                            max="1" 
+                            step="0.01" 
+                            value={testPowerUpSpawnChance}
+                            onChange={(e) => setTestPowerUpSpawnChance(parseFloat(e.target.value))}
+                            style={{ width: '80%' }} // Slider width
+                        />
                     </div>
                 </div>
             )}

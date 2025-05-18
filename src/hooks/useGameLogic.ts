@@ -5,7 +5,8 @@ import {
     FIELD_INITIAL_HEIGHT_OFFSET, FIELD_INITIAL_WIDTH_OFFSET,
     BALL_SIZE, BIG_BALL_SIZE_INCREASE, PADDLE_Y, INITIAL_BALL_SPEED_Y,
     FIELD_SHRINK_RATE_H, FIELD_SHRINK_RATE_W, FIELD_SHRINK_INTERVAL,
-    ALL_TOGGLEABLE_POWER_UPS, PADDLE_HEIGHT, BOARD_HEIGHT 
+    ALL_TOGGLEABLE_POWER_UPS, PADDLE_HEIGHT, BOARD_HEIGHT,
+    INITIAL_TEST_POWER_UP_SPAWN_CHANCE // Added for test mode slider
 } from '../constants'; 
 import { Ball, PowerUp, Laser, PowerUpType, GameState, GameMode, GameStateRefs as IGameStateRefs, GameLoopCallbacks, PointsField } from '../interfaces';
 import { initialBallState } from '../gameLogic';
@@ -63,12 +64,14 @@ export function useGameLogic() {
     const firstTestRunCompletedRef = useRef<boolean>(false);
     const pointsFieldsRef = useRef<PointsField[]>([]);
     const levelCompletionProcessedRef = useRef<boolean>(false);
+    const testPowerUpSpawnChanceRef = useRef<number>(INITIAL_TEST_POWER_UP_SPAWN_CHANCE); // Added for test mode slider
 
     const [gameOverState, setGameOverState] = useState<GameState>('menu');
     const gameOverStateRef = useRef(gameOverState);
     const [enabledPowerUps, setEnabledPowerUps] = useState<Set<PowerUpType>>(() => new Set(ALL_TOGGLEABLE_POWER_UPS));
     const [showSidebar, setShowSidebar] = useState<boolean>(false);
     const [activeGameMode, setActiveGameMode] = useState<GameMode | null>(null);
+    const [testPowerUpSpawnChance, setTestPowerUpSpawnChance] = useState<number>(INITIAL_TEST_POWER_UP_SPAWN_CHANCE); // State for slider
 
     const {
         schedulePaddleShrink,
@@ -126,6 +129,10 @@ export function useGameLogic() {
     useEffect(() => {
         enabledPowerUpsRef.current = enabledPowerUps;
     }, [enabledPowerUps]);
+
+    useEffect(() => {
+        testPowerUpSpawnChanceRef.current = testPowerUpSpawnChance;
+    }, [testPowerUpSpawnChance]);
 
     useEffect(() => {
         gameOverStateRef.current = gameOverState;
@@ -234,6 +241,8 @@ export function useGameLogic() {
         initialBonusGoldDecrementCompleteRef.current = false;
         pointsFieldsRef.current = [];
         levelCompletionProcessedRef.current = false;
+        testPowerUpSpawnChanceRef.current = INITIAL_TEST_POWER_UP_SPAWN_CHANCE; // Reset slider value on game reset
+        setTestPowerUpSpawnChance(INITIAL_TEST_POWER_UP_SPAWN_CHANCE); // Reset state for slider
 
         resetLevel(null, true); 
         resetPaddle();
@@ -350,6 +359,8 @@ export function useGameLogic() {
             pointsFieldsRef.current = [];
             levelCompletionProcessedRef.current = false;
             testPreviewInitialLaunchDoneRef.current = false; // Reset for new test session
+            testPowerUpSpawnChanceRef.current = INITIAL_TEST_POWER_UP_SPAWN_CHANCE; // Reset slider value on game start
+            setTestPowerUpSpawnChance(INITIAL_TEST_POWER_UP_SPAWN_CHANCE); // Reset state for slider
 
             gameModeRef.current = mode; 
             setActiveGameMode(mode); 
@@ -391,6 +402,8 @@ export function useGameLogic() {
             pointsFieldsRef.current = [];
             levelCompletionProcessedRef.current = false;
             testPreviewInitialLaunchDoneRef.current = false; // Reset if going to next level from shop
+            testPowerUpSpawnChanceRef.current = INITIAL_TEST_POWER_UP_SPAWN_CHANCE; // Reset slider value 
+            setTestPowerUpSpawnChance(INITIAL_TEST_POWER_UP_SPAWN_CHANCE); // Reset state for slider
 
             resetLevel(nextMode, false);
             isGameStartedRef.current = false; 
@@ -451,7 +464,7 @@ export function useGameLogic() {
         gameIsRunningRef, gameOverStateRef, gameSpeedFactorRef,
         collectionFieldHeightRef, collectionFieldWidthOffsetRef,
         stickyPaddleChargesRef, stuckBallsRef, enabledPowerUpsRef, isGameStartedRef,
-        testPreviewInitialLaunchDoneRef, // Added to refs
+        testPreviewInitialLaunchDoneRef, 
         paddleShrinkCountdownRef,
         collectionFieldShrinkTimerRef,
         animationFrameIdRef, lastTimeRef,
@@ -469,13 +482,14 @@ export function useGameLogic() {
         initialBonusGoldDecrementCompleteRef,
         pointsFieldsRef,
         levelCompletionProcessedRef,
+        testPowerUpSpawnChanceRef, // Added to refs
     }), [
         paddleXRef, ballsRef, powerUpsRef, scoreRef, goldRef, spawnablePowerUpsRef,
         paddleWidthRef, widenLevelRef, laserShotsRef, lasersRef, safetyNetCountRef,
         gameIsRunningRef, gameOverStateRef, gameSpeedFactorRef,
         collectionFieldHeightRef, collectionFieldWidthOffsetRef,
         stickyPaddleChargesRef, stuckBallsRef, enabledPowerUpsRef, isGameStartedRef,
-        testPreviewInitialLaunchDoneRef, // Added to deps
+        testPreviewInitialLaunchDoneRef, 
         paddleShrinkCountdownRef,
         collectionFieldShrinkTimerRef,
         animationFrameIdRef, lastTimeRef,
@@ -493,6 +507,7 @@ export function useGameLogic() {
         initialBonusGoldDecrementCompleteRef,
         pointsFieldsRef,
         levelCompletionProcessedRef,
+        testPowerUpSpawnChanceRef, // Added to deps
     ]);
 
     const drawEndMessageCallback = useCallback((context: CanvasRenderingContext2D, state: GameState, finalScore: number) => {
@@ -529,5 +544,7 @@ export function useGameLogic() {
         lives: livesRef.current,
         score: scoreRef.current,
         gold: goldRef.current,
+        testPowerUpSpawnChance, // Expose state for slider
+        setTestPowerUpSpawnChance, // Expose setter for slider
     };
 }

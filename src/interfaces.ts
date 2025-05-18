@@ -160,6 +160,7 @@ export interface GameStateRefsBase {
     initialBonusGoldDecrementCompleteRef: React.MutableRefObject<boolean>;
     pointsFieldsRef: React.MutableRefObject<PointsField[]>; // Added pointsFieldsRef
     levelCompletionProcessedRef: React.MutableRefObject<boolean>; // *** ADDED LINE ***
+    testPowerUpSpawnChanceRef: React.MutableRefObject<number>; // Added for test mode slider
 }
 
 export interface GameStateRefs extends GameStateRefsBase {

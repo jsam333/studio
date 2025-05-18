@@ -126,8 +126,13 @@ export const gameUpdate = (
     const columns = refs.brickColumnsRef.current;
     const rows = refs.brickRowsRef.current;
     
-    if (!isTestPreview) {
+    // Update paddle shrink timer if a shrink is scheduled, regardless of mode
+    if (refs.paddleShrinkCountdownRef?.current !== null) {
         updatePaddleShrinkTimer(refs, callbacks, elapsedTime);
+    }
+
+    // Bonus gold timer only for main game mode and not in test preview
+    if (!isTestPreview) {
         updateBonusGoldTimer(refs, callbacks, elapsedTime);
     }
 
