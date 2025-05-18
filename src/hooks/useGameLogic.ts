@@ -6,7 +6,6 @@ import {
     BALL_SIZE, BIG_BALL_SIZE_INCREASE, PADDLE_Y, INITIAL_BALL_SPEED_Y,
     FIELD_SHRINK_RATE_H, FIELD_SHRINK_RATE_W, FIELD_SHRINK_INTERVAL,
     ALL_TOGGLEABLE_POWER_UPS, PADDLE_HEIGHT, BOARD_HEIGHT 
-    // INITIAL_LIVES was incorrectly imported here, it's a local const or defined in this file
 } from '../constants'; 
 import { Ball, PowerUp, Laser, PowerUpType, GameState, GameMode, GameStateRefs as IGameStateRefs, GameLoopCallbacks, PointsField } from '../interfaces';
 import { initialBallState } from '../gameLogic';
@@ -14,7 +13,7 @@ import { useLevelLogic } from './useLevelLogic';
 import { usePaddleLogic } from './usePaddleLogic';
 
 const MAX_UPGRADE_LEVEL = 3;
-const INITIAL_LIVES = 3; // Define INITIAL_LIVES here
+const INITIAL_LIVES = 3;
 
 const getPowerUpTypeForLevel = (baseType: PowerUpType, level: number): PowerUpType | null => {
     if (level < 1 || level > MAX_UPGRADE_LEVEL) return null;
@@ -52,12 +51,13 @@ export function useGameLogic() {
     const stickyPaddleChargesRef = useRef(0);
     const stuckBallsRef = useRef<Ball[]>([]);
     const enabledPowerUpsRef = useRef<Set<PowerUpType>>(new Set(ALL_TOGGLEABLE_POWER_UPS));
-    const isGameStartedRef = useRef(false);
+    const isGameStartedRef = useRef(false); // For main game state
+    const testPreviewInitialLaunchDoneRef = useRef(false); // NEW: Track initial launch in test preview
     const gameModeRef = useRef<GameMode | null>(null); 
     const currentLevelRef = useRef<number>(1);
     const animationFrameIdRef = useRef<number | null>(null);
     const lastTimeRef = useRef<number>(0);
-    const livesRef = useRef<number>(INITIAL_LIVES); // Uses the local const INITIAL_LIVES
+    const livesRef = useRef<number>(INITIAL_LIVES);
     const bonusGoldTimerCountdownRef = useRef<number | null>(null);
     const initialBonusGoldDecrementCompleteRef = useRef<boolean>(false);
     const firstTestRunCompletedRef = useRef<boolean>(false);
@@ -118,7 +118,7 @@ export function useGameLogic() {
         stickyPaddleChargesRef,
         paddleShrinkCountdownRef,
         setupInitialBall,
-        isGameStartedRef,
+        isGameStartedRef, // Pass the main game's started ref
         spawnablePowerUpsRef,
         initialBonusGoldDecrementCompleteRef,
     });
@@ -133,6 +133,7 @@ export function useGameLogic() {
 
         if (gameOverState === 'lost' && activeGameMode === 'test') {
             resetLevel(activeGameMode, true); 
+            testPreviewInitialLaunchDoneRef.current = false; // Reset for next preview session
             setGameOverState('menu'); 
             return; 
         }
@@ -220,6 +221,7 @@ export function useGameLogic() {
     const handleResetGame = useCallback(() => {
         gameIsRunningRef.current = false;
         isGameStartedRef.current = false;
+        testPreviewInitialLaunchDoneRef.current = false; // Reset this on full game reset
         if (collectionFieldShrinkTimerRef.current) clearInterval(collectionFieldShrinkTimerRef.current);
         collectionFieldShrinkTimerRef.current = null;
 
@@ -247,7 +249,7 @@ export function useGameLogic() {
 
     }, [resetLevel, resetPaddle, clearBonusGoldTimers, setGameOverState, setActiveGameMode, setShowSidebar, setEnabledPowerUps]);
 
-    const launchStuckBalls = useCallback((isInitialLaunch = false) => {
+    const launchStuckBalls = useCallback((isInitialLaunchArgument = false) => { // Renamed for clarity
         const isTestModePreview = activeGameMode === 'test' && gameOverStateRef.current === 'menu';
         if (!((gameOverStateRef.current === 'playing') || isTestModePreview) || stuckBallsRef.current.length === 0) return;
         
@@ -255,25 +257,45 @@ export function useGameLogic() {
         const currentPaddleX = paddleXRef.current;
         const currentPaddleWidth = paddleWidthRef.current;
 
+        // Determine if this specific launch is the *truly* initial one for its context
+        let trulyInitialLaunch = false;
+        let launchSpeedX = 0;
+        const launchSpeedY = -Math.abs(INITIAL_BALL_SPEED_Y);
+
+        if (isTestModePreview) {
+            if (!testPreviewInitialLaunchDoneRef.current) {
+                launchSpeedX = 3; // Initial X speed for test preview's first launch
+                testPreviewInitialLaunchDoneRef.current = true;
+                trulyInitialLaunch = true; // This is the test preview's initial launch
+            } else {
+                launchSpeedX = 0; // Subsequent launches in test preview are straight up
+            }
+        } else { // Main game logic
+            if (isInitialLaunchArgument) { // isInitialLaunchArgument comes from gameCanvas
+                launchSpeedX = 3;
+                trulyInitialLaunch = true;
+            } else {
+                launchSpeedX = 0;
+            }
+        }
+
         const launchedBalls = stuckBallsRef.current.map(ball => {
             const currentBallSize = ball.isBig ? BALL_SIZE + BIG_BALL_SIZE_INCREASE : BALL_SIZE;
-            let launchX = 0, launchY = 0;
-            const launchSpeedX = isInitialLaunch ? 3 : 0;
-            const launchSpeedY = -Math.abs(INITIAL_BALL_SPEED_Y);
+            let currentLaunchX = 0, currentLaunchY = 0;
 
             if (ball.stuckSide) {
                  const sideOffset = currentBallSize;
-                 launchX = ball.stuckSide === 'left'
+                 currentLaunchX = ball.stuckSide === 'left'
                      ? currentPaddleX - sideOffset
                      : currentPaddleX + currentPaddleWidth + sideOffset;
-                 launchY = PADDLE_Y + PADDLE_HEIGHT / 2 + (ball.stuckSideOffset ?? 0);
-                 launchY = Math.min(BOARD_HEIGHT - currentBallSize -1, Math.max(currentBallSize + 1, launchY))
+                 currentLaunchY = PADDLE_Y + PADDLE_HEIGHT / 2 + (ball.stuckSideOffset ?? 0);
+                 currentLaunchY = Math.min(BOARD_HEIGHT - currentBallSize -1, Math.max(currentBallSize + 1, currentLaunchY))
             } else {
-                 launchX = currentPaddleX + (ball.stuckOffset ?? currentPaddleWidth / 2);
-                 launchY = PADDLE_Y - currentBallSize - 1;
+                 currentLaunchX = currentPaddleX + (ball.stuckOffset ?? currentPaddleWidth / 2);
+                 currentLaunchY = PADDLE_Y - currentBallSize - 1;
             }
 
-            if (isInitialLaunch && !isGameStartedRef.current) {
+            if (trulyInitialLaunch && !isGameStartedRef.current) {
                 if (!isTestModePreview) { 
                     isGameStartedRef.current = true;
                     if (gameModeRef.current === 'main') {
@@ -289,9 +311,9 @@ export function useGameLogic() {
 
             return {
                 ...ball,
-                x: launchX,
-                y: launchY,
-                speedX: launchSpeedX,
+                x: currentLaunchX,
+                y: currentLaunchY,
+                speedX: launchSpeedX, // Use the determined launchSpeedX
                 speedY: launchSpeedY,
                 stuckOffset: undefined,
                 stuckSide: null,
@@ -308,7 +330,7 @@ export function useGameLogic() {
         });
         ballsRef.current.push(...launchedBalls);
         stuckBallsRef.current = [];
-    }, [startBonusGoldCountdown, activeGameMode]);
+    }, [startBonusGoldCountdown, activeGameMode, gameOverStateRef]); // Added gameOverStateRef for isTestModePreview check
 
     const handlePowerUpToggle = useCallback((type: PowerUpType) => {
         setEnabledPowerUps(prev => {
@@ -327,6 +349,7 @@ export function useGameLogic() {
             initialBonusGoldDecrementCompleteRef.current = false;
             pointsFieldsRef.current = [];
             levelCompletionProcessedRef.current = false;
+            testPreviewInitialLaunchDoneRef.current = false; // Reset for new test session
 
             gameModeRef.current = mode; 
             setActiveGameMode(mode); 
@@ -367,6 +390,7 @@ export function useGameLogic() {
             initialBonusGoldDecrementCompleteRef.current = false;
             pointsFieldsRef.current = [];
             levelCompletionProcessedRef.current = false;
+            testPreviewInitialLaunchDoneRef.current = false; // Reset if going to next level from shop
 
             resetLevel(nextMode, false);
             isGameStartedRef.current = false; 
@@ -416,6 +440,9 @@ export function useGameLogic() {
         pointsFieldsRef.current = [];
         resetLevel(mode, resetScoreAndGold);
         isGameStartedRef.current = false; 
+        if (mode === 'test' || (gameModeRef.current === 'test' && mode === null)) { // if resetting to test or from test to menu
+            testPreviewInitialLaunchDoneRef.current = false;
+        }
     }, [resetLevel]);
 
     const gameStateRefs: IGameStateRefs = useMemo(() => ({
@@ -424,6 +451,7 @@ export function useGameLogic() {
         gameIsRunningRef, gameOverStateRef, gameSpeedFactorRef,
         collectionFieldHeightRef, collectionFieldWidthOffsetRef,
         stickyPaddleChargesRef, stuckBallsRef, enabledPowerUpsRef, isGameStartedRef,
+        testPreviewInitialLaunchDoneRef, // Added to refs
         paddleShrinkCountdownRef,
         collectionFieldShrinkTimerRef,
         animationFrameIdRef, lastTimeRef,
@@ -447,6 +475,7 @@ export function useGameLogic() {
         gameIsRunningRef, gameOverStateRef, gameSpeedFactorRef,
         collectionFieldHeightRef, collectionFieldWidthOffsetRef,
         stickyPaddleChargesRef, stuckBallsRef, enabledPowerUpsRef, isGameStartedRef,
+        testPreviewInitialLaunchDoneRef, // Added to deps
         paddleShrinkCountdownRef,
         collectionFieldShrinkTimerRef,
         animationFrameIdRef, lastTimeRef,
