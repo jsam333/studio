@@ -92,8 +92,8 @@ export const getLevelStats = (level: number, gameMode: GameMode | null): { total
         else if (level === 16) { scoreGoal += 316; }
         else if (level === 17) { scoreGoal += 441; }
         else if (level === 18) { scoreGoal += 571; }
-        else if (level === 19) { scoreGoal += 812; }
-        else if (level >= 20) { scoreGoal += 1185; }
+        else if (level === 19) { scoreGoal += 770; } // Updated for level 19
+        else if (level >= 20) { scoreGoal += 1032; } // Updated for level 20
     }
     return { totalBricks: count, targetScore: scoreGoal };
 };
@@ -154,7 +154,7 @@ export function useLevelLogic({
 
         const currentLevel = currentLevelRef.current;
         const baseDelay = 5000;
-        const incrementPerLevel = 750;
+        const incrementPerLevel = 900;
         let startDelay = baseDelay + (currentLevel - 1) * incrementPerLevel;
 
         const maxDelayForLevel20 = baseDelay + (20 - 1) * incrementPerLevel;
