@@ -1,7 +1,8 @@
 // src/hooks/useLevelLogic.ts
 import { useRef, useCallback, MutableRefObject } from 'react';
 import {
-    BRICK_COLUMNS, BRICK_ROWS, BRICK_HEIGHT, TALL_BRICK_HEIGHT,
+    BRICK_COLUMNS as DEFAULT_BRICK_COLUMNS, // Renamed for clarity
+    BRICK_ROWS, BRICK_HEIGHT, TALL_BRICK_HEIGHT,
     BRICK_PADDING, TARGET_TOTAL_BRICK_GRID_HEIGHT, INITIAL_BONUS_GOLD, MINIMUM_BONUS_GOLD,
     BONUS_GOLD_DECREMENT_INTERVAL,
     FIELD_INITIAL_HEIGHT_OFFSET,
@@ -11,14 +12,15 @@ import {
     POWER_UP_SIZE,
     BOARD_HEIGHT,
 } from '../constants';
-import { Brick, GameMode, Ball, PowerUp, Laser, PowerUpType } from '../interfaces';
-import { initializeBricks } from '../gameLogic'; // Ensure initializeBricks is imported
+import { Brick, GameMode, Ball, PowerUp, Laser, PowerUpType, GameStateRefs } from '../interfaces'; // Added GameStateRefs
+import { initializeBricks } from '../gameLogic'; 
 
 const INITIAL_BONUS_GOLD_CONST = INITIAL_BONUS_GOLD;
 const MINIMUM_BONUS_GOLD_CONST = MINIMUM_BONUS_GOLD;
 
-export const getBrickConfiguration = (level: number, gameMode: GameMode | null): { brickColumns: number, brickRows: number, brickHeight: number } => {
-  let cols = BRICK_COLUMNS;
+// Updated getBrickConfiguration to accept testBrickColumnsRef for test mode
+export const getBrickConfiguration = (level: number, gameMode: GameMode | null, testBrickColumns?: number): { brickColumns: number, brickRows: number, brickHeight: number } => {
+  let cols = DEFAULT_BRICK_COLUMNS;
   let rows = BRICK_ROWS;
   let targetHeight = BRICK_HEIGHT;
 
@@ -33,7 +35,7 @@ export const getBrickConfiguration = (level: number, gameMode: GameMode | null):
     else if (level === 8) { cols = 10; rows = 7; targetHeight = TALL_BRICK_HEIGHT; }
     else if (level === 9) { cols = 11; rows = 8; targetHeight = TALL_BRICK_HEIGHT; }
     else {
-      cols = 4; // Default for levels >= 10 before specific overrides
+      cols = 4; 
       if (level === 10) { cols = 13; rows = 8; }
       else if (level === 11) { cols = 15; rows = 9; }
       else if (level === 12) { cols = 17; rows = 10; }
@@ -54,16 +56,22 @@ export const getBrickConfiguration = (level: number, gameMode: GameMode | null):
         targetHeight = BRICK_HEIGHT;
       }
     }
+  } else if (gameMode === 'test') {
+    cols = testBrickColumns ?? DEFAULT_BRICK_COLUMNS; // Use testBrickColumns if provided, else default
+    rows = BRICK_ROWS; // Default rows for test mode
+    targetHeight = BRICK_HEIGHT; // Default height for test mode
   } else {
-    cols = BRICK_COLUMNS;
+    // Fallback for null gameMode or other unhandled modes
+    cols = DEFAULT_BRICK_COLUMNS;
     rows = BRICK_ROWS;
     targetHeight = BRICK_HEIGHT;
   }
   return { brickColumns: cols, brickRows: rows, brickHeight: targetHeight };
 };
 
-export const getLevelStats = (level: number, gameMode: GameMode | null): { totalBricks: number, targetScore: number } => {
-    const config = getBrickConfiguration(level, gameMode);
+// Updated getLevelStats to accept testBrickColumns
+export const getLevelStats = (level: number, gameMode: GameMode | null, testBrickColumns?: number): { totalBricks: number, targetScore: number } => {
+    const config = getBrickConfiguration(level, gameMode, testBrickColumns);
     const bricksForStats = initializeBricks(config.brickColumns, config.brickRows, config.brickHeight, level, gameMode);
 
     let count = 0;
@@ -92,15 +100,15 @@ export const getLevelStats = (level: number, gameMode: GameMode | null): { total
         else if (level === 16) { scoreGoal += 316; }
         else if (level === 17) { scoreGoal += 441; }
         else if (level === 18) { scoreGoal += 571; }
-        else if (level === 19) { scoreGoal += 770; } // Updated for level 19
-        else if (level >= 20) { scoreGoal += 1032; } // Updated for level 20
+        else if (level === 19) { scoreGoal += 770; } 
+        else if (level >= 20) { scoreGoal += 1032; } 
     }
     return { totalBricks: count, targetScore: scoreGoal };
 };
 
 interface UseLevelLogicProps {
     gameModeRef: MutableRefObject<GameMode | null>;
-    gameOverStateRef: MutableRefObject<string>;
+    gameOverStateRef: MutableRefObject<string>; // Should be GameState, but keeping as string if used elsewhere as such
     currentLevelRef: MutableRefObject<number>;
     scoreRef: MutableRefObject<number>;
     goldRef: MutableRefObject<number>;
@@ -118,6 +126,7 @@ interface UseLevelLogicProps {
     isGameStartedRef: MutableRefObject<boolean>;
     spawnablePowerUpsRef: MutableRefObject<Set<PowerUpType>>;
     initialBonusGoldDecrementCompleteRef: MutableRefObject<boolean>;
+    testBrickColumnsRef?: MutableRefObject<number>; // Made optional as it's specific to test mode logic path
 }
 
 export function useLevelLogic({
@@ -126,12 +135,13 @@ export function useLevelLogic({
     gameSpeedFactorRef, collectionFieldHeightRef, collectionFieldWidthOffsetRef,
     stickyPaddleChargesRef, paddleShrinkCountdownRef, setupInitialBall, isGameStartedRef,
     spawnablePowerUpsRef,
-    initialBonusGoldDecrementCompleteRef
+    initialBonusGoldDecrementCompleteRef,
+    testBrickColumnsRef // Destructure the new ref
 }: UseLevelLogicProps) {
     const bricksRef = useRef<Brick[][]>([]);
     const targetScoreRef = useRef(0);
     const totalBricksRef = useRef<number>(0);
-    const brickColumnsRef = useRef<number>(BRICK_COLUMNS);
+    const brickColumnsRef = useRef<number>(DEFAULT_BRICK_COLUMNS); // General ref for columns
     const brickRowsRef = useRef<number>(BRICK_ROWS);
     const bonusGoldRef = useRef<number>(INITIAL_BONUS_GOLD_CONST);
     const bonusCountdownStartedRef = useRef<boolean>(false);
@@ -185,13 +195,16 @@ export function useLevelLogic({
         const currentMode = mode ?? gameModeRef.current;
         if (!currentMode) return;
         const level = currentLevelRef.current;
+        
+        // Use testBrickColumnsRef if in test mode, otherwise undefined (will use level-based config)
+        const testCols = (currentMode === 'test' && testBrickColumnsRef) ? testBrickColumnsRef.current : undefined;
 
-        const stats = getLevelStats(level, currentMode);
+        const stats = getLevelStats(level, currentMode, testCols);
         totalBricksRef.current = stats.totalBricks;
         targetScoreRef.current = stats.targetScore;
 
-        const config = getBrickConfiguration(level, currentMode);
-        brickColumnsRef.current = config.brickColumns;
+        const config = getBrickConfiguration(level, currentMode, testCols);
+        brickColumnsRef.current = config.brickColumns; // This will now reflect testCols in test mode
         brickRowsRef.current = config.brickRows;
         
         bricksRef.current = initializeBricks(config.brickColumns, config.brickRows, config.brickHeight, level, currentMode);
@@ -245,14 +258,15 @@ export function useLevelLogic({
         stickyPaddleChargesRef, paddleShrinkCountdownRef,
         setupInitialBall, isGameStartedRef, clearBonusGoldTimers,
         spawnablePowerUpsRef,
-        initialBonusGoldDecrementCompleteRef
+        initialBonusGoldDecrementCompleteRef,
+        testBrickColumnsRef // Add to dependency array
     ]);
 
     return {
         bricksRef,
         targetScoreRef,
         totalBricksRef,
-        brickColumnsRef,
+        brickColumnsRef, // This ref will be updated by resetLevel with test columns if in test mode
         brickRowsRef,
         bonusGoldRef,
         bonusCountdownStartedRef,

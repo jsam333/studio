@@ -6,7 +6,8 @@ import {
     BALL_SIZE, BIG_BALL_SIZE_INCREASE, PADDLE_Y, INITIAL_BALL_SPEED_Y,
     FIELD_SHRINK_RATE_H, FIELD_SHRINK_RATE_W, FIELD_SHRINK_INTERVAL,
     ALL_TOGGLEABLE_POWER_UPS, PADDLE_HEIGHT, BOARD_HEIGHT,
-    INITIAL_TEST_POWER_UP_SPAWN_CHANCE // Added for test mode slider
+    INITIAL_TEST_POWER_UP_SPAWN_CHANCE,
+    BRICK_COLUMNS as DEFAULT_BRICK_COLUMNS 
 } from '../constants'; 
 import { Ball, PowerUp, Laser, PowerUpType, GameState, GameMode, GameStateRefs as IGameStateRefs, GameLoopCallbacks, PointsField } from '../interfaces';
 import { initialBallState } from '../gameLogic';
@@ -52,8 +53,8 @@ export function useGameLogic() {
     const stickyPaddleChargesRef = useRef(0);
     const stuckBallsRef = useRef<Ball[]>([]);
     const enabledPowerUpsRef = useRef<Set<PowerUpType>>(new Set(ALL_TOGGLEABLE_POWER_UPS));
-    const isGameStartedRef = useRef(false); // For main game state
-    const testPreviewInitialLaunchDoneRef = useRef(false); // NEW: Track initial launch in test preview
+    const isGameStartedRef = useRef(false); 
+    const testPreviewInitialLaunchDoneRef = useRef(false); 
     const gameModeRef = useRef<GameMode | null>(null); 
     const currentLevelRef = useRef<number>(1);
     const animationFrameIdRef = useRef<number | null>(null);
@@ -64,14 +65,16 @@ export function useGameLogic() {
     const firstTestRunCompletedRef = useRef<boolean>(false);
     const pointsFieldsRef = useRef<PointsField[]>([]);
     const levelCompletionProcessedRef = useRef<boolean>(false);
-    const testPowerUpSpawnChanceRef = useRef<number>(INITIAL_TEST_POWER_UP_SPAWN_CHANCE); // Added for test mode slider
+    const testPowerUpSpawnChanceRef = useRef<number>(INITIAL_TEST_POWER_UP_SPAWN_CHANCE); 
+    const testBrickColumnsRef = useRef<number>(DEFAULT_BRICK_COLUMNS); 
 
     const [gameOverState, setGameOverState] = useState<GameState>('menu');
     const gameOverStateRef = useRef(gameOverState);
     const [enabledPowerUps, setEnabledPowerUps] = useState<Set<PowerUpType>>(() => new Set(ALL_TOGGLEABLE_POWER_UPS));
     const [showSidebar, setShowSidebar] = useState<boolean>(false);
     const [activeGameMode, setActiveGameMode] = useState<GameMode | null>(null);
-    const [testPowerUpSpawnChance, setTestPowerUpSpawnChance] = useState<number>(INITIAL_TEST_POWER_UP_SPAWN_CHANCE); // State for slider
+    const [testPowerUpSpawnChance, setTestPowerUpSpawnChance] = useState<number>(INITIAL_TEST_POWER_UP_SPAWN_CHANCE); 
+    const [testBrickColumns, setTestBrickColumns] = useState<number>(DEFAULT_BRICK_COLUMNS); 
 
     const {
         schedulePaddleShrink,
@@ -97,7 +100,7 @@ export function useGameLogic() {
         bricksRef,
         targetScoreRef,
         totalBricksRef,
-        brickColumnsRef,
+        brickColumnsRef, 
         brickRowsRef,
         bonusGoldRef,
         bonusCountdownStartedRef,
@@ -121,9 +124,10 @@ export function useGameLogic() {
         stickyPaddleChargesRef,
         paddleShrinkCountdownRef,
         setupInitialBall,
-        isGameStartedRef, // Pass the main game's started ref
+        isGameStartedRef, 
         spawnablePowerUpsRef,
         initialBonusGoldDecrementCompleteRef,
+        testBrickColumnsRef,
     });
 
     useEffect(() => {
@@ -134,13 +138,19 @@ export function useGameLogic() {
         testPowerUpSpawnChanceRef.current = testPowerUpSpawnChance;
     }, [testPowerUpSpawnChance]);
 
+    // This useEffect ensures testBrickColumnsRef is generally in sync with the state.
+    // For immediate resets triggered by column input, startGame will handle the ref directly.
+    useEffect(() => {
+        testBrickColumnsRef.current = testBrickColumns;
+    }, [testBrickColumns]);
+
     useEffect(() => {
         gameOverStateRef.current = gameOverState;
         gameIsRunningRef.current = gameOverState === 'playing';
 
         if (gameOverState === 'lost' && activeGameMode === 'test') {
             resetLevel(activeGameMode, true); 
-            testPreviewInitialLaunchDoneRef.current = false; // Reset for next preview session
+            testPreviewInitialLaunchDoneRef.current = false; 
             setGameOverState('menu'); 
             return; 
         }
@@ -161,9 +171,6 @@ export function useGameLogic() {
             pointsFieldsRef.current = [];
             if (gameSpeedFactorRef.current !== BASE_BALL_SPEED_FACTOR) {
                  gameSpeedFactorRef.current = BASE_BALL_SPEED_FACTOR;
-            }
-            if(gameOverState === 'lost' && activeGameMode !== 'test') {
-                 // Main game over logic handled by page.tsx
             }
         }
     }, [gameOverState, resetLevel, activeGameMode, setGameOverState]);
@@ -228,7 +235,7 @@ export function useGameLogic() {
     const handleResetGame = useCallback(() => {
         gameIsRunningRef.current = false;
         isGameStartedRef.current = false;
-        testPreviewInitialLaunchDoneRef.current = false; // Reset this on full game reset
+        testPreviewInitialLaunchDoneRef.current = false; 
         if (collectionFieldShrinkTimerRef.current) clearInterval(collectionFieldShrinkTimerRef.current);
         collectionFieldShrinkTimerRef.current = null;
 
@@ -241,8 +248,10 @@ export function useGameLogic() {
         initialBonusGoldDecrementCompleteRef.current = false;
         pointsFieldsRef.current = [];
         levelCompletionProcessedRef.current = false;
-        testPowerUpSpawnChanceRef.current = INITIAL_TEST_POWER_UP_SPAWN_CHANCE; // Reset slider value on game reset
-        setTestPowerUpSpawnChance(INITIAL_TEST_POWER_UP_SPAWN_CHANCE); // Reset state for slider
+        testPowerUpSpawnChanceRef.current = INITIAL_TEST_POWER_UP_SPAWN_CHANCE; 
+        setTestPowerUpSpawnChance(INITIAL_TEST_POWER_UP_SPAWN_CHANCE); 
+        testBrickColumnsRef.current = DEFAULT_BRICK_COLUMNS; 
+        setTestBrickColumns(DEFAULT_BRICK_COLUMNS); 
 
         resetLevel(null, true); 
         resetPaddle();
@@ -258,7 +267,7 @@ export function useGameLogic() {
 
     }, [resetLevel, resetPaddle, clearBonusGoldTimers, setGameOverState, setActiveGameMode, setShowSidebar, setEnabledPowerUps]);
 
-    const launchStuckBalls = useCallback((isInitialLaunchArgument = false) => { // Renamed for clarity
+    const launchStuckBalls = useCallback((isInitialLaunchArgument = false) => { 
         const isTestModePreview = activeGameMode === 'test' && gameOverStateRef.current === 'menu';
         if (!((gameOverStateRef.current === 'playing') || isTestModePreview) || stuckBallsRef.current.length === 0) return;
         
@@ -266,21 +275,20 @@ export function useGameLogic() {
         const currentPaddleX = paddleXRef.current;
         const currentPaddleWidth = paddleWidthRef.current;
 
-        // Determine if this specific launch is the *truly* initial one for its context
         let trulyInitialLaunch = false;
         let launchSpeedX = 0;
         const launchSpeedY = -Math.abs(INITIAL_BALL_SPEED_Y);
 
         if (isTestModePreview) {
             if (!testPreviewInitialLaunchDoneRef.current) {
-                launchSpeedX = 3; // Initial X speed for test preview's first launch
+                launchSpeedX = 3; 
                 testPreviewInitialLaunchDoneRef.current = true;
-                trulyInitialLaunch = true; // This is the test preview's initial launch
+                trulyInitialLaunch = true; 
             } else {
-                launchSpeedX = 0; // Subsequent launches in test preview are straight up
+                launchSpeedX = 0; 
             }
-        } else { // Main game logic
-            if (isInitialLaunchArgument) { // isInitialLaunchArgument comes from gameCanvas
+        } else { 
+            if (isInitialLaunchArgument) { 
                 launchSpeedX = 3;
                 trulyInitialLaunch = true;
             } else {
@@ -322,7 +330,7 @@ export function useGameLogic() {
                 ...ball,
                 x: currentLaunchX,
                 y: currentLaunchY,
-                speedX: launchSpeedX, // Use the determined launchSpeedX
+                speedX: launchSpeedX, 
                 speedY: launchSpeedY,
                 stuckOffset: undefined,
                 stuckSide: null,
@@ -339,7 +347,7 @@ export function useGameLogic() {
         });
         ballsRef.current.push(...launchedBalls);
         stuckBallsRef.current = [];
-    }, [startBonusGoldCountdown, activeGameMode, gameOverStateRef]); // Added gameOverStateRef for isTestModePreview check
+    }, [startBonusGoldCountdown, activeGameMode, gameOverStateRef]);
 
     const handlePowerUpToggle = useCallback((type: PowerUpType) => {
         setEnabledPowerUps(prev => {
@@ -349,7 +357,8 @@ export function useGameLogic() {
         });
     }, []);
 
-    const startGame = useCallback((mode: GameMode) => {
+    // Modified startGame to accept optional newTestBrickColumns
+    const startGame = useCallback((mode: GameMode, newTestBrickColumns?: number) => {
         if (gameOverStateRef.current === 'menu' || mode === 'test') {
             scoreRef.current = 0;
             goldRef.current = 0;
@@ -358,9 +367,17 @@ export function useGameLogic() {
             initialBonusGoldDecrementCompleteRef.current = false;
             pointsFieldsRef.current = [];
             levelCompletionProcessedRef.current = false;
-            testPreviewInitialLaunchDoneRef.current = false; // Reset for new test session
-            testPowerUpSpawnChanceRef.current = INITIAL_TEST_POWER_UP_SPAWN_CHANCE; // Reset slider value on game start
-            setTestPowerUpSpawnChance(INITIAL_TEST_POWER_UP_SPAWN_CHANCE); // Reset state for slider
+            testPreviewInitialLaunchDoneRef.current = false; 
+            testPowerUpSpawnChanceRef.current = INITIAL_TEST_POWER_UP_SPAWN_CHANCE; 
+            setTestPowerUpSpawnChance(INITIAL_TEST_POWER_UP_SPAWN_CHANCE); 
+
+            if (mode === 'test' && newTestBrickColumns !== undefined) {
+                testBrickColumnsRef.current = newTestBrickColumns;
+                // setTestBrickColumns(newTestBrickColumns); // Also update state if direct ref manipulation is too fast for other useEffects
+            } else if (mode === 'test') {
+                // If no newTestBrickColumns passed, ensure ref is synced with current state for other startGame calls
+                testBrickColumnsRef.current = testBrickColumns; 
+            }
 
             gameModeRef.current = mode; 
             setActiveGameMode(mode); 
@@ -382,13 +399,13 @@ export function useGameLogic() {
                  isGameStartedRef.current = false; 
              }
 
-            currentLevelRef.current = 1;
-            resetLevel(mode, true);
+            currentLevelRef.current = 1; 
+            resetLevel(mode, true); 
             if (mode === 'test') {
                 setupInitialBall(); 
             }
         }
-    }, [resetLevel, setupInitialBall, setActiveGameMode, setEnabledPowerUps, setShowSidebar, setGameOverState]);
+    }, [resetLevel, setupInitialBall, setActiveGameMode, setEnabledPowerUps, setShowSidebar, setGameOverState, testBrickColumns]); // Added testBrickColumns to dep array
 
     const startNextLevel = useCallback(() => {
         if (gameOverStateRef.current === 'shop') {
@@ -401,9 +418,11 @@ export function useGameLogic() {
             initialBonusGoldDecrementCompleteRef.current = false;
             pointsFieldsRef.current = [];
             levelCompletionProcessedRef.current = false;
-            testPreviewInitialLaunchDoneRef.current = false; // Reset if going to next level from shop
-            testPowerUpSpawnChanceRef.current = INITIAL_TEST_POWER_UP_SPAWN_CHANCE; // Reset slider value 
-            setTestPowerUpSpawnChance(INITIAL_TEST_POWER_UP_SPAWN_CHANCE); // Reset state for slider
+            testPreviewInitialLaunchDoneRef.current = false; 
+            testPowerUpSpawnChanceRef.current = INITIAL_TEST_POWER_UP_SPAWN_CHANCE; 
+            setTestPowerUpSpawnChance(INITIAL_TEST_POWER_UP_SPAWN_CHANCE); 
+            testBrickColumnsRef.current = DEFAULT_BRICK_COLUMNS; 
+            setTestBrickColumns(DEFAULT_BRICK_COLUMNS); 
 
             resetLevel(nextMode, false);
             isGameStartedRef.current = false; 
@@ -453,7 +472,7 @@ export function useGameLogic() {
         pointsFieldsRef.current = [];
         resetLevel(mode, resetScoreAndGold);
         isGameStartedRef.current = false; 
-        if (mode === 'test' || (gameModeRef.current === 'test' && mode === null)) { // if resetting to test or from test to menu
+        if (mode === 'test' || (gameModeRef.current === 'test' && mode === null)) { 
             testPreviewInitialLaunchDoneRef.current = false;
         }
     }, [resetLevel]);
@@ -473,7 +492,7 @@ export function useGameLogic() {
         bricksRef,
         targetScoreRef,
         totalBricksRef,
-        brickColumnsRef,
+        brickColumnsRef, 
         brickRowsRef,
         bonusGoldRef,
         bonusCountdownStartedRef,
@@ -482,7 +501,8 @@ export function useGameLogic() {
         initialBonusGoldDecrementCompleteRef,
         pointsFieldsRef,
         levelCompletionProcessedRef,
-        testPowerUpSpawnChanceRef, // Added to refs
+        testPowerUpSpawnChanceRef, 
+        testBrickColumnsRef, 
     }), [
         paddleXRef, ballsRef, powerUpsRef, scoreRef, goldRef, spawnablePowerUpsRef,
         paddleWidthRef, widenLevelRef, laserShotsRef, lasersRef, safetyNetCountRef,
@@ -498,7 +518,7 @@ export function useGameLogic() {
         bricksRef,
         targetScoreRef,
         totalBricksRef,
-        brickColumnsRef,
+        brickColumnsRef, 
         brickRowsRef,
         bonusGoldRef,
         bonusCountdownStartedRef,
@@ -507,7 +527,8 @@ export function useGameLogic() {
         initialBonusGoldDecrementCompleteRef,
         pointsFieldsRef,
         levelCompletionProcessedRef,
-        testPowerUpSpawnChanceRef, // Added to deps
+        testPowerUpSpawnChanceRef, 
+        testBrickColumnsRef,
     ]);
 
     const drawEndMessageCallback = useCallback((context: CanvasRenderingContext2D, state: GameState, finalScore: number) => {
@@ -544,7 +565,9 @@ export function useGameLogic() {
         lives: livesRef.current,
         score: scoreRef.current,
         gold: goldRef.current,
-        testPowerUpSpawnChance, // Expose state for slider
-        setTestPowerUpSpawnChance, // Expose setter for slider
+        testPowerUpSpawnChance, 
+        setTestPowerUpSpawnChance, 
+        testBrickColumns, 
+        setTestBrickColumns, 
     };
 }

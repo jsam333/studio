@@ -46,8 +46,10 @@ export default function Home() {
         addSpawnablePowerUp,
         gameStateRefs,
         gameLoopCallbacks, 
-        testPowerUpSpawnChance, // Added for slider
-        setTestPowerUpSpawnChance, // Added for slider
+        testPowerUpSpawnChance, 
+        setTestPowerUpSpawnChance, 
+        testBrickColumns, 
+        setTestBrickColumns, 
     } = useGameLogic();
 
     useEffect(() => {
@@ -268,31 +270,52 @@ export default function Home() {
                     <div 
                         style={{
                             width: `${BOARD_WIDTH * testScaleRef.current}px`, 
-                            height: 'auto', // Auto height to fit content
-                            minHeight: '50px', // Minimum height for the div
                             padding: '10px',
                             backgroundColor: '#111927', 
                             display: 'flex',
-                            flexDirection: 'column', // Stack label and slider vertically
+                            flexDirection: 'column',
                             alignItems: 'center',
                             justifyContent: 'center',
                             color: '#FFFFFF',
-                            boxSizing: 'border-box'
+                            boxSizing: 'border-box',
+                            gap: '10px' 
                         }}
                     >
-                        <label htmlFor="powerUpSpawnChance" style={{ marginBottom: '5px' }}>
-                            Power-up Spawn Chance: {Math.round(testPowerUpSpawnChance * 100)}%
-                        </label>
-                        <input 
-                            type="range" 
-                            id="powerUpSpawnChance" 
-                            min="0" 
-                            max="1" 
-                            step="0.01" 
-                            value={testPowerUpSpawnChance}
-                            onChange={(e) => setTestPowerUpSpawnChance(parseFloat(e.target.value))}
-                            style={{ width: '80%' }} // Slider width
-                        />
+                        <div style={{display: 'flex', flexDirection: 'column', alignItems: 'center', width: '100%'}}>
+                            <label htmlFor="powerUpSpawnChance" style={{ marginBottom: '5px' }}>
+                                Power-up Spawn Chance: {Math.round(testPowerUpSpawnChance * 100)}%
+                            </label>
+                            <input 
+                                type="range" 
+                                id="powerUpSpawnChance" 
+                                min="0" 
+                                max="1" 
+                                step="0.01" 
+                                value={testPowerUpSpawnChance}
+                                onChange={(e) => setTestPowerUpSpawnChance(parseFloat(e.target.value))}
+                                style={{ width: '80%' }}
+                            />
+                        </div>
+                        <div style={{display: 'flex', flexDirection: 'column', alignItems: 'center', width: '100%'}}>
+                            <label htmlFor="testBrickColumns" style={{ marginBottom: '5px' }}>
+                                Brick Columns: {testBrickColumns}
+                            </label>
+                            <input 
+                                type="number" 
+                                id="testBrickColumns" 
+                                min="1" 
+                                max="100" 
+                                value={testBrickColumns}
+                                onChange={(e) => {
+                                    const val = parseInt(e.target.value, 10);
+                                    if (!isNaN(val) && val >= 1 && val <= 100) { 
+                                        setTestBrickColumns(val);
+                                        startGame('test', val); // Pass the new column value to startGame
+                                    }
+                                }}
+                                style={{ width: '50%', padding: '5px', color: '#000000' }} 
+                            />
+                        </div>
                     </div>
                 </div>
             )}
