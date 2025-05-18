@@ -151,8 +151,8 @@ export interface GameStateRefsBase {
     enabledPowerUpsRef: React.MutableRefObject<Set<PowerUpType>>;
     isGameStartedRef: React.MutableRefObject<boolean>;
     bonusCountdownStartedRef: React.MutableRefObject<boolean>;
-    brickColumnsRef: React.MutableRefObject<number>; // General columns, used by main game or default for test
-    brickRowsRef: React.MutableRefObject<number>;
+    brickColumnsRef: React.MutableRefObject<number>; 
+    brickRowsRef: React.MutableRefObject<number>; // General rows, used by main game or default for test
     gameModeRef: React.MutableRefObject<GameMode | null>;
     livesRef: React.MutableRefObject<number>;
     bonusGoldTimerCountdownRef: React.MutableRefObject<number | null>;
@@ -160,7 +160,8 @@ export interface GameStateRefsBase {
     pointsFieldsRef: React.MutableRefObject<PointsField[]>;
     levelCompletionProcessedRef: React.MutableRefObject<boolean>;
     testPowerUpSpawnChanceRef: React.MutableRefObject<number>;
-    testBrickColumnsRef: React.MutableRefObject<number>; // Added for test mode column input
+    testBrickColumnsRef: React.MutableRefObject<number>; 
+    testBrickRowsRef: React.MutableRefObject<number>; // Added for test mode row input
 }
 
 export interface GameStateRefs extends GameStateRefsBase {

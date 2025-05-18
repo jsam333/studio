@@ -35,14 +35,14 @@ export const PIERCE_BALL_HITS = 3;
 export const ZIP_TO_PADDLE_DURATION = 100; // milliseconds for the zip animation
 
 // Bricks
-export const BRICK_ROWS = 20; // Default rows for Test mode
-export const BRICK_COLUMNS = 53; // Default columns for Test mode
+export const BRICK_ROWS = 20; // General default rows, test mode uses its own default via useGameLogic
+export const BRICK_COLUMNS = 53; // General default columns, test mode uses its own default via useGameLogic
 export const BRICK_PADDING = 1;
-export const BRICK_WIDTH = 10; // Default width (used for test mode)
-export const BRICK_HEIGHT = 9; // Default height
-export const TALL_BRICK_HEIGHT = 18; // Taller height for specific main levels
-export const TARGET_TOTAL_BRICK_GRID_HEIGHT = 165; // Target height for levels 8+
-export const BRICK_OFFSET_TOP = 30; // Adjusted offset for space for info text
+export const BRICK_WIDTH = 10; 
+export const BRICK_HEIGHT = 9; // General default height
+export const TALL_BRICK_HEIGHT = 18; 
+export const TARGET_TOTAL_BRICK_GRID_HEIGHT = 165; 
+export const BRICK_OFFSET_TOP = 30; 
 export const BRICK_OFFSET_LEFT = (BOARD_WIDTH - (BRICK_COLUMNS * BRICK_WIDTH + (BRICK_COLUMNS - 1) * BRICK_PADDING)) / 2;
 export const BRICK_REGEN_DELAY = 5000;
 export const NORMAL_BRICK_POINTS = 10;
@@ -63,13 +63,13 @@ export const BOMB_DAMAGE_POINTS = 10;
 export const POWER_UP_SIZE = 8;
 export const POWER_UP_SPEED = 2;
 export const BASE_POWER_UP_SPEED = 2;
-export const POWER_UP_SPAWN_THRESHOLD = 1.0; // This is likely for general power-up chance, might need adjustment with the new test slider
-export const INITIAL_TEST_POWER_UP_SPAWN_CHANCE = 0.25; // Default for test mode slider (25%)
+export const POWER_UP_SPAWN_THRESHOLD = 1.0; 
+export const INITIAL_TEST_POWER_UP_SPAWN_CHANCE = 1.0; // Default for test mode slider (100%)
 export const POWER_UP_CHANCE_REDUCTION_PER_EXTRA = 0.05;
 export const SAFETY_NET_HEIGHT = 3;
 export const BUILDER_BRICK_MAX_LEVEL = 3;
 export const BUILDER_BALL_SPAWN_CHANCE = 0.15;
-export const MULTI_BALL_COUNT = 3; // Base count for L1
+export const MULTI_BALL_COUNT = 3; 
 export const BLACK_BALL_DURATION_MS = 10000;
 export const BOMB_BRICK_SPAWN_CHANCE = 0.1;
 export const BOMB_EXPLOSION_RADIUS_FACTOR = 1.5;
@@ -79,7 +79,6 @@ export const POWER_UP_COUNT_THRESHOLD = 20;
 export const POWER_UP_SECOND_THRESHOLD = 4;
 export const POWER_UP_SECOND_CHANCE_REDUCTION_PER_EXTRA = 0.02;
 
-// export const SPEED_UP_INCREMENT = 0.1; // Removed SPEED_UP power-up
 export const SPLITTING_BALL_DURATION = 6000;
 export const BIG_BALL_DURATION = 6000;
 export const BUILDER_BALL_DURATION = 6000;
@@ -88,14 +87,9 @@ export const BLACK_BALL_DURATION = 10000;
 // Bonus Gold
 export const INITIAL_BONUS_GOLD = 30;
 export const MINIMUM_BONUS_GOLD = 5;
-// export const BONUS_GOLD_START_DELAY_DEFAULT = 10000; // Removed
-// export const BONUS_GOLD_START_DELAY_EXTENDED = 15000; // Removed
-// export const BONUS_GOLD_START_DELAY_HIGH = 20000; // Removed
-// export const BONUS_GOLD_START_DELAY_MAX = 30000; // Removed
-export const BONUS_GOLD_DECREMENT_INTERVAL = 500; // Added this export
-// *** ADDED: Constants for the new timer ***
-export const BONUS_GOLD_TARGET = 5; // Target bonus gold to trigger the timer
-export const BONUS_GOLD_TIMER_DURATION = 5000; // 5 seconds in milliseconds
+export const BONUS_GOLD_DECREMENT_INTERVAL = 500; 
+export const BONUS_GOLD_TARGET = 5; 
+export const BONUS_GOLD_TIMER_DURATION = 5000; 
 
 
 // Collection Field
@@ -113,11 +107,9 @@ export const FIELD_SHRINK_INTERVAL = 16;
 export const POINTS_FIELD_WIDTH = 50; 
 export const POINTS_FIELD_HEIGHT = 50; 
 export const POINTS_FIELD_COLOR = 'rgba(0, 255, 0, 0.3)';
-export const POINTS_FIELD_DURATION = 5000; // Duration in milliseconds
-export const POINTS_FIELD_MAX_BALLS = 5; // Max balls before field is destroyed
+export const POINTS_FIELD_DURATION = 5000; 
+export const POINTS_FIELD_MAX_BALLS = 5; 
 
-// *** All potentially spawnable power-ups (for UI and logic) ***
-// NOTE: Upgrades (L2/L3) are handled by ShopScreen, not listed here.
 export const ALL_TOGGLEABLE_POWER_UPS: PowerUpType[] = [
     'MULTI_BALL', 
     'WIDEN_PADDLE', 
@@ -140,7 +132,6 @@ export const ALL_TOGGLEABLE_POWER_UPS: PowerUpType[] = [
     'POINTS_FIELD', 
 ];
 
-// *** Individual Power-up Costs ***
 export const POWER_UP_COSTS: { [key in PowerUpType]?: number } = {
     MULTI_BALL: 10,
     MULTI_BALL_L2: 12,
@@ -203,7 +194,6 @@ export const POWER_UP_COSTS: { [key in PowerUpType]?: number } = {
     NONE: 0
 };
 
-// *** Power-up Descriptions ***
 export const POWER_UP_DESCRIPTIONS: { [key in PowerUpType | string]?: string } = {
     MULTI_BALL: "Spawns a new ball at the paddle.",
     MULTI_BALL_L2: "Spawns 2 new balls.",
@@ -260,13 +250,12 @@ export const POWER_UP_DESCRIPTIONS: { [key in PowerUpType | string]?: string } =
     BALL_BRICK_L2: "Turns 2 bricks into ball-holding bricks.",
     BALL_BRICK_L3: "Turns 3 bricks into ball-holding bricks.",
     POINTS_FIELD: "Creates 1 field for 5s where balls entering it earn points.",
-    POINTS_FIELD_L2: "Creates 2 fields for 5s where balls earn points.", // Added description
-    POINTS_FIELD_L3: "Creates 3 fields for 5s where balls earn points.", // Added description
+    POINTS_FIELD_L2: "Creates 2 fields for 5s where balls earn points.", 
+    POINTS_FIELD_L3: "Creates 3 fields for 5s where balls earn points.", 
     ALL_IN_ONE: "Grants a random selection of powerful effects.",
     NONE: "No power-up."
 };
 
-// *** Power-up Image Paths ***
 export const POWER_UP_IMAGE_PATHS: { [key in PowerUpType]?: string } = {
     MULTI_BALL: '/images/multiball.png',
     WIDEN_PADDLE: '/images/widen paddle.png',
@@ -284,11 +273,9 @@ export const POWER_UP_IMAGE_PATHS: { [key in PowerUpType]?: string } = {
     COLLECTION_FIELD: '/images/collection field.png',
     HOMING_BALL: '/images/homing ball.png',
     BOMB_BRICK: '/images/bomb brick.png',
-    RECOVERY_PADDLE: '/images/sticky paddle.png', // Assuming 'sticky paddle.png' is for RECOVERY_PADDLE
+    RECOVERY_PADDLE: '/images/sticky paddle.png', 
     BALL_BRICK: '/images/ball brick.png',
     POINTS_FIELD: '/images/points field.png',
-    // Note: L2/L3 versions will use the same base image for now. 
-    // If L2/L3 have different images, those need to be added here with their specific keys.
 };
 
 
@@ -302,7 +289,7 @@ export const LASER_WIDTH = 5;
 export const LASER_HEIGHT = 15;
 export const LASER_COOLDOWN = 300;
 export const LASER_STRIPE_WIDTH_PER_SHOT = 4;
-export const STICKY_INDICATOR_WIDTH_PER_CHARGE = 2; // Width per sticky charge for side indicators
+export const STICKY_INDICATOR_WIDTH_PER_CHARGE = 2; 
 
 // Colors
 export const GOLD_COLOR = '#FFD700';
@@ -372,8 +359,8 @@ export const POWER_UP_COLORS: { [key in PowerUpType | 'NONE']?: string } = {
     BALL_BRICK_L2: '#40E0D0',
     BALL_BRICK_L3: '#40E0D0',
     POINTS_FIELD: POINTS_FIELD_COLOR, 
-    POINTS_FIELD_L2: POINTS_FIELD_COLOR, // Same color for L2 icon
-    POINTS_FIELD_L3: POINTS_FIELD_COLOR, // Same color for L3 icon
+    POINTS_FIELD_L2: POINTS_FIELD_COLOR, 
+    POINTS_FIELD_L3: POINTS_FIELD_COLOR, 
     ALL_IN_ONE: '#FFFFFF',
     NONE: '#888888'
 };

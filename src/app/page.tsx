@@ -13,7 +13,7 @@ import { useIsMobile } from '../hooks/use-mobile';
 import { GameMenu } from '../components/GameMenu';
 import { GameView } from '../components/GameView';
 
-const SIDEBAR_WIDTH_PX = 192;
+const SIDEBAR_WIDTH_PX = 192; // This constant is already defined
 
 export default function Home() {
     const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -50,6 +50,8 @@ export default function Home() {
         setTestPowerUpSpawnChance, 
         testBrickColumns, 
         setTestBrickColumns, 
+        testBrickRows, 
+        setTestBrickRows, 
     } = useGameLogic();
 
     useEffect(() => {
@@ -269,21 +271,23 @@ export default function Home() {
                     />
                     <div 
                         style={{
-                            width: `${BOARD_WIDTH * testScaleRef.current}px`, 
+                            width: `${(BOARD_WIDTH * testScaleRef.current) + SIDEBAR_WIDTH_PX}px`, // Updated width calculation
                             padding: '10px',
                             backgroundColor: '#111927', 
                             display: 'flex',
-                            flexDirection: 'column',
-                            alignItems: 'center',
-                            justifyContent: 'center',
+                            flexDirection: 'row', 
+                            alignItems: 'flex-start', 
+                            justifyContent: 'space-between', 
                             color: '#FFFFFF',
                             boxSizing: 'border-box',
-                            gap: '10px' 
+                            gap: '15px',
+                            border: '1px solid white'
                         }}
                     >
-                        <div style={{display: 'flex', flexDirection: 'column', alignItems: 'center', width: '100%'}}>
+                        {/* Power-up Spawn Chance Control Group */}
+                        <div style={{display: 'flex', flexDirection: 'column', alignItems: 'center', flex: 2}}>
                             <label htmlFor="powerUpSpawnChance" style={{ marginBottom: '5px' }}>
-                                Power-up Spawn Chance: {Math.round(testPowerUpSpawnChance * 100)}%
+                                Spawn Chance: {Math.round(testPowerUpSpawnChance * 100)}%
                             </label>
                             <input 
                                 type="range" 
@@ -293,12 +297,34 @@ export default function Home() {
                                 step="0.01" 
                                 value={testPowerUpSpawnChance}
                                 onChange={(e) => setTestPowerUpSpawnChance(parseFloat(e.target.value))}
-                                style={{ width: '80%' }}
+                                style={{ width: '100%' }} 
                             />
                         </div>
-                        <div style={{display: 'flex', flexDirection: 'column', alignItems: 'center', width: '100%'}}>
+                        {/* Brick Rows Control Group */}
+                        <div style={{display: 'flex', flexDirection: 'column', alignItems: 'center', flex: 1}}>
+                            <label htmlFor="testBrickRows" style={{ marginBottom: '5px' }}>
+                                Rows: {testBrickRows}
+                            </label>
+                            <input 
+                                type="number" 
+                                id="testBrickRows" 
+                                min="1" 
+                                max="50" 
+                                value={testBrickRows}
+                                onChange={(e) => {
+                                    const val = parseInt(e.target.value, 10);
+                                    if (!isNaN(val) && val >= 1 && val <= 50) { 
+                                        setTestBrickRows(val);
+                                        startGame('test', testBrickColumns, val);
+                                    }
+                                }}
+                                style={{ width: '80px', padding: '5px', color: '#000000', textAlign: 'center' }} 
+                            />
+                        </div>
+                        {/* Brick Columns Control Group */}
+                        <div style={{display: 'flex', flexDirection: 'column', alignItems: 'center', flex: 1}}>
                             <label htmlFor="testBrickColumns" style={{ marginBottom: '5px' }}>
-                                Brick Columns: {testBrickColumns}
+                                Columns: {testBrickColumns}
                             </label>
                             <input 
                                 type="number" 
@@ -310,10 +336,10 @@ export default function Home() {
                                     const val = parseInt(e.target.value, 10);
                                     if (!isNaN(val) && val >= 1 && val <= 100) { 
                                         setTestBrickColumns(val);
-                                        startGame('test', val); // Pass the new column value to startGame
+                                        startGame('test', val, testBrickRows);
                                     }
                                 }}
-                                style={{ width: '50%', padding: '5px', color: '#000000' }} 
+                                style={{ width: '80px', padding: '5px', color: '#000000', textAlign: 'center' }} 
                             />
                         </div>
                     </div>
