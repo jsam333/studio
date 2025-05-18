@@ -5,15 +5,16 @@ import {
     FIELD_INITIAL_HEIGHT_OFFSET, FIELD_INITIAL_WIDTH_OFFSET,
     BALL_SIZE, BIG_BALL_SIZE_INCREASE, PADDLE_Y, INITIAL_BALL_SPEED_Y,
     FIELD_SHRINK_RATE_H, FIELD_SHRINK_RATE_W, FIELD_SHRINK_INTERVAL,
-    ALL_TOGGLEABLE_POWER_UPS, PADDLE_HEIGHT, BOARD_HEIGHT
-} from '../constants';
+    ALL_TOGGLEABLE_POWER_UPS, PADDLE_HEIGHT, BOARD_HEIGHT 
+    // INITIAL_LIVES was incorrectly imported here, it's a local const or defined in this file
+} from '../constants'; 
 import { Ball, PowerUp, Laser, PowerUpType, GameState, GameMode, GameStateRefs as IGameStateRefs, GameLoopCallbacks, PointsField } from '../interfaces';
 import { initialBallState } from '../gameLogic';
 import { useLevelLogic } from './useLevelLogic';
 import { usePaddleLogic } from './usePaddleLogic';
 
 const MAX_UPGRADE_LEVEL = 3;
-const INITIAL_LIVES = 3;
+const INITIAL_LIVES = 3; // Define INITIAL_LIVES here
 
 const getPowerUpTypeForLevel = (baseType: PowerUpType, level: number): PowerUpType | null => {
     if (level < 1 || level > MAX_UPGRADE_LEVEL) return null;
@@ -31,7 +32,6 @@ const UPGRADABLE_POWER_UPS: PowerUpType[] = [
 ];
 
 export function useGameLogic() {
-    // Core Game State Refs
     const paddleXRef = useRef((BOARD_WIDTH - INITIAL_PADDLE_WIDTH) / 2);
     const ballsRef = useRef<Ball[]>([]);
     const powerUpsRef = useRef<PowerUp[]>([]);
@@ -53,22 +53,22 @@ export function useGameLogic() {
     const stuckBallsRef = useRef<Ball[]>([]);
     const enabledPowerUpsRef = useRef<Set<PowerUpType>>(new Set(ALL_TOGGLEABLE_POWER_UPS));
     const isGameStartedRef = useRef(false);
-    const gameModeRef = useRef<GameMode | null>(null);
+    const gameModeRef = useRef<GameMode | null>(null); 
     const currentLevelRef = useRef<number>(1);
     const animationFrameIdRef = useRef<number | null>(null);
     const lastTimeRef = useRef<number>(0);
-    const livesRef = useRef<number>(INITIAL_LIVES);
+    const livesRef = useRef<number>(INITIAL_LIVES); // Uses the local const INITIAL_LIVES
     const bonusGoldTimerCountdownRef = useRef<number | null>(null);
     const initialBonusGoldDecrementCompleteRef = useRef<boolean>(false);
     const firstTestRunCompletedRef = useRef<boolean>(false);
     const pointsFieldsRef = useRef<PointsField[]>([]);
-    const levelCompletionProcessedRef = useRef<boolean>(false); // *** ADDED LINE: Initialize the new ref ***
+    const levelCompletionProcessedRef = useRef<boolean>(false);
 
-    // UI State
     const [gameOverState, setGameOverState] = useState<GameState>('menu');
     const gameOverStateRef = useRef(gameOverState);
     const [enabledPowerUps, setEnabledPowerUps] = useState<Set<PowerUpType>>(() => new Set(ALL_TOGGLEABLE_POWER_UPS));
     const [showSidebar, setShowSidebar] = useState<boolean>(false);
+    const [activeGameMode, setActiveGameMode] = useState<GameMode | null>(null);
 
     const {
         schedulePaddleShrink,
@@ -102,7 +102,7 @@ export function useGameLogic() {
         startBonusGoldCountdown,
         resetLevel,
     } = useLevelLogic({
-        gameModeRef,
+        gameModeRef, 
         gameOverStateRef,
         currentLevelRef,
         scoreRef,
@@ -131,6 +131,12 @@ export function useGameLogic() {
         gameOverStateRef.current = gameOverState;
         gameIsRunningRef.current = gameOverState === 'playing';
 
+        if (gameOverState === 'lost' && activeGameMode === 'test') {
+            resetLevel(activeGameMode, true); 
+            setGameOverState('menu'); 
+            return; 
+        }
+
         if (gameOverState === 'level_reset') {
             livesRef.current--;
             scoreRef.current = 0;
@@ -138,22 +144,21 @@ export function useGameLogic() {
             bonusGoldTimerCountdownRef.current = null;
             initialBonusGoldDecrementCompleteRef.current = false;
             pointsFieldsRef.current = [];
-            levelCompletionProcessedRef.current = false; // *** ADDED LINE: Reset flag ***
+            levelCompletionProcessedRef.current = false;
             setGameOverState('playing');
         } else if (gameOverState !== 'playing') {
             paddleShrinkCountdownRef.current = null;
             bonusGoldTimerCountdownRef.current = null;
             initialBonusGoldDecrementCompleteRef.current = false;
             pointsFieldsRef.current = [];
-            // levelCompletionProcessedRef is not reset here intentionally,
-            // as it should only reset when a level *starts* or *restarts*.
-            // States like 'won', 'lost', 'shop', 'menu' don't immediately restart a playable level.
             if (gameSpeedFactorRef.current !== BASE_BALL_SPEED_FACTOR) {
                  gameSpeedFactorRef.current = BASE_BALL_SPEED_FACTOR;
             }
+            if(gameOverState === 'lost' && activeGameMode !== 'test') {
+                 // Main game over logic handled by page.tsx
+            }
         }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [gameOverState, resetLevel]);
+    }, [gameOverState, resetLevel, activeGameMode, setGameOverState]);
 
     useEffect(() => {
         const handleKeyDown = (event: KeyboardEvent) => {
@@ -226,24 +231,26 @@ export function useGameLogic() {
         bonusGoldTimerCountdownRef.current = null;
         initialBonusGoldDecrementCompleteRef.current = false;
         pointsFieldsRef.current = [];
-        levelCompletionProcessedRef.current = false; // *** ADDED LINE: Reset flag ***
+        levelCompletionProcessedRef.current = false;
 
-        resetLevel(null, true);
+        resetLevel(null, true); 
         resetPaddle();
 
+        setActiveGameMode(null); 
         setGameOverState('menu');
         setShowSidebar(false);
-        if (gameModeRef.current !== 'test') {
-            setEnabledPowerUps(new Set(ALL_TOGGLEABLE_POWER_UPS));
-            firstTestRunCompletedRef.current = false;
-        }
-        gameModeRef.current = null;
+        setEnabledPowerUps(new Set(ALL_TOGGLEABLE_POWER_UPS));
+        firstTestRunCompletedRef.current = false; 
+        
+        gameModeRef.current = null; 
         clearBonusGoldTimers();
 
-    }, [resetLevel, resetPaddle, clearBonusGoldTimers]);
+    }, [resetLevel, resetPaddle, clearBonusGoldTimers, setGameOverState, setActiveGameMode, setShowSidebar, setEnabledPowerUps]);
 
     const launchStuckBalls = useCallback((isInitialLaunch = false) => {
-        if (gameOverStateRef.current !== 'playing' || stuckBallsRef.current.length === 0) return;
+        const isTestModePreview = activeGameMode === 'test' && gameOverStateRef.current === 'menu';
+        if (!((gameOverStateRef.current === 'playing') || isTestModePreview) || stuckBallsRef.current.length === 0) return;
+        
         const launchTime = Date.now();
         const currentPaddleX = paddleXRef.current;
         const currentPaddleWidth = paddleWidthRef.current;
@@ -267,9 +274,11 @@ export function useGameLogic() {
             }
 
             if (isInitialLaunch && !isGameStartedRef.current) {
-                isGameStartedRef.current = true;
-                if (gameModeRef.current === 'main') {
-                    startBonusGoldCountdown();
+                if (!isTestModePreview) { 
+                    isGameStartedRef.current = true;
+                    if (gameModeRef.current === 'main') {
+                        startBonusGoldCountdown();
+                    }
                 }
             }
 
@@ -299,7 +308,7 @@ export function useGameLogic() {
         });
         ballsRef.current.push(...launchedBalls);
         stuckBallsRef.current = [];
-    }, [startBonusGoldCountdown]);
+    }, [startBonusGoldCountdown, activeGameMode]);
 
     const handlePowerUpToggle = useCallback((type: PowerUpType) => {
         setEnabledPowerUps(prev => {
@@ -310,34 +319,42 @@ export function useGameLogic() {
     }, []);
 
     const startGame = useCallback((mode: GameMode) => {
-         if (gameOverStateRef.current === 'menu') {
+        if (gameOverStateRef.current === 'menu' || mode === 'test') {
             scoreRef.current = 0;
             goldRef.current = 0;
             livesRef.current = INITIAL_LIVES;
             bonusGoldTimerCountdownRef.current = null;
             initialBonusGoldDecrementCompleteRef.current = false;
             pointsFieldsRef.current = [];
-            levelCompletionProcessedRef.current = false; // *** ADDED LINE: Reset flag ***
+            levelCompletionProcessedRef.current = false;
+
+            gameModeRef.current = mode; 
+            setActiveGameMode(mode); 
 
             if (mode === 'main') {
                  spawnablePowerUpsRef.current = new Set();
                  setEnabledPowerUps(new Set(ALL_TOGGLEABLE_POWER_UPS));
                  firstTestRunCompletedRef.current = false;
+                 setShowSidebar(false);
+                 setGameOverState('playing');
+                 isGameStartedRef.current = false; 
              } else if (mode === 'test') {
                  spawnablePowerUpsRef.current = new Set(ALL_TOGGLEABLE_POWER_UPS);
                  if (!firstTestRunCompletedRef.current) {
                      setEnabledPowerUps(new Set(['MULTI_BALL'] as PowerUpType[]));
-                     firstTestRunCompletedRef.current = true;
                  }
+                 setShowSidebar(true);
+                 setGameOverState('menu'); 
+                 isGameStartedRef.current = false; 
              }
 
             currentLevelRef.current = 1;
-            gameModeRef.current = mode;
             resetLevel(mode, true);
-            setShowSidebar(mode === 'test');
-            setGameOverState('playing');
+            if (mode === 'test') {
+                setupInitialBall(); 
+            }
         }
-    }, [resetLevel]);
+    }, [resetLevel, setupInitialBall, setActiveGameMode, setEnabledPowerUps, setShowSidebar, setGameOverState]);
 
     const startNextLevel = useCallback(() => {
         if (gameOverStateRef.current === 'shop') {
@@ -345,25 +362,27 @@ export function useGameLogic() {
             currentLevelRef.current++;
             const nextMode: GameMode = 'main';
             gameModeRef.current = nextMode;
+            setActiveGameMode(nextMode);
             bonusGoldTimerCountdownRef.current = null;
             initialBonusGoldDecrementCompleteRef.current = false;
             pointsFieldsRef.current = [];
-            levelCompletionProcessedRef.current = false; // *** ADDED LINE: Reset flag ***
+            levelCompletionProcessedRef.current = false;
 
             resetLevel(nextMode, false);
+            isGameStartedRef.current = false; 
 
             setShowSidebar(false);
             setGameOverState('playing');
         }
-    }, [resetLevel]);
+    }, [resetLevel, setActiveGameMode, setShowSidebar, setGameOverState]); 
 
     const addSpawnablePowerUp = useCallback((typeToAdd: PowerUpType) => {
         const currentSpawnables = spawnablePowerUpsRef.current;
-        const gameMode = gameModeRef.current;
+        const currentActiveGameMode = gameModeRef.current; 
 
         currentSpawnables.add(typeToAdd);
 
-        if (gameMode === 'main') {
+        if (currentActiveGameMode === 'main') {
             const baseTypeStr = typeToAdd.split('_L')[0];
             const isUpgradable = UPGRADABLE_POWER_UPS.some(up => up === baseTypeStr);
 
@@ -395,8 +414,8 @@ export function useGameLogic() {
         bonusGoldTimerCountdownRef.current = null;
         initialBonusGoldDecrementCompleteRef.current = false;
         pointsFieldsRef.current = [];
-        // levelCompletionProcessedRef should already be handled by the calling context (startGame, startNextLevel, or gameOverState effect)
         resetLevel(mode, resetScoreAndGold);
+        isGameStartedRef.current = false; 
     }, [resetLevel]);
 
     const gameStateRefs: IGameStateRefs = useMemo(() => ({
@@ -408,7 +427,7 @@ export function useGameLogic() {
         paddleShrinkCountdownRef,
         collectionFieldShrinkTimerRef,
         animationFrameIdRef, lastTimeRef,
-        gameModeRef,
+        gameModeRef, 
         currentLevelRef,
         bricksRef,
         targetScoreRef,
@@ -421,7 +440,7 @@ export function useGameLogic() {
         bonusGoldTimerCountdownRef,
         initialBonusGoldDecrementCompleteRef,
         pointsFieldsRef,
-        levelCompletionProcessedRef, // *** ADDED LINE: Include in refs object ***
+        levelCompletionProcessedRef,
     }), [
         paddleXRef, ballsRef, powerUpsRef, scoreRef, goldRef, spawnablePowerUpsRef,
         paddleWidthRef, widenLevelRef, laserShotsRef, lasersRef, safetyNetCountRef,
@@ -431,7 +450,7 @@ export function useGameLogic() {
         paddleShrinkCountdownRef,
         collectionFieldShrinkTimerRef,
         animationFrameIdRef, lastTimeRef,
-        gameModeRef,
+        gameModeRef, 
         currentLevelRef,
         bricksRef,
         targetScoreRef,
@@ -444,11 +463,10 @@ export function useGameLogic() {
         bonusGoldTimerCountdownRef,
         initialBonusGoldDecrementCompleteRef,
         pointsFieldsRef,
-        levelCompletionProcessedRef, // *** ADDED LINE: Include in dependency array ***
+        levelCompletionProcessedRef,
     ]);
 
     const drawEndMessageCallback = useCallback((context: CanvasRenderingContext2D, state: GameState, finalScore: number) => {
-        // Placeholder
     }, []);
 
     const gameLoopCallbacks: GameLoopCallbacks = useMemo(() => ({
@@ -467,10 +485,10 @@ export function useGameLogic() {
 
     return {
         gameOverState,
+        activeGameMode, 
         enabledPowerUps,
         showSidebar,
         currentLevel: currentLevelRef.current,
-        setGameOverState,
         handleResetGame,
         launchStuckBalls,
         handlePowerUpToggle,

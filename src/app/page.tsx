@@ -1,11 +1,11 @@
 // src/app/page.tsx
 'use client'
 
-import React, { useRef, useEffect, useCallback } from 'react';
+import React, { useRef, useEffect, useCallback, useState } from 'react';
 import {
     BOARD_WIDTH, BOARD_HEIGHT,
 } from '../constants';
-import { GameLoopCallbacks, GameState, GameStateRefs, PowerUpType } from '../interfaces';
+import { GameLoopCallbacks, GameState, GameStateRefs, PowerUpType, GameMode } from '../interfaces';
 import { gameUpdate } from '../gameLoop';
 import { setupGameCanvas } from '../gameCanvas';
 import { useGameLogic } from '../hooks/useGameLogic';
@@ -18,25 +18,43 @@ const SIDEBAR_WIDTH_PX = 192;
 export default function Home() {
     const canvasRef = useRef<HTMLCanvasElement>(null);
     const gameContainerRef = useRef<HTMLDivElement>(null);
-    const scaleRef = useRef(1);
+    const testCanvasRef = useRef<HTMLCanvasElement>(null);
+    const testGameContainerRef = useRef<HTMLDivElement>(null);
+
+    const scaleRef = useRef(1); 
+    const testScaleRef = useRef(1); 
+
     const animationFrameIdRef = useRef<number | null>(null);
+    const testAnimationFrameIdRef = useRef<number | null>(null);
+
     const lastTimeRef = useRef<number>(0);
+    const testLastTimeRef = useRef<number>(0);
     const isMobile = useIsMobile();
+    const [isInitialTestSetupDone, setIsInitialTestSetupDone] = useState(false);
 
     const {
         gameOverState,
+        activeGameMode, 
         enabledPowerUps,
         showSidebar,
-        currentLevel, // Assuming this is restored/available from useGameLogic
+        currentLevel,
         handleResetGame,
         launchStuckBalls,
         handlePowerUpToggle,
-        startGame,
-        startNextLevel, // Assuming this is restored/available from useGameLogic
-        addSpawnablePowerUp, // Assuming this is restored/available from useGameLogic
+        startGame, 
+        startNextLevel,
+        addSpawnablePowerUp,
         gameStateRefs,
-        gameLoopCallbacks,
+        gameLoopCallbacks, 
     } = useGameLogic();
+
+    useEffect(() => {
+        if (!isInitialTestSetupDone) {
+            console.log("Starting test mode for preview...");
+            startGame('test');
+            setIsInitialTestSetupDone(true);
+        }
+    }, [startGame, isInitialTestSetupDone]);
 
     const drawEndMessageCallback = useCallback((context: CanvasRenderingContext2D, state: GameState, finalScore: number) => {
         if (state !== 'won' && state !== 'lost') return;
@@ -57,54 +75,7 @@ export default function Home() {
     }, []);
 
     const gameLoopRef = useRef<(timestamp: number) => void>();
-
-    useEffect(() => {
-        const gameLoop = (timestamp: number) => {
-            const currentGameState = gameStateRefs.gameOverStateRef.current;
-            if (currentGameState === 'menu' || currentGameState === 'shop') { // 'shop' state will pause the game loop
-                 lastTimeRef.current = 0;
-                 if (animationFrameIdRef.current) {
-                     cancelAnimationFrame(animationFrameIdRef.current);
-                     animationFrameIdRef.current = null;
-                 }
-                 return;
-             }
-            if (currentGameState === 'won' || currentGameState === 'lost') {
-                 lastTimeRef.current = 0;
-                 const canvas = canvasRef.current;
-                 const ctx = canvas?.getContext('2d');
-                 if (ctx && gameLoopCallbacksRef.current) {
-                     gameLoopCallbacksRef.current.drawEndMessage(ctx, currentGameState, gameStateRefs.scoreRef.current);
-                 }
-                 if (animationFrameIdRef.current) {
-                     cancelAnimationFrame(animationFrameIdRef.current);
-                     animationFrameIdRef.current = null;
-                 }
-                 return;
-             }
-            if (!lastTimeRef.current) lastTimeRef.current = timestamp;
-            const elapsed = timestamp - lastTimeRef.current;
-            lastTimeRef.current = timestamp;
-            const clampedElapsed = Math.min(elapsed, 100);
-            const canvas = canvasRef.current;
-            const ctx = canvas?.getContext('2d');
-            if (ctx && gameLoopCallbacksRef.current) {
-                gameUpdate(ctx, gameStateRefs, gameLoopCallbacksRef.current, clampedElapsed);
-            }
-            if (gameStateRefs.gameOverStateRef.current === 'playing' || gameStateRefs.gameOverStateRef.current === 'level_reset') {
-               if(gameLoopRef.current) {
-                   animationFrameIdRef.current = requestAnimationFrame(gameLoopRef.current);
-               }
-            } else {
-                if (animationFrameIdRef.current) {
-                    cancelAnimationFrame(animationFrameIdRef.current);
-                    animationFrameIdRef.current = null;
-                }
-            }
-        };
-        gameLoopRef.current = gameLoop;
-    }, [gameStateRefs]);
-
+    const testGameLoopRef = useRef<(timestamp: number) => void>();
     const gameLoopCallbacksRef = useRef<GameLoopCallbacks>();
 
     useEffect(() => {
@@ -114,128 +85,206 @@ export default function Home() {
         };
     }, [gameLoopCallbacks, drawEndMessageCallback]);
 
-    useEffect(() => {
-        const handleKeyDown = (event: KeyboardEvent) => {
-            if (event.key === 'c' && gameStateRefs.gameOverStateRef.current === 'playing' && gameLoopCallbacksRef.current?.updateScoreCallback) {
-                console.log("Cheat code activated: +1,000,000 points");
-                gameLoopCallbacksRef.current.updateScoreCallback(1000000);
-            }
-        };
-        window.addEventListener('keydown', handleKeyDown);
+    const createGameLoop = (gsRefs: GameStateRefs, gcbs: GameLoopCallbacks, lTimeRef: React.MutableRefObject<number>, mode: GameMode | null) => (timestamp: number) => {
+        const currentGameState = gsRefs.gameOverStateRef.current;
+        const currentActiveMode = gsRefs.gameModeRef.current; 
 
-        if (gameOverState === 'menu' || gameOverState === 'shop') { // 'shop' state will prevent canvas setup/resetup, relying on GameView to show overlay
-            if (animationFrameIdRef.current) {
-                cancelAnimationFrame(animationFrameIdRef.current);
-                animationFrameIdRef.current = null;
+        if (mode === 'test' && currentGameState === 'menu' && currentActiveMode === 'test') {
+        } else if (currentGameState === 'menu' || currentGameState === 'shop') {
+            lTimeRef.current = 0;
+            return;
+        }
+
+        if (currentGameState === 'won' || currentGameState === 'lost') {
+            lTimeRef.current = 0;
+            const canvas = mode === 'test' ? testCanvasRef.current : canvasRef.current;
+            const ctx = canvas?.getContext('2d');
+            if (ctx && gcbs.drawEndMessage) {
+                gcbs.drawEndMessage(ctx, currentGameState, gsRefs.scoreRef.current);
             }
-            // Don't clear canvas if it's shop state, to keep the last frame visible under the overlay
-            if (gameOverState === 'menu') {
-                const canvas = canvasRef.current;
-                const ctx = canvas?.getContext('2d');
-                if (ctx) {
-                    ctx.clearRect(0, 0, canvas.width, canvas.height);
+            return;
+        }
+
+        if (!lTimeRef.current) lTimeRef.current = timestamp;
+        const elapsed = timestamp - lTimeRef.current;
+        lTimeRef.current = timestamp;
+        const clampedElapsed = Math.min(elapsed, 100); 
+        
+        const canvas = mode === 'test' ? testCanvasRef.current : canvasRef.current;
+        const ctx = canvas?.getContext('2d');
+
+        if (ctx && gcbs) {
+            gameUpdate(ctx, gsRefs, gcbs, clampedElapsed);
+        }
+        
+        const shouldContinueAnimation = (mode === 'test' && currentGameState === 'menu' && currentActiveMode === 'test') || 
+                                        (currentGameState === 'playing' || currentGameState === 'level_reset');
+
+        if (shouldContinueAnimation) {
+            const animFrameIdRef = mode === 'test' ? testAnimationFrameIdRef : animationFrameIdRef;
+            const gLoopRef = mode === 'test' ? testGameLoopRef : gameLoopRef;
+            if(gLoopRef.current) {
+                animFrameIdRef.current = requestAnimationFrame(gLoopRef.current);
+            }
+        } 
+    };
+    
+    useEffect(() => {
+        if (gameLoopCallbacksRef.current) { 
+            gameLoopRef.current = createGameLoop(gameStateRefs, gameLoopCallbacksRef.current, lastTimeRef, 'main');
+            testGameLoopRef.current = createGameLoop(gameStateRefs, gameLoopCallbacksRef.current, testLastTimeRef, 'test');
+        }
+    }, [gameStateRefs, gameLoopCallbacks, drawEndMessageCallback]); 
+
+    useEffect(() => {
+        const isTestPreviewActive = activeGameMode === 'test' && gameOverState === 'menu';
+        const isMainGameActive = gameOverState === 'playing' || gameOverState === 'lost' || gameOverState === 'won';
+
+        let cleanupCanvas: () => void = () => {};
+        let cleanupTestCanvas: () => void = () => {};
+
+        if (animationFrameIdRef.current) cancelAnimationFrame(animationFrameIdRef.current);
+        animationFrameIdRef.current = null;
+        if (testAnimationFrameIdRef.current) cancelAnimationFrame(testAnimationFrameIdRef.current);
+        testAnimationFrameIdRef.current = null;
+
+        if (isTestPreviewActive) {
+            if (testGameContainerRef.current && testCanvasRef.current && gameLoopCallbacksRef.current && testGameLoopRef.current) {
+                console.log("Setting up test preview canvas");
+                cleanupTestCanvas = setupGameCanvas({
+                    gameContainerRef: testGameContainerRef,
+                    canvasRef: testCanvasRef,
+                    gameLoop: testGameLoopRef.current,
+                    scaleRef: testScaleRef, 
+                    animationFrameIdRef: testAnimationFrameIdRef,
+                    handleResetGame, 
+                    gameStateRefs, 
+                    gameLoopCallbacks: gameLoopCallbacksRef.current,
+                    lastTimeRef: testLastTimeRef,
+                    sidebarWidthPx: SIDEBAR_WIDTH_PX,
+                    totalSidebarSpace: SIDEBAR_WIDTH_PX, 
+                    launchStuckBalls, 
+                    isMobile,
+                    showSidebarState: true 
+                });
+                testLastTimeRef.current = performance.now();
+                testAnimationFrameIdRef.current = requestAnimationFrame(testGameLoopRef.current);
+            }
+        }
+
+        if (isMainGameActive) {
+            if (gameContainerRef.current && canvasRef.current && gameLoopCallbacksRef.current && gameLoopRef.current) {
+                console.log("Setting up main game canvas");
+                cleanupCanvas = setupGameCanvas({
+                    gameContainerRef,
+                    canvasRef,
+                    gameLoop: gameLoopRef.current,
+                    scaleRef,
+                    animationFrameIdRef,
+                    handleResetGame,
+                    gameStateRefs,
+                    gameLoopCallbacks: gameLoopCallbacksRef.current,
+                    lastTimeRef,
+                    sidebarWidthPx: SIDEBAR_WIDTH_PX,
+                    totalSidebarSpace: showSidebar ? SIDEBAR_WIDTH_PX : 0,
+                    launchStuckBalls,
+                    isMobile,
+                    showSidebarState: showSidebar
+                });
+                if (gameOverState === 'playing' && !animationFrameIdRef.current) {
+                    lastTimeRef.current = performance.now();
+                    animationFrameIdRef.current = requestAnimationFrame(gameLoopRef.current);
                 }
             }
-             return () => {
-                window.removeEventListener('keydown', handleKeyDown);
-            };
+        }
+        
+        if (gameOverState === 'menu' && !isTestPreviewActive) {
+            const mainCtx = canvasRef.current?.getContext('2d');
+            if (mainCtx) mainCtx.clearRect(0, 0, mainCtx.canvas.width, mainCtx.canvas.height);
+            const testCtx = testCanvasRef.current?.getContext('2d');
+            if (testCtx) testCtx.clearRect(0, 0, testCtx.canvas.width, testCtx.canvas.height);
         }
 
-        if (!gameContainerRef.current || !canvasRef.current) {
-             return () => {
-                window.removeEventListener('keydown', handleKeyDown);
-            };
-        }
-
-        const sidebarWidthForSetup = showSidebar ? SIDEBAR_WIDTH_PX : 0;
-        const totalSidebarSpaceForSetup = sidebarWidthForSetup;
-
-        if (!gameLoopCallbacksRef.current) {
-             console.warn("gameLoopCallbacksRef not ready for setupGameCanvas");
-             return () => {
-                window.removeEventListener('keydown', handleKeyDown);
-            };
-        }
-
-        const cleanupCanvas = setupGameCanvas({
-            gameContainerRef,
-            canvasRef,
-            gameLoop: gameLoopRef.current!,
-            scaleRef,
-            animationFrameIdRef,
-            handleResetGame,
-            gameStateRefs,
-            gameLoopCallbacks: gameLoopCallbacksRef.current,
-            lastTimeRef: lastTimeRef,
-            totalSidebarSpace: totalSidebarSpaceForSetup,
-            sidebarWidthPx: sidebarWidthForSetup,
-            launchStuckBalls: launchStuckBalls,
-            isMobile: isMobile,
-        });
-
-        const handleContextMenu = (event: MouseEvent) => {
-            event.preventDefault();
-            if (gameStateRefs.gameOverStateRef.current === 'playing' && gameStateRefs.isGameStartedRef.current) {
-                launchStuckBalls(false);
-            }
+        const handleKeyDownGlobal = (event: KeyboardEvent) => {
+          if (event.key === 'c' && gameStateRefs.gameOverStateRef.current === 'playing' && gameLoopCallbacksRef.current?.updateScoreCallback) {
+              console.log("Cheat code activated: +1,000,000 points");
+              gameLoopCallbacksRef.current.updateScoreCallback(1000000);
+          }
         };
-
-        const containerElement = gameContainerRef.current;
-        if (containerElement) {
-            containerElement.addEventListener('contextmenu', handleContextMenu);
-        }
-
-        if (gameOverState === 'playing' && !animationFrameIdRef.current) {
-           lastTimeRef.current = performance.now();
-           if (gameLoopRef.current) {
-             animationFrameIdRef.current = requestAnimationFrame(gameLoopRef.current);
-           }
-        }
+        window.addEventListener('keydown', handleKeyDownGlobal);
 
         const fieldTimerCleanup = () => {
-             const timerRef = gameStateRefs.collectionFieldShrinkTimerRef?.current;
-             if (timerRef) {
-                clearInterval(timerRef);
-             }
+            const timerRef = gameStateRefs.collectionFieldShrinkTimerRef?.current;
+            if (timerRef) clearInterval(timerRef);
         };
 
         return () => {
+            console.log("Cleaning up canvases and listeners");
             cleanupCanvas();
+            cleanupTestCanvas();
             fieldTimerCleanup();
-            if (containerElement) {
-                containerElement.removeEventListener('contextmenu', handleContextMenu);
-            }
-            if (animationFrameIdRef.current) {
-                 cancelAnimationFrame(animationFrameIdRef.current);
-                 animationFrameIdRef.current = null;
-            }
-             window.removeEventListener('keydown', handleKeyDown);
+            if (animationFrameIdRef.current) cancelAnimationFrame(animationFrameIdRef.current);
+            if (testAnimationFrameIdRef.current) cancelAnimationFrame(testAnimationFrameIdRef.current);
+            window.removeEventListener('keydown', handleKeyDownGlobal);
         };
-    }, [gameOverState, handleResetGame, launchStuckBalls, gameStateRefs, showSidebar, isMobile, drawEndMessageCallback, gameLoopCallbacks]);
-
-    if (gameOverState === 'menu') {
-        return <GameMenu onStartGame={startGame} />;
-    }
+    }, [gameOverState, activeGameMode, showSidebar, handleResetGame, launchStuckBalls, gameStateRefs, isMobile, drawEndMessageCallback, gameLoopCallbacks]);
 
     return (
-        <GameView
-            gameContainerRef={gameContainerRef}
-            canvasRef={canvasRef}
-            gameOverState={gameOverState}
-            showSidebar={showSidebar}
-            enabledPowerUps={enabledPowerUps}
-            onTogglePowerUp={handlePowerUpToggle}
-            handleResetGame={handleResetGame}
-            // Props for ShopScreen overlay
-            gameStateRefs={gameStateRefs}
-            currentLevel={currentLevel} // Assuming currentLevel is available from useGameLogic
-            addSpawnablePowerUp={addSpawnablePowerUp} // Assuming addSpawnablePowerUp is available
-            startNextLevel={startNextLevel} // Assuming startNextLevel is available
-            // Pass scaleRef if ShopScreen overlay needs to react to scaling, or for positioning
-            // For now, let's assume ShopScreen is styled to fit, but gameContainerRef itself will be scaled.
-            scaleRef={scaleRef} 
-            gameWidth={BOARD_WIDTH}
-            gameHeight={BOARD_HEIGHT}
-        />
+        <div style={{
+             display: 'flex', 
+             flexDirection: 'column', 
+             alignItems: 'center', 
+             minHeight: '100vh', // Ensure it takes at least full screen height
+             // overflowY: 'auto' // REMOVED: Let body/html handle scrolling
+        }}>
+            {gameOverState === 'menu' && (
+                <GameMenu 
+                    onStartGame={(mode) => {
+                        if (mode === 'main') startGame('main');
+                    }} 
+                />
+            )}
+
+            {gameOverState === 'menu' && activeGameMode === 'test' && (
+                <div style={{ marginTop: '0px' /* Minimal top margin */ }}> 
+                    <GameView
+                        gameContainerRef={testGameContainerRef} 
+                        canvasRef={testCanvasRef} 
+                        gameOverState={gameOverState} 
+                        showSidebar={true} 
+                        enabledPowerUps={enabledPowerUps} 
+                        onTogglePowerUp={handlePowerUpToggle} 
+                        handleResetGame={() => startGame('test')} 
+                        gameStateRefs={gameStateRefs} 
+                        currentLevel={1} 
+                        addSpawnablePowerUp={addSpawnablePowerUp}
+                        startNextLevel={() => {}} 
+                        scaleRef={testScaleRef} 
+                        gameWidth={BOARD_WIDTH} // These props might be unused in GameView if BOARD_HEIGHT is directly used
+                        gameHeight={BOARD_HEIGHT}
+                        isTestPreview={true} 
+                    />
+                </div>
+            )}
+
+            {(gameOverState === 'playing' || gameOverState === 'shop' || gameOverState === 'lost' || gameOverState === 'won') && activeGameMode === 'main' && (
+                <GameView
+                    gameContainerRef={gameContainerRef}
+                    canvasRef={canvasRef}
+                    gameOverState={gameOverState}
+                    showSidebar={showSidebar}
+                    enabledPowerUps={enabledPowerUps}
+                    onTogglePowerUp={handlePowerUpToggle}
+                    handleResetGame={handleResetGame}
+                    gameStateRefs={gameStateRefs}
+                    currentLevel={currentLevel}
+                    addSpawnablePowerUp={addSpawnablePowerUp}
+                    startNextLevel={startNextLevel}
+                    scaleRef={scaleRef}
+                    gameWidth={BOARD_WIDTH}
+                    gameHeight={BOARD_HEIGHT}
+                />
+            )}
+        </div>
     );
 }

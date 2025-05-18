@@ -12,10 +12,9 @@ import {
     BOARD_WIDTH, BOARD_HEIGHT, BASE_BALL_SPEED_FACTOR, POWER_UP_COLORS,
     TARGET_FPS, BONUS_GOLD_TARGET, BONUS_GOLD_TIMER_DURATION,
     BALL_SIZE, BIG_BALL_SIZE_INCREASE, POINTS_FIELD_DURATION, POINTS_FIELD_MAX_BALLS
-} from './constants'; // Added POINTS_FIELD_MAX_BALLS
+} from './constants'; 
 import { drawPaddle, drawBalls, drawBricks, drawGameInfo, drawPowerUps, drawLasers, drawSafetyNet, drawCollectionFieldRect, drawPowerUpPreviews, drawPointsFields } from './drawFunctions';
 
-// Function to handle paddle shrink countdown
 const updatePaddleShrinkTimer = (
     refs: GameStateRefs,
     callbacks: GameLoopCallbacks,
@@ -30,7 +29,6 @@ const updatePaddleShrinkTimer = (
     }
 };
 
-// Function to handle Bonus Gold Timer
 const updateBonusGoldTimer = (
     refs: GameStateRefs,
     callbacks: GameLoopCallbacks,
@@ -52,18 +50,16 @@ const updateBonusGoldTimer = (
     }
 };
 
-// Function to update PointsFields (remove after duration or max balls)
 const updatePointsFields = (pointsFields: PointsField[], currentTime: number) => {
     if (!pointsFields) return;
     for (let i = pointsFields.length - 1; i >= 0; i--) {
         const field = pointsFields[i];
         if (currentTime - field.createdAt > POINTS_FIELD_DURATION || field.ballsPassed >= POINTS_FIELD_MAX_BALLS) {
-            pointsFields.splice(i, 1); // Remove the field if its duration has expired or max balls reached
+            pointsFields.splice(i, 1); 
         }
     }
 };
 
-// Function to check for ball collision with PointsFields (entry-only points)
 const checkPointsFieldCollisions = (
     balls: Ball[],
     pointsFields: PointsField[],
@@ -86,22 +82,19 @@ const checkPointsFieldCollisions = (
                 ballCenterY - ballRadius < field.y + field.height
             ) {
                 currentFrameInteractions.add(field.id);
-                // Check if this is a new entry
                 if (!ball.lastFramePointsFieldIds.has(field.id)) {
-                    updateScoreCallback(1); // Award 1 point on entry
-                    field.ballsPassed += 1; // Increment balls passed for this field
+                    updateScoreCallback(1); 
+                    field.ballsPassed += 1; 
                 }
             }
         });
-        // Update the ball's last frame interactions for the next cycle
         ball.lastFramePointsFieldIds = currentFrameInteractions;
     });
 };
 
 
-// --- Optimization: Reusable arrays --- 
 const collectedPowerUpTypesReusable: PowerUpType[] = [];
-const spawnRequestsReusable: PowerUpSpawnEvent[] = []; // Reusable array for spawn requests
+const spawnRequestsReusable: PowerUpSpawnEvent[] = [];
 
 export const gameUpdate = (
     ctx: CanvasRenderingContext2D,
@@ -110,10 +103,14 @@ export const gameUpdate = (
     elapsedTime: number
 ) => {
     const currentGameState = refs.gameOverStateRef.current;
+    const gameMode = refs.gameModeRef.current;
+    const isTestPreview = gameMode === 'test' && currentGameState === 'menu';
 
-    if (currentGameState === 'won' || currentGameState === 'lost' || currentGameState === 'shop' || currentGameState === 'menu') {
+    if (!isTestPreview && (currentGameState === 'won' || currentGameState === 'lost' || currentGameState === 'shop' || currentGameState === 'menu')) {
         ctx.clearRect(0, 0, BOARD_WIDTH, BOARD_HEIGHT);
-        callbacks.drawEndMessage(ctx, currentGameState, refs.scoreRef.current);
+        if (currentGameState === 'won' || currentGameState === 'lost') {
+            callbacks.drawEndMessage(ctx, currentGameState, refs.scoreRef.current);
+        }
         return;
     }
 
@@ -128,18 +125,17 @@ export const gameUpdate = (
 
     const columns = refs.brickColumnsRef.current;
     const rows = refs.brickRowsRef.current;
-    const gameMode = refs.gameModeRef.current;
-    const isTestMode = gameMode === 'test';
+    
+    if (!isTestPreview) {
+        updatePaddleShrinkTimer(refs, callbacks, elapsedTime);
+        updateBonusGoldTimer(refs, callbacks, elapsedTime);
+    }
 
-    // --- UPDATES ---
-    updatePaddleShrinkTimer(refs, callbacks, elapsedTime);
-    updateBonusGoldTimer(refs, callbacks, elapsedTime);
     updateBalls(refs, callbacks, spawnRequestsReusable, currentTime, gameSpeedFactor, scaledDeltaTime, columns, rows); 
-    // Update PointsFields BEFORE collision checks to ensure fields are valid
+    updateLasers(refs, callbacks, spawnRequestsReusable, currentTime, scaledDeltaTime, columns, rows); 
     updatePointsFields(refs.pointsFieldsRef.current, currentTime); 
     checkPointsFieldCollisions(refs.ballsRef.current, refs.pointsFieldsRef.current, callbacks.updateScoreCallback);
 
-    // --- DRAWING --- 
     ctx.save();
     ctx.clearRect(0, 0, BOARD_WIDTH, BOARD_HEIGHT);
     drawBricks(ctx, refs.bricksRef.current, columns, rows);
@@ -151,7 +147,7 @@ export const gameUpdate = (
         refs.targetScoreRef.current,
         refs.goldRef.current,
         refs.bonusGoldRef.current,
-        isTestMode,
+        gameMode === 'test', 
         refs.livesRef.current,
         refs.bonusGoldTimerCountdownRef.current
     );
@@ -160,44 +156,51 @@ export const gameUpdate = (
         drawCollectionFieldRect(ctx, refs.paddleXRef.current, refs.paddleWidthRef.current, refs.collectionFieldHeightRef.current, refs.collectionFieldWidthOffsetRef.current);
     }
 
-    if (!refs.isGameStartedRef.current) {
+    if (!refs.isGameStartedRef.current && !isTestPreview) { 
         drawBalls(ctx, [], refs.stuckBallsRef.current); 
         if (gameMode === 'main') {
-            drawPowerUpPreviews(ctx, refs.spawnablePowerUpsRef.current);
+            // If power-ups are pre-placed by useLevelLogic into powerUpsRef, 
+            // drawPowerUps below will handle them. drawPowerUpPreviews might be redundant or for a different type of preview.
+            // For now, relying on drawPowerUps to render static pre-placed powerups.
+            // drawPowerUpPreviews(ctx, refs.spawnablePowerUpsRef.current);
         }
-        ctx.restore();
-        return;
+    } 
+    
+    if (isTestPreview && !refs.isGameStartedRef.current) {
+        drawBalls(ctx, [], refs.stuckBallsRef.current);
     }
     
     collectedPowerUpTypesReusable.length = 0; 
-    updateLasers(refs, callbacks, spawnRequestsReusable, currentTime, scaledDeltaTime, columns, rows);
 
-    const currentFallingPowerUpCount = refs.powerUpsRef.current.reduce((count, p) => {
-        return p.status === 'falling' ? count + 1 : count;
-    }, 0);
-    
-    const availablePowerUpsForSpawning = gameMode === 'main'
-        ? refs.spawnablePowerUpsRef.current
-        : refs.enabledPowerUpsRef.current;
+    const availablePowerUpsForSpawning = gameMode === 'test' 
+        ? refs.enabledPowerUpsRef.current
+        : refs.spawnablePowerUpsRef.current;
 
     const { newPowerUps, newBalls } = handleSpawnEvents(
         spawnRequestsReusable, 
-        currentFallingPowerUpCount,
+        refs.powerUpsRef.current.reduce((count, p) => p.status === 'falling' ? count + 1 : count, 0),
         availablePowerUpsForSpawning,
         gameMode,
         currentTime,
         gameSpeedFactor
     );
 
-    if (newBalls.length > 0) {
+    if (newPowerUps.length > 0) {
+        refs.powerUpsRef.current.push(...newPowerUps);
+    }
+    if (newBalls.length > 0) { 
         refs.ballsRef.current.push(...newBalls);
     }
 
-    updatePowerUps( refs, gameSpeedFactor, newPowerUps, collectedPowerUpTypesReusable, scaledDeltaTime );
-    applyPowerUpEffects(refs, callbacks, collectedPowerUpTypesReusable, currentTime, gameSpeedFactor);
+    // Only update power-up positions (make them fall) and apply their effects 
+    // if the game has started or if it's the interactive test preview.
+    if (refs.isGameStartedRef.current || isTestPreview) {
+        updatePowerUps( refs, gameSpeedFactor, [], collectedPowerUpTypesReusable, scaledDeltaTime );
+        applyPowerUpEffects(refs, callbacks, collectedPowerUpTypesReusable, currentTime, gameSpeedFactor); 
+    }
 
-    drawBalls(ctx, refs.ballsRef.current, refs.stuckBallsRef.current);
-    drawPowerUps(ctx, refs.powerUpsRef.current);
+    drawBalls(ctx, refs.ballsRef.current, (isTestPreview || !refs.isGameStartedRef.current) ? [] : refs.stuckBallsRef.current); 
+    drawPowerUps(ctx, refs.powerUpsRef.current); // This will draw all powerups in powerUpsRef
     drawLasers(ctx, refs.lasersRef.current);
 
     if (gameSpeedFactor !== BASE_BALL_SPEED_FACTOR) {
@@ -208,4 +211,13 @@ export const gameUpdate = (
 
     checkGameStatus(refs, callbacks, previousBallCount);
 
+    if (isTestPreview && 
+        refs.ballsRef.current.length === 0 && 
+        refs.stuckBallsRef.current.length === 0 && 
+        previousBallCount > 0 &&
+        refs.gameOverStateRef.current === 'menu' 
+    ) {
+        console.log("Test preview: All balls lost, setting state to 'lost' to trigger reset.");
+        callbacks.setGameOverState('lost');
+    }
 };

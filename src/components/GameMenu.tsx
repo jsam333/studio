@@ -1,7 +1,7 @@
 import React from 'react';
 
 interface GameMenuProps {
-  onStartGame: (mode: 'main' | 'test') => void;
+  onStartGame: (mode: 'main') => void; 
 }
 
 export const GameMenu: React.FC<GameMenuProps> = ({ onStartGame }) => {
@@ -9,10 +9,11 @@ export const GameMenu: React.FC<GameMenuProps> = ({ onStartGame }) => {
     <div style={{
       fontFamily: 'Arial, sans-serif',
       color: '#000000',
-      minHeight: '100vh',
-      padding: '20px',
+      padding: '20px 20px 0px 20px', // Reduced bottom padding to 0
       backgroundImage: 'url(/images/bbubg2.png)',
-      backgroundRepeat: 'repeat'
+      backgroundRepeat: 'repeat',
+      width: '100%',
+      boxSizing: 'border-box'
     }}>
       <header style={{ textAlign: 'center', marginBottom: '20px', borderBottom: '2px solid #000000', paddingBottom: '20px' }}>
         <h1 style={{ fontSize: '36px', fontWeight: 'bold', margin: '0' }}>Free Fun Games - Welcome!</h1>
@@ -64,23 +65,14 @@ export const GameMenu: React.FC<GameMenuProps> = ({ onStartGame }) => {
                 </p>
               </div>
             </li>
-            <li style={{ marginBottom: '10px' }}>
-              <a 
-                href="#" 
-                onClick={(e) => { e.preventDefault(); onStartGame('test'); }}
-                style={{ fontSize: '20px', color: '#0000FF', textDecoration: 'underline', fontWeight: 'bold', display: 'inline-block' }}
-              >
-                Test Level
-              </a>
-            </li>
           </ul>
         </nav>
         <img src="/images/atari-breakout-998.webp" alt="Atari Breakout" style={{ marginTop: '10px', maxHeight: '150px' }}/>
       </div>
 
-      <footer style={{ textAlign: 'center', marginTop: '30px', paddingTop: '20px', borderTop: '1px dashed #555555', fontSize: '12px' }}>
-        <p>&copy; 2001 BrickBlast Corp. All Rights Reserved.</p>
-        <img src="https://www.thegeocitiesgallery.com/images/blinking-construction.gif" alt="Under Construction" style={{marginTop: '10px'}}/>
+      <footer style={{ textAlign: 'center', marginTop: '5px', paddingTop: '5px', borderTop: '1px dashed #555555', fontSize: '12px', marginBottom: '0px' }}>
+        <p style={{ marginBlockStart: '0.5em', marginBlockEnd: '0.5em' }}>&copy; 2001 BrickBlast Corp. All Rights Reserved.</p>
+        <img src="https://www.thegeocitiesgallery.com/images/blinking-construction.gif" alt="Under Construction" style={{marginTop: '5px', display: 'block', marginBottom: '0px'}}/>
       </footer>
     </div>
   );

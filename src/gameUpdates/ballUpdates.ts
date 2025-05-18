@@ -1,5 +1,5 @@
 // src/gameUpdates/ballUpdates.ts
-import { Ball, Brick, PowerUpSpawnEvent } from '../interfaces'; // Removed PowerUp, PointsField as they are not directly used here
+import { Ball, Brick, PowerUpSpawnEvent } from '../interfaces';
 import { GameStateRefs, GameLoopCallbacks } from '../interfaces';
 import { checkBrickCollision } from '../gameLogic';
 import { createNewBall, findClosestBrick } from './gameLoopUtils';
@@ -7,8 +7,8 @@ import {
     BOARD_WIDTH, BOARD_HEIGHT, PADDLE_Y, BALL_SIZE, MAX_BALL_SPEED_X, SAFETY_NET_HEIGHT,
     BIG_BALL_SIZE_INCREASE, BRICK_WIDTH, BRICK_HEIGHT, PADDLE_HEIGHT, BASE_BALL_SPEED_FACTOR,
     PADDLE_SIDE_SAVE_THRESHOLD,
-    POINTS_FIELD_DURATION, // Though not directly used, it was in the original import list
-    ZIP_TO_PADDLE_DURATION // Added for zip animation
+    POINTS_FIELD_DURATION, 
+    ZIP_TO_PADDLE_DURATION
 } from '../constants';
 
 export const updateBalls = (
@@ -25,30 +25,30 @@ export const updateBalls = (
     let ballsToAdd: Ball[] = [];
     let ballsToRemoveIds = new Set<number>();
 
-    // Update positions of already stuck balls (e.g., to follow paddle movement if stuck to paddle edges)
     refs.stuckBallsRef.current.forEach(stuckBall => {
         const currentBallSize = stuckBall.isBig ? BALL_SIZE + BIG_BALL_SIZE_INCREASE : BALL_SIZE;
         if (stuckBall.stuckSide) {
-            const sideOffset = currentBallSize; // Ball radius
+            const sideOffset = currentBallSize;
             stuckBall.x = stuckBall.stuckSide === 'left'
                 ? refs.paddleXRef.current - sideOffset
                 : refs.paddleXRef.current + refs.paddleWidthRef.current + sideOffset;
             stuckBall.y = PADDLE_Y + PADDLE_HEIGHT / 2 + (stuckBall.stuckSideOffset ?? -PADDLE_HEIGHT / 2);
-        } else { // Stuck on top (though this logic might be deprecated if top-sticking is fully removed)
+        } else { 
             const offset = stuckBall.stuckOffset ?? refs.paddleWidthRef.current / 2;
             stuckBall.x = refs.paddleXRef.current + offset;
             stuckBall.y = PADDLE_Y - currentBallSize;
         }
     });
 
-    if (refs.isGameStartedRef.current) {
+    const isTestModePreview = refs.gameModeRef.current === 'test' && refs.gameOverStateRef.current === 'menu';
+
+    if (refs.isGameStartedRef.current || isTestModePreview) { 
         for (let i = 0; i < refs.ballsRef.current.length; i++) {
             const ball = refs.ballsRef.current[i];
-            let processNormalUpdate = true; // Flag to determine if normal physics update should occur
+            let processNormalUpdate = true; 
 
             const currentBallSize = ball.isBig ? BALL_SIZE + BIG_BALL_SIZE_INCREASE : BALL_SIZE;
 
-            // --- Handle Zipping Animation for Sticky Recovery --- 
             if (ball.isZipping) {
                 if (ball.zipStartTime && ball.initialZipX !== undefined && ball.initialZipY !== undefined && ball.zipTargetX !== undefined && ball.zipTargetY !== undefined) {
                     const elapsedZipTime = currentTime - ball.zipStartTime;
@@ -56,32 +56,27 @@ export const updateBalls = (
                         const progress = elapsedZipTime / ZIP_TO_PADDLE_DURATION;
                         ball.x = ball.initialZipX + (ball.zipTargetX - ball.initialZipX) * progress;
                         ball.y = ball.initialZipY + (ball.zipTargetY - ball.initialZipY) * progress;
-                        processNormalUpdate = false; // Skip normal physics while zipping
+                        processNormalUpdate = false; 
                     } else {
-                        // Animation finished, stick the ball
                         ball.x = ball.zipTargetX;
                         ball.y = ball.zipTargetY;
                         ball.isZipping = false;
                         ball.stuckSide = ball.targetStuckSideValue;
-                        ball.stuckSideOffset = -PADDLE_HEIGHT / 2; // Standard vertical offset for side stuck balls
+                        ball.stuckSideOffset = -PADDLE_HEIGHT / 2; 
                         ball.speedX = 0;
                         ball.speedY = 0;
-                        ball.stuckOffset = undefined; // Clear top stuck offset
-
-                        // Transfer to stuckBallsRef and mark for removal from active balls
+                        ball.stuckOffset = undefined; 
                         refs.stuckBallsRef.current.push(ball);
                         ballsToRemoveIds.add(ball.id);
                         processNormalUpdate = false;
                     }
                 } else {
-                    // Invalid zip state, revert to normal or stuck (should not happen)
                     ball.isZipping = false; 
                 }
             }
 
             if (processNormalUpdate) {
-                 // Deactivate timed power-ups if they've expired
-                if (ball.stuckOffset === undefined && !ball.stuckSide) { // Only if not stuck
+                if (ball.stuckOffset === undefined && !ball.stuckSide) { 
                     if (ball.isBlack && ball.blackEndTime && currentTime >= ball.blackEndTime) { ball.isBlack = false; ball.blackEndTime = undefined; }
                     if (ball.isBlue && ball.blueEndTime && currentTime >= ball.blueEndTime) { ball.isBlue = false; ball.blueEndTime = undefined; }
                     if (ball.isBig && ball.bigEndTime && currentTime >= ball.bigEndTime) { ball.isBig = false; ball.bigEndTime = undefined; }
@@ -91,7 +86,6 @@ export const updateBalls = (
                 let currentSpeedX = ball.speedX;
                 let currentSpeedY = ball.speedY;
 
-                // Brick Collisions
                 const brickCollisionResult = checkBrickCollision(ball, refs.bricksRef.current, columns, rows, deltaTime);
                 if (brickCollisionResult.collision) {
                     currentSpeedX = brickCollisionResult.newSpeedX;
@@ -117,7 +111,6 @@ export const updateBalls = (
                 const paddleLeft = refs.paddleXRef.current;
                 const paddleRight = paddleLeft + refs.paddleWidthRef.current;
 
-                // Wall Collisions
                 if (nextX > BOARD_WIDTH - currentBallSize || nextX < currentBallSize) {
                     const overshoot = nextX > BOARD_WIDTH - currentBallSize ? (nextX - (BOARD_WIDTH - currentBallSize)) : (currentBallSize - nextX);
                     currentSpeedX = -currentSpeedX;
@@ -128,41 +121,37 @@ export const updateBalls = (
                     currentSpeedY = -currentSpeedY;
                     nextY = currentBallSize + overshoot;
                 }
-                // Bottom of Screen / Paddle Interactions
-                else if (nextY + currentBallSize > BOARD_HEIGHT) { // Ball is at or below paddle level / going off screen
+                else if (nextY + currentBallSize > BOARD_HEIGHT) { 
                     const isNearLeft = Math.abs(nextX - paddleLeft) < PADDLE_SIDE_SAVE_THRESHOLD;
                     const isNearRight = Math.abs(nextX - paddleRight) < PADDLE_SIDE_SAVE_THRESHOLD;
 
-                    if (refs.stickyPaddleChargesRef.current > 0 && !ball.isBig && (isNearLeft || isNearRight)) {
+                    // Sticky Paddle, Safety Net now active in test preview if charges/count > 0
+                    if (refs.stickyPaddleChargesRef.current > 0 && !ball.isBig && (isNearLeft || isNearRight)) { 
                         refs.stickyPaddleChargesRef.current--;
                         ball.isZipping = true;
                         ball.zipStartTime = currentTime;
-                        ball.initialZipX = ball.x; // Current position before zip
+                        ball.initialZipX = ball.x; 
                         ball.initialZipY = ball.y;
                         ball.targetStuckSideValue = isNearLeft ? 'left' : 'right';
                         const sideOffset = currentBallSize;
                         ball.zipTargetX = ball.targetStuckSideValue === 'left' ? paddleLeft - sideOffset : paddleRight + sideOffset;
-                        ball.zipTargetY = PADDLE_Y + PADDLE_HEIGHT / 2 - PADDLE_HEIGHT / 2; // Simplified: PADDLE_Y
-                        
-                        ball.speedX = 0; ball.speedY = 0; // Stop normal movement
-                        // Pause timed effects for the zipping ball
+                        ball.zipTargetY = PADDLE_Y + PADDLE_HEIGHT / 2 - PADDLE_HEIGHT / 2;
+                        ball.speedX = 0; ball.speedY = 0; 
                         if (ball.isHoming) { ball.isHoming = false; }
                         if (ball.isBlack && ball.blackEndTime) { ball.blackPausedDuration = ball.blackEndTime - currentTime; ball.blackEndTime = undefined; }
                         if (ball.isBlue && ball.blueEndTime) { ball.bluePausedDuration = ball.blueEndTime - currentTime; ball.blueEndTime = undefined; }
                         if (ball.isSplitting && ball.splittingEndTime) { ball.splittingPausedDuration = ball.splittingEndTime - currentTime; ball.splittingEndTime = undefined; }
-                        
-                        processNormalUpdate = false; // Ball is now zipping, not moving normally or being removed yet
-                    } else if (refs.safetyNetCountRef.current > 0) {
+                        processNormalUpdate = false; 
+                    } else if (refs.safetyNetCountRef.current > 0) { 
                         currentSpeedY = -Math.abs(currentSpeedY);
                         ball.y = BOARD_HEIGHT - currentBallSize - refs.safetyNetCountRef.current * SAFETY_NET_HEIGHT;
-                        refs.safetyNetCountRef.current--;
-                        nextY = ball.y + currentSpeedY * deltaTime; // Recalculate nextY after bounce
-                    } else {
+                        refs.safetyNetCountRef.current--; // Consume safety net charge
+                        nextY = ball.y + currentSpeedY * deltaTime; 
+                    } else { // Ball loss (applies to both main game and test preview if not caught by above)
                         ballsToRemoveIds.add(ball.id);
                         processNormalUpdate = false;
                     }
                 }
-                // Paddle Top Collision (Always Bounce)
                 else if (currentSpeedY > 0 && ball.y + currentBallSize <= PADDLE_Y && nextY + currentBallSize > PADDLE_Y) {
                     const timeToPaddleY = (PADDLE_Y - (ball.y + currentBallSize)) / effectiveSpeedY;
                     const collisionX = ball.x + effectiveSpeedX * timeToPaddleY;
@@ -171,6 +160,8 @@ export const updateBalls = (
                         currentSpeedY = -Math.abs(currentSpeedY);
                         let deltaX = collisionX - (paddleLeft + refs.paddleWidthRef.current / 2);
                         currentSpeedX = Math.max(-currentMaxBallSpeedX, Math.min(currentMaxBallSpeedX, currentSpeedX + (deltaX * 0.1)));
+                        
+                        // Homing ball logic now active in test preview if ball.isHoming
                         if (ball.isHoming) {
                             const closestBrick = findClosestBrick(ball, refs.bricksRef.current, columns, rows);
                             if (closestBrick) {
@@ -185,8 +176,9 @@ export const updateBalls = (
                                     currentSpeedY = -Math.abs(currentSpeedY);
                                 }
                             }
-                            ball.isHoming = false;
+                            ball.isHoming = false; // Consume homing effect
                         }
+                        // Big ball splitting on paddle now active in test preview if ball.isBig
                         if (ball.isBig) {
                             ballsToAdd.push(createNewBall(collisionX, PADDLE_Y - BALL_SIZE - 5, (Math.random() - 0.5) * 6, -3 - Math.random() * 2, BASE_BALL_SPEED_FACTOR));
                         }
@@ -196,29 +188,22 @@ export const updateBalls = (
                     }
                 }
 
-                // Apply updated position and speed if normal update proceeded
                 if (processNormalUpdate) {
                     ball.x = nextX;
                     ball.y = nextY;
                     ball.speedX = currentSpeedX;
                     ball.speedY = currentSpeedY;
                 }
-            } // End if(processNormalUpdate)
-        } // End for loop over active balls
-    } // End if (isGameStartedRef)
+            } 
+        } 
+    } 
 
-    // Remove points fields that have expired (Original logic seems to be for POINTS_FIELD_DURATION only)
     if (refs.pointsFieldsRef.current && refs.pointsFieldsRef.current.length > 0) {
         refs.pointsFieldsRef.current = refs.pointsFieldsRef.current.filter(field => {
-            // The condition from gameLoop.ts for points field removal is:
-            // currentTime - field.createdAt > POINTS_FIELD_DURATION || field.ballsPassed >= POINTS_FIELD_MAX_BALLS
-            // This file, ballUpdates.ts, might not be the place to manage PointsField removal based on ballsPassed.
-            // For now, sticking to the original time-based removal as found in this file previously.
             return currentTime - field.createdAt < POINTS_FIELD_DURATION;
         });
     }
 
-    // Efficiently remove balls marked for deletion from active balls list
     if (ballsToRemoveIds.size > 0) {
         let writeIndex = 0;
         for (let readIndex = 0; readIndex < refs.ballsRef.current.length; readIndex++) {
@@ -232,7 +217,6 @@ export const updateBalls = (
         refs.ballsRef.current.length = writeIndex;
     }
 
-    // Add newly created balls to the active list
     if (ballsToAdd.length > 0) {
          refs.ballsRef.current.push(...ballsToAdd);
     }
