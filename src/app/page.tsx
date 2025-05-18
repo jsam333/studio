@@ -246,7 +246,7 @@ export default function Home() {
             )}
 
             {gameOverState === 'menu' && activeGameMode === 'test' && (
-                <div style={{ marginTop: '0px' /* Minimal top margin */ }}> 
+                <div style={{ marginTop: '0px', display: 'flex', flexDirection: 'column', alignItems: 'center' }}> 
                     <GameView
                         gameContainerRef={testGameContainerRef} 
                         canvasRef={testCanvasRef} 
@@ -260,10 +260,26 @@ export default function Home() {
                         addSpawnablePowerUp={addSpawnablePowerUp}
                         startNextLevel={() => {}} 
                         scaleRef={testScaleRef} 
-                        gameWidth={BOARD_WIDTH} // These props might be unused in GameView if BOARD_HEIGHT is directly used
+                        gameWidth={BOARD_WIDTH} 
                         gameHeight={BOARD_HEIGHT}
                         isTestPreview={true} 
                     />
+                    {/* New empty div for content below the test game window */}
+                    <div 
+                        style={{
+                            width: `${BOARD_WIDTH * testScaleRef.current}px`, // Match width of the canvas
+                            height: '100px', // Placeholder height
+                            backgroundColor: '#111927', // Updated background color
+                            // border: '1px solid #ccc', // REMOVED: Placeholder border
+                            // marginTop: '10px', // REMOVED: Space between canvas and this div
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            color: '#FFFFFF' // Text color white for contrast
+                        }}
+                    >
+                        Placeholder content below test game window.
+                    </div>
                 </div>
             )}
 
