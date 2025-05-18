@@ -17,7 +17,7 @@ export const GameMenu: React.FC<GameMenuProps> = ({ onStartGame }) => {
     }}>
       <header style={{ textAlign: 'center', marginBottom: '20px', borderBottom: '2px solid #000000', paddingBottom: '20px' }}>
         <h1 style={{ fontSize: '36px', fontWeight: 'bold', margin: '0' }}>Free Fun Games - Welcome!</h1>
-        <p style={{ fontSize: '14px', marginTop: '5px' }}>Your #1 source for brick-blasting action!</p>
+        <p style={{ fontSize: '14px', marginTop: '5px' }}>Your #1 source for brick-blasting action</p>
       </header>
       
       <div style={{ display: 'flex', justifyContent: 'space-around', alignItems: 'flex-start', maxWidth: '1000px', margin: '0 auto' }}>
