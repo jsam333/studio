@@ -61,8 +61,7 @@ export const GameMenu: React.FC<GameMenuProps> = ({ onStartGame }) => {
               <span style={{ fontSize: '20px', color: '#000000', marginLeft: '10px' }}>&lt;- new!</span>
               <div style={{ textAlign: 'center', marginTop: '0px', padding: '0px', borderRadius: '5px' }}>
                 <p style={{ fontSize: '14px', lineHeight: '1.6', maxWidth: '600px', margin: '0 auto' }}>
-                  Destroy all the bricks using your paddle and ball. Collect power-ups to help! 
-                  Gain more gold for beating levels faster, and beware of the level time limit.
+                  Destroy all the bricks using your paddle and ball. Clear all levels to win!
                 </p>
               </div>
             </li>
