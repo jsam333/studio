@@ -73,7 +73,7 @@ export const GameMenu: React.FC<GameMenuProps> = ({ onStartGame }) => {
 
       <footer style={{ textAlign: 'center', marginTop: '5px', paddingTop: '5px', borderTop: '1px dashed #555555', fontSize: '12px', marginBottom: '0px' }}>
         <p style={{ marginBlockStart: '0.5em', marginBlockEnd: '0.5em' }}>&copy; 2001 BrickBlast Corp. All Rights Reserved.</p>
-        <img src="https://www.thegeocitiesgallery.com/images/blinking-construction.gif" alt="Test the game below" style={{marginTop: '5px', display: 'block', marginBottom: '0px'}}/>
+        <img src="https://www.thegeocitiesgallery.com/images/blinking-construction.gif" alt="Try it out down here :-)" style={{marginTop: '5px', display: 'block', marginBottom: '0px'}}/>
       </footer>
     </div>
   );
