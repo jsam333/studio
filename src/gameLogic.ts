@@ -190,13 +190,13 @@ export const checkBrickCollision = ( ball: Ball, bricks: Brick[][], columns: num
                          newSpeedY = tempSpeedY;
                          if (brick.isBomb && brickDestroyed) {
                              pointsAwarded += handleBombExplosion(c, r, bricks, columns, rows, spawnEvents);
-                         } else if (brickDestroyed && ball.isBlack && !brick.isBomb && !brick.holdsBall) { 
+                         } else if (brickDestroyed && ball.isBlack) { 
                              const neighbors = [{ nc: c + 1, nr: r }, { nc: c - 1, nr: r }, { nc: c, nr: r + 1 }, { nc: c, nr: r - 1 }];
                              const validNeighbors: { brick: Brick, col: number, row: number }[] = [];
                              neighbors.forEach(n => {
                                  if (n.nc >= 0 && n.nc < columns && n.nr >= 0 && n.nr < rows) {
                                      const neighborBrick = bricks[n.nc]?.[n.nr];
-                                     if (neighborBrick && neighborBrick.status === 1 && !neighborBrick.isBomb && !neighborBrick.holdsBall) {
+                                     if (neighborBrick && neighborBrick.status === 1) {
                                          validNeighbors.push({ brick: neighborBrick, col: n.nc, row: n.nr });
                                      }
                                  }
