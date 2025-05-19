@@ -17,6 +17,8 @@ export const PADDLE_SPEED = 7;
 export const PADDLE_FRICTION = 0.9;
 export const PADDLE_EDGE_STICK_THRESHOLD = 0.15; // 15% of paddle width from edge for top-sticking
 export const PADDLE_SIDE_SAVE_THRESHOLD = 90; // Pixels from paddle side to trigger bottom save
+export const PADDLE_WIDEN_VISUAL_EFFECT_DURATION_MS = 100; 
+export const PADDLE_WIDEN_VISUAL_EFFECT_AMOUNT = 6; // Total visual expansion
 
 // Ball
 export const BALL_SIZE = 4;
@@ -87,12 +89,12 @@ export const BUILDER_BALL_DURATION = 6000;
 export const BLACK_BALL_DURATION = 10000;
 
 // Particle Effects
-export const MULTIBALL_PARTICLE_COUNT = 10; // Halved
-export const MULTIBALL_PARTICLE_SPEED_MIN = 2; // Doubled
-export const MULTIBALL_PARTICLE_SPEED_MAX = 6; // Doubled
-export const MULTIBALL_PARTICLE_SIZE = 1; // Fixed tiny size
-export const MULTIBALL_PARTICLE_LIFESPAN_MS = 250; // Halved (milliseconds)
-export const MULTIBALL_PARTICLE_COLOR = '#FFFFFF'; // White particles
+export const MULTIBALL_PARTICLE_COUNT = 10; 
+export const MULTIBALL_PARTICLE_SPEED_MIN = 2; 
+export const MULTIBALL_PARTICLE_SPEED_MAX = 6; 
+export const MULTIBALL_PARTICLE_SIZE = 1; 
+export const MULTIBALL_PARTICLE_LIFESPAN_MS = 250; 
+export const MULTIBALL_PARTICLE_COLOR = '#FFFFFF'; 
 
 // Bonus Gold
 export const INITIAL_BONUS_GOLD = 30;

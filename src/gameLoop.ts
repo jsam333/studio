@@ -8,18 +8,19 @@ import { updatePowerUps } from './gameUpdates/powerUpUpdates';
 import { applyPowerUpEffects } from './gameUpdates/powerUpEffects';
 import { checkGameStatus } from './gameUpdates/gameStatus';
 import { handleSpawnEvents } from './gameUpdates/gameLoopUtils';
-import { updateParticles } from './gameUpdates/particleUpdates'; // Added
+import { updateParticles } from './gameUpdates/particleUpdates'; 
 import {
     BOARD_WIDTH, BOARD_HEIGHT, BASE_BALL_SPEED_FACTOR, POWER_UP_COLORS,
     TARGET_FPS, BONUS_GOLD_TARGET, BONUS_GOLD_TIMER_DURATION,
     BALL_SIZE, BIG_BALL_SIZE_INCREASE, POINTS_FIELD_DURATION, POINTS_FIELD_MAX_BALLS,
-    BRICK_FLASH_DURATION, BRICK_FADE_SPEED 
+    BRICK_FLASH_DURATION, BRICK_FADE_SPEED,
+    PADDLE_WIDEN_VISUAL_EFFECT_DURATION_MS, PADDLE_WIDEN_VISUAL_EFFECT_AMOUNT // Added paddle effect constants
 } from './constants'; 
 import { 
     drawPaddle, drawBalls, drawBricks, drawGameInfo, 
     drawPowerUps, drawLasers, drawSafetyNet, 
     drawCollectionFieldRect, drawPowerUpPreviews, 
-    drawPointsFields, drawParticles // Added drawParticles
+    drawPointsFields, drawParticles 
 } from './drawFunctions';
 
 const updatePaddleShrinkTimer = (
@@ -126,7 +127,6 @@ const updateBrickAnimations = (bricks: Brick[][], columns: number, rows: number,
     }
 };
 
-
 const collectedPowerUpTypesReusable: PowerUpType[] = [];
 const spawnRequestsReusable: PowerUpSpawnEvent[] = [];
 
@@ -134,7 +134,7 @@ export const gameUpdate = (
     ctx: CanvasRenderingContext2D,
     refs: GameStateRefs,
     callbacks: GameLoopCallbacks,
-    elapsedTime: number // This is deltaTime from requestAnimationFrame
+    elapsedTime: number 
 ) => {
     const currentGameState = refs.gameOverStateRef.current;
     const gameMode = refs.gameModeRef.current;
@@ -145,11 +145,6 @@ export const gameUpdate = (
         if (currentGameState === 'won' || currentGameState === 'lost') {
             callbacks.drawEndMessage(ctx, currentGameState, refs.scoreRef.current);
         }
-        // Potentially draw particles even on menu/shop if any are left over and it looks good
-        // if (refs.particlesRef.current && refs.particlesRef.current.length > 0) {
-        //     updateParticles(refs, Date.now(), elapsedTime);
-        //     drawParticles(ctx, refs.particlesRef.current);
-        // }
         return;
     }
 
@@ -159,14 +154,12 @@ export const gameUpdate = (
     const scaledDeltaTime = elapsedTime / targetFrameTime;
 
     spawnRequestsReusable.length = 0; 
-
     const previousBallCount = refs.ballsRef.current.length + refs.stuckBallsRef.current.length;
-
     const columns = refs.brickColumnsRef.current;
     const rows = refs.brickRowsRef.current;
 
     updateBrickAnimations(refs.bricksRef.current, columns, rows, currentTime, scaledDeltaTime); 
-    updateParticles(refs, currentTime, elapsedTime); // Update particles
+    updateParticles(refs, currentTime, elapsedTime); 
     
     if (refs.paddleShrinkCountdownRef?.current !== null) {
         updatePaddleShrinkTimer(refs, callbacks, elapsedTime);
@@ -184,7 +177,26 @@ export const gameUpdate = (
     ctx.save();
     ctx.clearRect(0, 0, BOARD_WIDTH, BOARD_HEIGHT);
     drawBricks(ctx, refs.bricksRef.current, columns, rows);
-    drawPaddle( ctx, refs.paddleXRef.current, refs.paddleWidthRef.current, refs.laserShotsRef.current, refs.stickyPaddleChargesRef.current );
+
+    // Paddle Visual Widen Effect Handling
+    let visualPaddleWidth = refs.paddleWidthRef.current;
+    let visualPaddleX = refs.paddleXRef.current;
+    if (refs.paddleVisualEffectActiveRef?.current && refs.paddleVisualEffectStartTimeRef?.current) {
+        const effectElapsedTime = currentTime - refs.paddleVisualEffectStartTimeRef.current;
+        if (effectElapsedTime < PADDLE_WIDEN_VISUAL_EFFECT_DURATION_MS) {
+            const progress = effectElapsedTime / PADDLE_WIDEN_VISUAL_EFFECT_DURATION_MS;
+            // Simple pulse: grow then shrink, using Math.sin for a smooth curve (0 -> 1 -> 0)
+            const offset = PADDLE_WIDEN_VISUAL_EFFECT_AMOUNT * Math.sin(progress * Math.PI);
+            visualPaddleWidth = refs.paddleWidthRef.current + offset;
+            visualPaddleX = refs.paddleXRef.current - offset / 2; // Adjust X to keep centered
+        } else {
+            refs.paddleVisualEffectActiveRef.current = false;
+            refs.paddleVisualEffectStartTimeRef.current = null;
+            // visualPaddleWidth and visualPaddleX default to actual values
+        }
+    }
+
+    drawPaddle( ctx, visualPaddleX, visualPaddleWidth, refs.laserShotsRef.current, refs.stickyPaddleChargesRef.current );
     drawPointsFields(ctx, refs.pointsFieldsRef.current); 
     drawGameInfo(
         ctx,
@@ -242,7 +254,7 @@ export const gameUpdate = (
     drawBalls(ctx, refs.ballsRef.current, (isTestPreview || !refs.isGameStartedRef.current) ? [] : refs.stuckBallsRef.current); 
     drawPowerUps(ctx, refs.powerUpsRef.current); 
     drawLasers(ctx, refs.lasersRef.current);
-    drawParticles(ctx, refs.particlesRef.current); // Draw particles
+    drawParticles(ctx, refs.particlesRef.current); 
 
     if (gameSpeedFactor !== BASE_BALL_SPEED_FACTOR) {
         ctx.font = "12px Arial"; ctx.fillStyle = POWER_UP_COLORS['SPEED_UP'] || '#e74c3c'; ctx.textAlign = 'right';

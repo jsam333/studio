@@ -38,7 +38,7 @@ export function useGameLogic() {
     const paddleXRef = useRef((BOARD_WIDTH - INITIAL_PADDLE_WIDTH) / 2);
     const ballsRef = useRef<Ball[]>([]);
     const powerUpsRef = useRef<PowerUp[]>([]);
-    const particlesRef = useRef<Particle[]>([]); // Added particlesRef
+    const particlesRef = useRef<Particle[]>([]); 
     const scoreRef = useRef(0);
     const goldRef = useRef<number>(0);
     const spawnablePowerUpsRef = useRef<Set<PowerUpType>>(new Set());
@@ -55,7 +55,7 @@ export function useGameLogic() {
     const collectionFieldShrinkTimerRef = useRef<NodeJS.Timeout | null>(null);
     const stickyPaddleChargesRef = useRef(0);
     const stuckBallsRef = useRef<Ball[]>([]);
-    const enabledPowerUpsRef = useRef<Set<PowerUpType>>(new Set(['MULTI_BALL'] as PowerUpType[])); // Default for test mode
+    const enabledPowerUpsRef = useRef<Set<PowerUpType>>(new Set(['MULTI_BALL'] as PowerUpType[])); 
     const isGameStartedRef = useRef(false); 
     const testPreviewInitialLaunchDoneRef = useRef(false); 
     const gameModeRef = useRef<GameMode | null>(null); 
@@ -65,18 +65,20 @@ export function useGameLogic() {
     const livesRef = useRef<number>(INITIAL_LIVES);
     const bonusGoldTimerCountdownRef = useRef<number | null>(null);
     const initialBonusGoldDecrementCompleteRef = useRef<boolean>(false);
-    const firstTestRunCompletedRef = useRef<boolean>(false); // To track if initial test setup is done
+    const firstTestRunCompletedRef = useRef<boolean>(false); 
     const pointsFieldsRef = useRef<PointsField[]>([]);
     const levelCompletionProcessedRef = useRef<boolean>(false);
     const testPowerUpSpawnChanceRef = useRef<number>(INITIAL_TEST_POWER_UP_SPAWN_CHANCE); 
     const testBrickColumnsRef = useRef<number>(TEST_DEFAULT_BRICK_COLUMNS); 
     const testBrickRowsRef = useRef<number>(TEST_DEFAULT_BRICK_ROWS); 
+    const paddleVisualEffectActiveRef = useRef<boolean>(false); // Added for widen paddle visual effect
+    const paddleVisualEffectStartTimeRef = useRef<number | null>(null); // Added for widen paddle visual effect
 
     const [gameOverState, setGameOverState] = useState<GameState>('menu');
     const gameOverStateRef = useRef(gameOverState);
-    const [enabledPowerUps, setEnabledPowerUps] = useState<Set<PowerUpType>>(() => new Set(['MULTI_BALL'] as PowerUpType[])); // Default for test mode
-    const [showSidebar, setShowSidebar] = useState<boolean>(true); // Show sidebar by default in test mode
-    const [activeGameMode, setActiveGameMode] = useState<GameMode | null>('test'); // Start in test mode
+    const [enabledPowerUps, setEnabledPowerUps] = useState<Set<PowerUpType>>(() => new Set(['MULTI_BALL'] as PowerUpType[])); 
+    const [showSidebar, setShowSidebar] = useState<boolean>(true); 
+    const [activeGameMode, setActiveGameMode] = useState<GameMode | null>('test'); 
     const [testPowerUpSpawnChance, setTestPowerUpSpawnChance] = useState<number>(INITIAL_TEST_POWER_UP_SPAWN_CHANCE); 
     const [testBrickColumns, setTestBrickColumns] = useState<number>(TEST_DEFAULT_BRICK_COLUMNS); 
     const [testBrickRows, setTestBrickRows] = useState<number>(TEST_DEFAULT_BRICK_ROWS); 
@@ -152,11 +154,9 @@ export function useGameLogic() {
         testBrickRowsRef.current = testBrickRows;
     }, [testBrickRows]);
 
-    // Forward declaration for startGame to be used in useEffect
     const startGameCallbackRef = useRef<((mode: GameMode, newTestBrickColumns?: number, newTestBrickRows?: number) => void) | null>(null);
 
     const startGame = useCallback((mode: GameMode, newTestBrickColumns?: number, newTestBrickRows?: number) => {
-        // Always reset common game state regardless of current gameOverState if mode is 'test' or menu is active
         if (gameOverStateRef.current === 'menu' || mode === 'test') {
             scoreRef.current = 0;
             goldRef.current = 0;
@@ -164,46 +164,41 @@ export function useGameLogic() {
             bonusGoldTimerCountdownRef.current = null;
             initialBonusGoldDecrementCompleteRef.current = false;
             pointsFieldsRef.current = [];
-            particlesRef.current = []; // Clear particles on new game/reset
+            particlesRef.current = []; 
             levelCompletionProcessedRef.current = false;
             testPreviewInitialLaunchDoneRef.current = false; 
+            paddleVisualEffectActiveRef.current = false; // Reset visual effect
+            paddleVisualEffectStartTimeRef.current = null;
             
             gameModeRef.current = mode; 
             setActiveGameMode(mode); 
 
             if (mode === 'main') {
-                 spawnablePowerUpsRef.current = new Set(); // Fresh set for main game
-                 setEnabledPowerUps(new Set(ALL_TOGGLEABLE_POWER_UPS)); // All power-ups available in main game by default
-                 firstTestRunCompletedRef.current = false; // Reset for next potential test run
+                 spawnablePowerUpsRef.current = new Set(); 
+                 setEnabledPowerUps(new Set(ALL_TOGGLEABLE_POWER_UPS)); 
+                 firstTestRunCompletedRef.current = false; 
                  setShowSidebar(false);
                  setGameOverState('playing');
                  isGameStartedRef.current = false; 
              } else if (mode === 'test') {
-                 spawnablePowerUpsRef.current = new Set(ALL_TOGGLEABLE_POWER_UPS); // All potentially spawnable in test
+                 spawnablePowerUpsRef.current = new Set(ALL_TOGGLEABLE_POWER_UPS); 
                  setShowSidebar(true);
                  setGameOverState('menu'); 
                  isGameStartedRef.current = false; 
 
                  if (!firstTestRunCompletedRef.current) {
-                    // This is the first run of test mode (e.g., initial load or after handleResetGame)
                     setTestPowerUpSpawnChance(INITIAL_TEST_POWER_UP_SPAWN_CHANCE);
                     testPowerUpSpawnChanceRef.current = INITIAL_TEST_POWER_UP_SPAWN_CHANCE;
                     setEnabledPowerUps(new Set(['MULTI_BALL'] as PowerUpType[]));
-                    
-                    // Set default brick dimensions if not overridden by parameters
                     testBrickColumnsRef.current = newTestBrickColumns !== undefined ? newTestBrickColumns : TEST_DEFAULT_BRICK_COLUMNS;
                     setTestBrickColumns(testBrickColumnsRef.current);
                     testBrickRowsRef.current = newTestBrickRows !== undefined ? newTestBrickRows : TEST_DEFAULT_BRICK_ROWS;
                     setTestBrickRows(testBrickRowsRef.current);
-
                     firstTestRunCompletedRef.current = true;
                 } else {
-                    // Test mode started again (e.g., by user changing brick counts or losing all balls),
-                    // use current UI values for spawn chance and enabled powerups.
-                    // Brick counts are updated based on parameters or current state.
-                    testBrickColumnsRef.current = newTestBrickColumns !== undefined ? newTestBrickColumns : testBrickColumns; // Use current state value if no new one
+                    testBrickColumnsRef.current = newTestBrickColumns !== undefined ? newTestBrickColumns : testBrickColumns; 
                     setTestBrickColumns(testBrickColumnsRef.current); 
-                    testBrickRowsRef.current = newTestBrickRows !== undefined ? newTestBrickRows : testBrickRows; // Use current state value if no new one
+                    testBrickRowsRef.current = newTestBrickRows !== undefined ? newTestBrickRows : testBrickRows; 
                     setTestBrickRows(testBrickRowsRef.current); 
                 }
              }
@@ -216,7 +211,6 @@ export function useGameLogic() {
         }
     }, [resetLevel, setupInitialBall, setActiveGameMode, setEnabledPowerUps, setShowSidebar, setGameOverState, testBrickColumns, testBrickRows]);
 
-    // Effect to assign startGame to the ref after it's defined.
     useEffect(() => {
         startGameCallbackRef.current = startGame;
     }, [startGame]);
@@ -227,7 +221,7 @@ export function useGameLogic() {
 
         if (gameOverState === 'lost' && activeGameMode === 'test') {
             if (startGameCallbackRef.current) {
-                startGameCallbackRef.current('test'); // Call startGame to reset test mode like UI does
+                startGameCallbackRef.current('test'); 
             }
             return; 
         }
@@ -239,20 +233,23 @@ export function useGameLogic() {
             bonusGoldTimerCountdownRef.current = null;
             initialBonusGoldDecrementCompleteRef.current = false;
             pointsFieldsRef.current = [];
-            particlesRef.current = []; // Clear particles on level reset
+            particlesRef.current = []; 
             levelCompletionProcessedRef.current = false;
+            paddleVisualEffectActiveRef.current = false; // Reset visual effect
+            paddleVisualEffectStartTimeRef.current = null;
             setGameOverState('playing');
         } else if (gameOverState !== 'playing') {
             paddleShrinkCountdownRef.current = null;
             bonusGoldTimerCountdownRef.current = null;
             initialBonusGoldDecrementCompleteRef.current = false;
             pointsFieldsRef.current = [];
-            particlesRef.current = []; // Clear particles if game is not playing (menu, shop, etc.)
+            particlesRef.current = []; 
+            paddleVisualEffectActiveRef.current = false; // Reset visual effect
+            paddleVisualEffectStartTimeRef.current = null;
             if (gameSpeedFactorRef.current !== BASE_BALL_SPEED_FACTOR) {
                  gameSpeedFactorRef.current = BASE_BALL_SPEED_FACTOR;
             }
         }
-    // Corrected dependencies for the gameOverState useEffect
     }, [gameOverState, activeGameMode, resetLevel, setGameOverState]);
 
     useEffect(() => {
@@ -327,10 +324,11 @@ export function useGameLogic() {
         bonusGoldTimerCountdownRef.current = null;
         initialBonusGoldDecrementCompleteRef.current = false;
         pointsFieldsRef.current = [];
-        particlesRef.current = []; // Clear particles on game reset
+        particlesRef.current = []; 
         levelCompletionProcessedRef.current = false;
+        paddleVisualEffectActiveRef.current = false; // Reset visual effect
+        paddleVisualEffectStartTimeRef.current = null;
         
-        // Reset test mode defaults
         testPowerUpSpawnChanceRef.current = INITIAL_TEST_POWER_UP_SPAWN_CHANCE; 
         setTestPowerUpSpawnChance(INITIAL_TEST_POWER_UP_SPAWN_CHANCE); 
         testBrickColumnsRef.current = TEST_DEFAULT_BRICK_COLUMNS; 
@@ -338,7 +336,7 @@ export function useGameLogic() {
         testBrickRowsRef.current = TEST_DEFAULT_BRICK_ROWS; 
         setTestBrickRows(TEST_DEFAULT_BRICK_ROWS); 
         setEnabledPowerUps(new Set(['MULTI_BALL'] as PowerUpType[]));
-        firstTestRunCompletedRef.current = false; // Signal to re-apply initial test settings
+        firstTestRunCompletedRef.current = false; 
 
         gameModeRef.current = 'test'; 
         setActiveGameMode('test'); 
@@ -452,10 +450,11 @@ export function useGameLogic() {
             bonusGoldTimerCountdownRef.current = null;
             initialBonusGoldDecrementCompleteRef.current = false;
             pointsFieldsRef.current = [];
-            particlesRef.current = []; // Clear particles when starting next level from shop
+            particlesRef.current = []; 
             levelCompletionProcessedRef.current = false;
             testPreviewInitialLaunchDoneRef.current = false; 
-            // Reset test-specific settings to their initial defaults when transitioning from shop to a new main game level
+            paddleVisualEffectActiveRef.current = false; // Reset visual effect
+            paddleVisualEffectStartTimeRef.current = null;
             testPowerUpSpawnChanceRef.current = INITIAL_TEST_POWER_UP_SPAWN_CHANCE; 
             setTestPowerUpSpawnChance(INITIAL_TEST_POWER_UP_SPAWN_CHANCE); 
             testBrickColumnsRef.current = TEST_DEFAULT_BRICK_COLUMNS; 
@@ -509,7 +508,9 @@ export function useGameLogic() {
         bonusGoldTimerCountdownRef.current = null;
         initialBonusGoldDecrementCompleteRef.current = false;
         pointsFieldsRef.current = [];
-        particlesRef.current = []; // Clear particles on level reset callback
+        particlesRef.current = []; 
+        paddleVisualEffectActiveRef.current = false; // Reset visual effect
+        paddleVisualEffectStartTimeRef.current = null;
         resetLevel(mode, resetScoreAndGold);
         isGameStartedRef.current = false; 
         if (mode === 'test' || (gameModeRef.current === 'test' && mode === null)) { 
@@ -518,7 +519,7 @@ export function useGameLogic() {
     }, [resetLevel]);
 
     const gameStateRefs: IGameStateRefs = useMemo(() => ({
-        paddleXRef, ballsRef, powerUpsRef, particlesRef, scoreRef, goldRef, spawnablePowerUpsRef, // Added particlesRef here
+        paddleXRef, ballsRef, powerUpsRef, particlesRef, scoreRef, goldRef, spawnablePowerUpsRef, 
         paddleWidthRef, widenLevelRef, laserShotsRef, lasersRef, safetyNetCountRef,
         gameIsRunningRef, gameOverStateRef, gameSpeedFactorRef,
         collectionFieldHeightRef, collectionFieldWidthOffsetRef,
@@ -544,8 +545,10 @@ export function useGameLogic() {
         testPowerUpSpawnChanceRef, 
         testBrickColumnsRef, 
         testBrickRowsRef, 
+        paddleVisualEffectActiveRef, // Added ref for widen paddle effect
+        paddleVisualEffectStartTimeRef, // Added ref for widen paddle effect
     }), [
-        paddleXRef, ballsRef, powerUpsRef, particlesRef, scoreRef, goldRef, spawnablePowerUpsRef, // Added particlesRef to dependency array
+        paddleXRef, ballsRef, powerUpsRef, particlesRef, scoreRef, goldRef, spawnablePowerUpsRef, 
         paddleWidthRef, widenLevelRef, laserShotsRef, lasersRef, safetyNetCountRef,
         gameIsRunningRef, gameOverStateRef, gameSpeedFactorRef,
         collectionFieldHeightRef, collectionFieldWidthOffsetRef,
@@ -571,6 +574,8 @@ export function useGameLogic() {
         testPowerUpSpawnChanceRef, 
         testBrickColumnsRef, 
         testBrickRowsRef,
+        paddleVisualEffectActiveRef, // Added ref to dependency array
+        paddleVisualEffectStartTimeRef, // Added ref to dependency array
     ]);
 
     const drawEndMessageCallback = useCallback((context: CanvasRenderingContext2D, state: GameState, finalScore: number) => {
