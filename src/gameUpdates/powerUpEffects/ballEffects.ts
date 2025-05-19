@@ -29,7 +29,9 @@ export const applyBallEffects = (
             const ballsToModify = eligibleBalls.slice(0, numToAffect);
             ballsToModify.forEach(ball => {
                 ball.isHoming = true;
-                 // Note: Homing duration TBD
+                // Note: Homing duration TBD
+                ball.isGlowEffectActive = true;
+                ball.glowEffectStartTime = currentTime;
             });
             break;
         }
@@ -40,7 +42,9 @@ export const applyBallEffects = (
             const ballsToModify = eligibleBalls.slice(0, numToAffect);
             ballsToModify.forEach(ball => {
                 ball.isSplitting = true;
-                ball.splittingEndTime = currentTime + SPLITTING_BALL_DURATION; // Duration might vary by level later
+                ball.splittingEndTime = currentTime + SPLITTING_BALL_DURATION; 
+                ball.isGlowEffectActive = true;
+                ball.glowEffectStartTime = currentTime;
             });
             break;
         }
@@ -51,14 +55,13 @@ export const applyBallEffects = (
             const ballsToModify = eligibleBalls.slice(0, numToAffect);
             ballsToModify.forEach(ball => {
                 ball.isBig = true;
-                ball.bigEndTime = currentTime + BIG_BALL_DURATION; // Duration might vary by level later
+                ball.bigEndTime = currentTime + BIG_BALL_DURATION; 
             });
             break;
         }
         case 'MULTI_BALL':
         case 'MULTI_BALL_L2':
         case 'MULTI_BALL_L3': {
-            // Spawning logic remains the same (spawns 1, 2, or 3 *new* balls)
             let numberOfBallsToSpawn = 1;
             if (type === 'MULTI_BALL_L2') {
                 numberOfBallsToSpawn = 2;
@@ -85,10 +88,11 @@ export const applyBallEffects = (
             const ballsToModify = eligibleBalls.slice(0, numToAffect);
             ballsToModify.forEach(ball => {
                 ball.isBlue = true;
-                ball.blueEndTime = currentTime + BUILDER_BALL_DURATION; // Duration might vary by level later
-                // Remove conflicting effects
+                ball.blueEndTime = currentTime + BUILDER_BALL_DURATION; 
                 ball.isBlack = false; ball.blackEndTime = undefined;
                 ball.pierceHitsRemaining = 0;
+                ball.isGlowEffectActive = true;
+                ball.glowEffectStartTime = currentTime;
             });
             break;
         }
@@ -101,12 +105,9 @@ export const applyBallEffects = (
             const ballsToModify = eligibleBalls.slice(0, numToAffect);
             ballsToModify.forEach(ball => {
                 ball.isBlack = true;
-                ball.blackEndTime = currentTime + BLACK_BALL_DURATION; // Duration might vary by level later
-                 // Remove conflicting effects
+                ball.blackEndTime = currentTime + BLACK_BALL_DURATION; 
                 ball.isBlue = false; ball.blueEndTime = undefined;
                 ball.pierceHitsRemaining = 0;
-
-                // Trigger visual effect on the specific ball
                 ball.isGlowEffectActive = true;
                 ball.glowEffectStartTime = currentTime;
             });
@@ -120,16 +121,15 @@ export const applyBallEffects = (
             );
             const ballsToModify = eligibleBalls.slice(0, numToAffect);
             ballsToModify.forEach(ball => {
-                 // Apply pierce effect (hits might vary by level later)
                 ball.pierceHitsRemaining = PIERCE_BALL_HITS;
-                 // Remove conflicting effects
                 ball.isBlue = false; ball.blueEndTime = undefined;
                 ball.isBlack = false; ball.blackEndTime = undefined;
+                ball.isGlowEffectActive = true;
+                ball.glowEffectStartTime = currentTime;
             });
             break;
         }
         default:
-            // console.log(`Ball effect not handled for type: ${type}`); // Optional: log unhandled types
             break;
     }
 };

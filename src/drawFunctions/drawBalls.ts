@@ -4,11 +4,10 @@ import {
     BLACK_BALL_VISUAL_EFFECT_DURATION_MS, BLACK_BALL_GLOW_MAX_RADIUS_ADDITION 
 } from '../constants';
 
-const drawBlackBallRadialGlow = (
+const drawRadialGlowEffect = (
     ctx: CanvasRenderingContext2D,
     ball: Ball,
-    currentTime: number,
-    // effectStartTime is now read directly from ball.glowEffectStartTime
+    currentTime: number
 ) => {
     if (typeof ball.glowEffectStartTime !== 'number') return;
 
@@ -18,10 +17,9 @@ const drawBlackBallRadialGlow = (
     }
 
     const progress = elapsedTime / BLACK_BALL_VISUAL_EFFECT_DURATION_MS;
-    const overallEffectAlpha = 1 - progress; // General fade for the entire effect
+    const overallEffectAlpha = 1 - progress; 
 
-    // Glow size starts big and shrinks
-    const sizeFactor = 1 - progress; // Goes from 1 down to 0
+    const sizeFactor = 1 - progress; 
     const currentGlowRadiusAddition = BLACK_BALL_GLOW_MAX_RADIUS_ADDITION * sizeFactor;
     
     const ballPhysicalRadius = ball.isBig ? BALL_SIZE + BIG_BALL_SIZE_INCREASE : BALL_SIZE;
@@ -53,15 +51,26 @@ export const drawBalls = (
     ctx: CanvasRenderingContext2D, 
     activeBalls: Ball[], 
     stuckBalls: Ball[], 
-    // blackBallEffectActive, blackBallEffectStartTime removed
-    currentTime?: number // currentTime is still needed for the effect calculation
+    currentTime?: number
 ) => {
     const drawBall = (ball: Ball) => { 
          ctx.save();
 
          const currentRadius = ball.isBig ? BALL_SIZE + BIG_BALL_SIZE_INCREASE : BALL_SIZE;
          
-         // Draw the main ball first
+         // Determine if the glow should be drawn for this ball
+         const shouldGlow = ball.isBlack || 
+                            (ball.pierceHitsRemaining && ball.pierceHitsRemaining > 0) || 
+                            ball.isSplitting ||
+                            ball.isBlue || // For Builder Ball
+                            ball.isHoming;   // For Homing Ball
+
+         // 1. Draw the glow effect first if applicable
+         if (shouldGlow && ball.isGlowEffectActive && typeof ball.glowEffectStartTime === 'number' && typeof currentTime === 'number') {
+             drawRadialGlowEffect(ctx, ball, currentTime);
+         }
+
+         // 2. Draw the main ball on top of the glow
          ctx.beginPath();
          ctx.arc(ball.x, ball.y, currentRadius, 0, Math.PI * 2);
 
@@ -85,18 +94,13 @@ export const drawBalls = (
         ctx.fill();
         ctx.closePath(); 
 
-        // Then draw the glow effect if applicable, using per-ball state
-        if (ball.isBlack && ball.isGlowEffectActive && typeof ball.glowEffectStartTime === 'number' && typeof currentTime === 'number') {
-            drawBlackBallRadialGlow(ctx, ball, currentTime);
-        }
-
-        // Stroke logic
+        // 3. Draw the stroke on top of everything
         let strokeStyle: string | undefined = undefined;
         if (ball.stuckOffset !== undefined || ball.stuckSide) { 
             strokeStyle = '#000000'; 
         } else if (ball.isBlack) {
             strokeStyle = '#A9A9A9';
-        } else if (ball.isSplitting || ball.isHoming) {
+        } else if (ball.isSplitting || ball.isHoming || (ball.pierceHitsRemaining && ball.pierceHitsRemaining > 0) || ball.isBlue) {
             strokeStyle = '#000000'; 
         }
 
