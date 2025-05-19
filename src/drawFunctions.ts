@@ -1,4 +1,4 @@
-import { Brick, PowerUp, Ball, Laser, PowerUpType, GameState, PointsField, Particle } from './interfaces'; // Added Particle
+import { Brick, PowerUp, Ball, Laser, PowerUpType, GameState, PointsField, Particle } from './interfaces';
 import {
     BOARD_WIDTH, BOARD_HEIGHT, PADDLE_HEIGHT, BALL_SIZE, PADDLE_Y,
     BRICK_PADDING, BRICK_OFFSET_LEFT, BRICK_OFFSET_TOP, POWER_UP_SIZE,
@@ -15,10 +15,12 @@ import {
     GOLD_COLOR,
     BALL_BRICK_COLOR, 
     POINTS_FIELD_COLOR, 
-    BONUS_GOLD_TIMER_DURATION 
+    BONUS_GOLD_TIMER_DURATION,
+    BRICK_REGEN_VISUAL_EFFECT_DURATION_MS, BRICK_REGEN_VISUAL_EFFECT_SCALE_AMOUNT // Added brick regen constants
 } from './constants';
 
 // --- Preload Power-Up Images --- 
+// ... (image preloading code remains the same)
 let multiBallImage: HTMLImageElement;
 let widenPaddleImage: HTMLImageElement;
 let laserPaddleImage: HTMLImageElement;
@@ -144,6 +146,7 @@ export const drawPaddle = (
   }
 };
 
+// ... (drawCollectionFieldRect, drawPointsFields, drawBalls remain the same)
 export const drawCollectionFieldRect = (
     ctx: CanvasRenderingContext2D,
     paddleX: number,
@@ -247,7 +250,8 @@ export const drawBalls = (ctx: CanvasRenderingContext2D, activeBalls: Ball[], st
     stuckBalls.forEach(drawBall);
 };
 
-export const drawBricks = (ctx: CanvasRenderingContext2D, bricks: Brick[][], columns: number, rows: number) => {
+// Updated drawBricks to accept currentTime for regen animation
+export const drawBricks = (ctx: CanvasRenderingContext2D, bricks: Brick[][], columns: number, rows: number, currentTime: number) => {
     if (!bricks) return;
     const flashLightenFactor = 0.7; 
 
@@ -257,8 +261,28 @@ export const drawBricks = (ctx: CanvasRenderingContext2D, bricks: Brick[][], col
             const brick = bricks[c][r];
             if (brick && (brick.status === 1 || brick.status === 2)) {
                 ctx.save();
+                
+                let currentX = brick.x;
+                let currentY = brick.y;
+                let currentWidth = brick.width;
+                let currentHeight = brick.height;
+
+                // Regen visual effect for active bricks (status 1)
+                if (brick.status === 1 && brick.isRegenVisualEffectActive && typeof brick.regenVisualEffectStartTime === 'number') {
+                    const effectElapsedTime = currentTime - brick.regenVisualEffectStartTime;
+                    if (effectElapsedTime < BRICK_REGEN_VISUAL_EFFECT_DURATION_MS) {
+                        const progress = effectElapsedTime / BRICK_REGEN_VISUAL_EFFECT_DURATION_MS;
+                        const scaleAddition = BRICK_REGEN_VISUAL_EFFECT_SCALE_AMOUNT * Math.sin(progress * Math.PI);
+                        const visualScale = 1 + scaleAddition;
+                        currentWidth = brick.width * visualScale;
+                        currentHeight = brick.height * visualScale;
+                        currentX = brick.x - (currentWidth - brick.width) / 2;
+                        currentY = brick.y - (currentHeight - brick.height) / 2;
+                    } // Effect ends naturally as isRegenVisualEffectActive is reset in gameLoop
+                }
+
                 ctx.beginPath();
-                ctx.rect(brick.x, brick.y, brick.width, brick.height);
+                ctx.rect(currentX, currentY, currentWidth, currentHeight);
 
                 let originalFillStyle = NORMAL_BRICK_COLOR; 
                 if (brick.holdsBall) {
@@ -295,18 +319,20 @@ export const drawBricks = (ctx: CanvasRenderingContext2D, bricks: Brick[][], col
                 ctx.restore(); 
 
                 if (brick.status === 1 || (brick.status === 2 && (brick.isFlashing || (brick.fadeOutAlpha && brick.fadeOutAlpha > 0.5)))) {
-                    if (brick.isBomb) {
-                        ctx.fillStyle = '#000000'; 
-                        ctx.beginPath();
-                        ctx.arc(brick.x + brick.width / 2, brick.y + brick.height / 2, brick.width / 4, 0, Math.PI * 2);
-                        ctx.fill();
-                        ctx.closePath();
-                    } else if (brick.holdsBall) {
-                        ctx.fillStyle = '#AAAAAA'; 
-                        ctx.beginPath();
-                        ctx.arc(brick.x + brick.width / 2, brick.y + brick.height / 2, brick.width / 4, 0, Math.PI * 2);
-                        ctx.fill();
-                        ctx.closePath();
+                    if (!brick.isRegenVisualEffectActive) { // Don't draw indicators during regen pop
+                        if (brick.isBomb) {
+                            ctx.fillStyle = '#000000'; 
+                            ctx.beginPath();
+                            ctx.arc(brick.x + brick.width / 2, brick.y + brick.height / 2, brick.width / 4, 0, Math.PI * 2);
+                            ctx.fill();
+                            ctx.closePath();
+                        } else if (brick.holdsBall) {
+                            ctx.fillStyle = '#AAAAAA'; 
+                            ctx.beginPath();
+                            ctx.arc(brick.x + brick.width / 2, brick.y + brick.height / 2, brick.width / 4, 0, Math.PI * 2);
+                            ctx.fill();
+                            ctx.closePath();
+                        }
                     }
                 }
             }
@@ -314,6 +340,7 @@ export const drawBricks = (ctx: CanvasRenderingContext2D, bricks: Brick[][], col
     }
 };
 
+// ... (drawParticles, drawGameInfo, drawPowerUps, etc. remain the same)
 export const drawParticles = (ctx: CanvasRenderingContext2D, particles: Particle[]) => {
     if (!particles) return;
     particles.forEach(particle => {

@@ -61,6 +61,8 @@ export const BOMB_BRICK_POINTS = 1;
 export const BOMB_DAMAGE_POINTS = 10;
 export const BRICK_FLASH_DURATION = 50; // Duration of the white flash in milliseconds
 export const BRICK_FADE_SPEED = 0.15; // Alpha decrease per frame for fade out (0.05 * 3)
+export const BRICK_REGEN_VISUAL_EFFECT_DURATION_MS = 100;
+export const BRICK_REGEN_VISUAL_EFFECT_SCALE_AMOUNT = 0.1; // e.g., 0.1 for 10% larger at peak
 
 
 // Power-ups
@@ -99,10 +101,16 @@ export const MULTIBALL_PARTICLE_COLOR = '#FFFFFF';
 export const LASER_TRAIL_PARTICLE_COUNT_PER_FRAME = 2;
 export const LASER_TRAIL_PARTICLE_SPEED_MIN_Y = 1;
 export const LASER_TRAIL_PARTICLE_SPEED_MAX_Y = 2;
-export const LASER_TRAIL_PARTICLE_SPREAD_X = 0.5; // Max horizontal speed component
+export const LASER_TRAIL_PARTICLE_SPREAD_X = 0.5; 
 export const LASER_TRAIL_PARTICLE_SIZE = 1;
 export const LASER_TRAIL_PARTICLE_LIFESPAN_MS = 200;
-export const LASER_TRAIL_PARTICLE_COLOR = '#FF0000'; // Red
+export const LASER_TRAIL_PARTICLE_COLOR = '#FF0000'; 
+
+export const SAFETY_NET_PARTICLE_COUNT = 100;
+export const SAFETY_NET_PARTICLE_SPEED_Y = -2; // Negative for upward
+export const SAFETY_NET_PARTICLE_SIZE = 1;
+export const SAFETY_NET_PARTICLE_LIFESPAN_MS = 300;
+export const SAFETY_NET_PARTICLE_COLOR = '#1E90FF'; // DodgerBlue, same as Safety Net power-up
 
 // Bonus Gold
 export const INITIAL_BONUS_GOLD = 30;

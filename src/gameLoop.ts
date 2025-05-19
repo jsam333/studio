@@ -14,7 +14,8 @@ import {
     TARGET_FPS, BONUS_GOLD_TARGET, BONUS_GOLD_TIMER_DURATION,
     BALL_SIZE, BIG_BALL_SIZE_INCREASE, POINTS_FIELD_DURATION, POINTS_FIELD_MAX_BALLS,
     BRICK_FLASH_DURATION, BRICK_FADE_SPEED,
-    PADDLE_WIDEN_VISUAL_EFFECT_DURATION_MS, PADDLE_WIDEN_VISUAL_EFFECT_AMOUNT // Added paddle effect constants
+    PADDLE_WIDEN_VISUAL_EFFECT_DURATION_MS, PADDLE_WIDEN_VISUAL_EFFECT_AMOUNT,
+    BRICK_REGEN_VISUAL_EFFECT_DURATION_MS // Added brick regen effect constant
 } from './constants'; 
 import { 
     drawPaddle, drawBalls, drawBricks, drawGameInfo, 
@@ -100,26 +101,38 @@ const checkPointsFieldCollisions = (
     });
 };
 
-const updateBrickAnimations = (bricks: Brick[][], columns: number, rows: number, currentTime: number, scaledDeltaTime: number) => {
+// Consolidate brick animation updates
+const updateBrickStateAndAnimations = (bricks: Brick[][], columns: number, rows: number, currentTime: number, scaledDeltaTime: number) => {
     for (let c = 0; c < columns; c++) {
         if (!bricks[c]) continue;
         for (let r = 0; r < rows; r++) {
             const brick = bricks[c][r];
             if (brick) {
-                if (brick.isFlashing) {
-                    if (brick.flashStartTime === undefined) {
-                        brick.flashStartTime = currentTime;
+                // Destruction Animation (Flash and Fade)
+                if (brick.status === 2) { // Only for bricks in destruction phase
+                    if (brick.isFlashing) {
+                        if (brick.flashStartTime === undefined) {
+                            brick.flashStartTime = currentTime;
+                        }
+                        if (currentTime - (brick.flashStartTime || 0) >= BRICK_FLASH_DURATION) {
+                            brick.isFlashing = false;
+                            brick.fadeOutAlpha = 1.0;
+                            delete brick.flashStartTime; 
+                        }
+                    } else if (brick.fadeOutAlpha !== undefined && brick.fadeOutAlpha > 0) {
+                        brick.fadeOutAlpha -= BRICK_FADE_SPEED * scaledDeltaTime;
+                        if (brick.fadeOutAlpha <= 0) {
+                            brick.fadeOutAlpha = 0;
+                            brick.status = 0; // Mark brick as fully inactive
+                        }
                     }
-                    if (currentTime - (brick.flashStartTime || 0) >= BRICK_FLASH_DURATION) {
-                        brick.isFlashing = false;
-                        brick.fadeOutAlpha = 1.0;
-                        delete brick.flashStartTime; 
-                    }
-                } else if (brick.fadeOutAlpha !== undefined && brick.fadeOutAlpha > 0) {
-                    brick.fadeOutAlpha -= BRICK_FADE_SPEED * scaledDeltaTime;
-                    if (brick.fadeOutAlpha <= 0) {
-                        brick.fadeOutAlpha = 0;
-                        brick.status = 0; 
+                }
+
+                // Regen Visual Effect Animation End Check
+                if (brick.isRegenVisualEffectActive && brick.regenVisualEffectStartTime) {
+                    if (currentTime - brick.regenVisualEffectStartTime >= BRICK_REGEN_VISUAL_EFFECT_DURATION_MS) {
+                        brick.isRegenVisualEffectActive = false;
+                        delete brick.regenVisualEffectStartTime;
                     }
                 }
             }
@@ -158,7 +171,7 @@ export const gameUpdate = (
     const columns = refs.brickColumnsRef.current;
     const rows = refs.brickRowsRef.current;
 
-    updateBrickAnimations(refs.bricksRef.current, columns, rows, currentTime, scaledDeltaTime); 
+    updateBrickStateAndAnimations(refs.bricksRef.current, columns, rows, currentTime, scaledDeltaTime); 
     updateParticles(refs, currentTime, elapsedTime); 
     
     if (refs.paddleShrinkCountdownRef?.current !== null) {
@@ -176,23 +189,21 @@ export const gameUpdate = (
 
     ctx.save();
     ctx.clearRect(0, 0, BOARD_WIDTH, BOARD_HEIGHT);
-    drawBricks(ctx, refs.bricksRef.current, columns, rows);
+    // Pass currentTime to drawBricks for regen animation
+    drawBricks(ctx, refs.bricksRef.current, columns, rows, currentTime);
 
-    // Paddle Visual Widen Effect Handling
     let visualPaddleWidth = refs.paddleWidthRef.current;
     let visualPaddleX = refs.paddleXRef.current;
     if (refs.paddleVisualEffectActiveRef?.current && refs.paddleVisualEffectStartTimeRef?.current) {
         const effectElapsedTime = currentTime - refs.paddleVisualEffectStartTimeRef.current;
         if (effectElapsedTime < PADDLE_WIDEN_VISUAL_EFFECT_DURATION_MS) {
             const progress = effectElapsedTime / PADDLE_WIDEN_VISUAL_EFFECT_DURATION_MS;
-            // Simple pulse: grow then shrink, using Math.sin for a smooth curve (0 -> 1 -> 0)
             const offset = PADDLE_WIDEN_VISUAL_EFFECT_AMOUNT * Math.sin(progress * Math.PI);
             visualPaddleWidth = refs.paddleWidthRef.current + offset;
-            visualPaddleX = refs.paddleXRef.current - offset / 2; // Adjust X to keep centered
+            visualPaddleX = refs.paddleXRef.current - offset / 2; 
         } else {
             refs.paddleVisualEffectActiveRef.current = false;
             refs.paddleVisualEffectStartTimeRef.current = null;
-            // visualPaddleWidth and visualPaddleX default to actual values
         }
     }
 
@@ -216,7 +227,6 @@ export const gameUpdate = (
     if (!refs.isGameStartedRef.current && !isTestPreview) { 
         drawBalls(ctx, [], refs.stuckBallsRef.current); 
         if (gameMode === 'main') {
-            // drawPowerUpPreviews(ctx, refs.spawnablePowerUpsRef.current);
         }
     } 
     
