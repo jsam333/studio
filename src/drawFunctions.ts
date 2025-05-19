@@ -359,10 +359,12 @@ export const drawGameInfo = (
     }
   }
 
-  // 4. Draw Lives
-  const livesText = `Lives: ${lives}`;
-  ctx.fillStyle = "#ff6347"; // Tomato color for lives
-  ctx.fillText(livesText, currentX, yPos);
+  // 4. Draw Lives (if not test mode)
+  if (!isTestMode) {
+    const livesText = `Lives: ${lives}`;
+    ctx.fillStyle = "#ff6347"; // Tomato color for lives
+    ctx.fillText(livesText, currentX, yPos);
+  }
 };
 // --- END MODIFICATION ---
 

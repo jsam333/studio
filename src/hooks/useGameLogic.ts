@@ -151,18 +151,82 @@ export function useGameLogic() {
         testBrickRowsRef.current = testBrickRows;
     }, [testBrickRows]);
 
+    // Forward declaration for startGame to be used in useEffect
+    const startGameCallbackRef = useRef<((mode: GameMode, newTestBrickColumns?: number, newTestBrickRows?: number) => void) | null>(null);
+
+    const startGame = useCallback((mode: GameMode, newTestBrickColumns?: number, newTestBrickRows?: number) => {
+        // Always reset common game state regardless of current gameOverState if mode is 'test' or menu is active
+        if (gameOverStateRef.current === 'menu' || mode === 'test') {
+            scoreRef.current = 0;
+            goldRef.current = 0;
+            livesRef.current = INITIAL_LIVES;
+            bonusGoldTimerCountdownRef.current = null;
+            initialBonusGoldDecrementCompleteRef.current = false;
+            pointsFieldsRef.current = [];
+            levelCompletionProcessedRef.current = false;
+            testPreviewInitialLaunchDoneRef.current = false; 
+            
+            gameModeRef.current = mode; 
+            setActiveGameMode(mode); 
+
+            if (mode === 'main') {
+                 spawnablePowerUpsRef.current = new Set(); // Fresh set for main game
+                 setEnabledPowerUps(new Set(ALL_TOGGLEABLE_POWER_UPS)); // All power-ups available in main game by default
+                 firstTestRunCompletedRef.current = false; // Reset for next potential test run
+                 setShowSidebar(false);
+                 setGameOverState('playing');
+                 isGameStartedRef.current = false; 
+             } else if (mode === 'test') {
+                 spawnablePowerUpsRef.current = new Set(ALL_TOGGLEABLE_POWER_UPS); // All potentially spawnable in test
+                 setShowSidebar(true);
+                 setGameOverState('menu'); 
+                 isGameStartedRef.current = false; 
+
+                 if (!firstTestRunCompletedRef.current) {
+                    // This is the first run of test mode (e.g., initial load or after handleResetGame)
+                    setTestPowerUpSpawnChance(INITIAL_TEST_POWER_UP_SPAWN_CHANCE);
+                    testPowerUpSpawnChanceRef.current = INITIAL_TEST_POWER_UP_SPAWN_CHANCE;
+                    setEnabledPowerUps(new Set(['MULTI_BALL'] as PowerUpType[]));
+                    
+                    // Set default brick dimensions if not overridden by parameters
+                    testBrickColumnsRef.current = newTestBrickColumns !== undefined ? newTestBrickColumns : TEST_DEFAULT_BRICK_COLUMNS;
+                    setTestBrickColumns(testBrickColumnsRef.current);
+                    testBrickRowsRef.current = newTestBrickRows !== undefined ? newTestBrickRows : TEST_DEFAULT_BRICK_ROWS;
+                    setTestBrickRows(testBrickRowsRef.current);
+
+                    firstTestRunCompletedRef.current = true;
+                } else {
+                    // Test mode started again (e.g., by user changing brick counts or losing all balls),
+                    // use current UI values for spawn chance and enabled powerups.
+                    // Brick counts are updated based on parameters or current state.
+                    testBrickColumnsRef.current = newTestBrickColumns !== undefined ? newTestBrickColumns : testBrickColumns; // Use current state value if no new one
+                    setTestBrickColumns(testBrickColumnsRef.current); 
+                    testBrickRowsRef.current = newTestBrickRows !== undefined ? newTestBrickRows : testBrickRows; // Use current state value if no new one
+                    setTestBrickRows(testBrickRowsRef.current); 
+                }
+             }
+
+            currentLevelRef.current = 1; 
+            resetLevel(mode, true); 
+            if (mode === 'test') {
+                setupInitialBall(); 
+            }
+        }
+    }, [resetLevel, setupInitialBall, setActiveGameMode, setEnabledPowerUps, setShowSidebar, setGameOverState, testBrickColumns, testBrickRows]);
+
+    // Effect to assign startGame to the ref after it's defined.
+    useEffect(() => {
+        startGameCallbackRef.current = startGame;
+    }, [startGame]);
+
     useEffect(() => {
         gameOverStateRef.current = gameOverState;
         gameIsRunningRef.current = gameOverState === 'playing';
 
         if (gameOverState === 'lost' && activeGameMode === 'test') {
-            // When lost in test mode, reset the board and ball, go back to menu (test preview).
-            // Bricks will use current testBrickColumns/Rows from state.
-            // Spawn chance and enabled power-ups will retain their current UI-set state.
-            resetLevel('test', true); 
-            setupInitialBall();
-            testPreviewInitialLaunchDoneRef.current = false; 
-            setGameOverState('menu'); 
+            if (startGameCallbackRef.current) {
+                startGameCallbackRef.current('test'); // Call startGame to reset test mode like UI does
+            }
             return; 
         }
 
@@ -184,7 +248,8 @@ export function useGameLogic() {
                  gameSpeedFactorRef.current = BASE_BALL_SPEED_FACTOR;
             }
         }
-    }, [gameOverState, resetLevel, activeGameMode, setGameOverState, setupInitialBall]);
+    // Corrected dependencies for the gameOverState useEffect
+    }, [gameOverState, activeGameMode, resetLevel, setGameOverState]);
 
     useEffect(() => {
         const handleKeyDown = (event: KeyboardEvent) => {
@@ -371,65 +436,6 @@ export function useGameLogic() {
             return next;
         });
     }, []);
-
-    const startGame = useCallback((mode: GameMode, newTestBrickColumns?: number, newTestBrickRows?: number) => {
-        // Always reset common game state regardless of current gameOverState if mode is 'test' or menu is active
-        if (gameOverStateRef.current === 'menu' || mode === 'test') {
-            scoreRef.current = 0;
-            goldRef.current = 0;
-            livesRef.current = INITIAL_LIVES;
-            bonusGoldTimerCountdownRef.current = null;
-            initialBonusGoldDecrementCompleteRef.current = false;
-            pointsFieldsRef.current = [];
-            levelCompletionProcessedRef.current = false;
-            testPreviewInitialLaunchDoneRef.current = false; 
-            
-            gameModeRef.current = mode; 
-            setActiveGameMode(mode); 
-
-            if (mode === 'main') {
-                 spawnablePowerUpsRef.current = new Set(); // Fresh set for main game
-                 setEnabledPowerUps(new Set(ALL_TOGGLEABLE_POWER_UPS)); // All power-ups available in main game by default
-                 firstTestRunCompletedRef.current = false; // Reset for next potential test run
-                 setShowSidebar(false);
-                 setGameOverState('playing');
-                 isGameStartedRef.current = false; 
-             } else if (mode === 'test') {
-                 spawnablePowerUpsRef.current = new Set(ALL_TOGGLEABLE_POWER_UPS); // All potentially spawnable in test
-                 setShowSidebar(true);
-                 setGameOverState('menu'); 
-                 isGameStartedRef.current = false; 
-
-                 if (!firstTestRunCompletedRef.current) {
-                    // This is the first run of test mode (e.g., initial load or after handleResetGame)
-                    setTestPowerUpSpawnChance(INITIAL_TEST_POWER_UP_SPAWN_CHANCE);
-                    testPowerUpSpawnChanceRef.current = INITIAL_TEST_POWER_UP_SPAWN_CHANCE;
-                    setEnabledPowerUps(new Set(['MULTI_BALL'] as PowerUpType[]));
-                    
-                    // Set default brick dimensions if not overridden by parameters
-                    testBrickColumnsRef.current = newTestBrickColumns !== undefined ? newTestBrickColumns : TEST_DEFAULT_BRICK_COLUMNS;
-                    setTestBrickColumns(testBrickColumnsRef.current);
-                    testBrickRowsRef.current = newTestBrickRows !== undefined ? newTestBrickRows : TEST_DEFAULT_BRICK_ROWS;
-                    setTestBrickRows(testBrickRowsRef.current);
-
-                    firstTestRunCompletedRef.current = true;
-                } else {
-                    // Test mode started again (e.g., by user changing brick counts), use current UI values for spawn chance and enabled powerups.
-                    // Brick counts are updated based on parameters or current state.
-                    testBrickColumnsRef.current = newTestBrickColumns !== undefined ? newTestBrickColumns : testBrickColumns;
-                    setTestBrickColumns(testBrickColumnsRef.current); // Ensure state reflects the ref for UI consistency
-                    testBrickRowsRef.current = newTestBrickRows !== undefined ? newTestBrickRows : testBrickRows;
-                    setTestBrickRows(testBrickRowsRef.current); // Ensure state reflects the ref for UI consistency
-                }
-             }
-
-            currentLevelRef.current = 1; 
-            resetLevel(mode, true); 
-            if (mode === 'test') {
-                setupInitialBall(); 
-            }
-        }
-    }, [resetLevel, setupInitialBall, setActiveGameMode, setEnabledPowerUps, setShowSidebar, setGameOverState, testBrickColumns, testBrickRows]);
 
     const startNextLevel = useCallback(() => {
         if (gameOverStateRef.current === 'shop') {

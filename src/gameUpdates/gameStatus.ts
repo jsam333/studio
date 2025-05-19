@@ -31,11 +31,16 @@ export const checkGameStatus = (
 
     // Check for loss condition (all balls gone)
     if (refs.ballsRef.current.length === 0 && refs.stuckBallsRef.current.length === 0 && previousBallCount > 0 && refs.isGameStartedRef.current) {
-        if (refs.livesRef.current > 1) {
-            nextState = 'level_reset';
-        } else {
-            nextState = 'lost';
-            console.log("Game Over! Ran out of lives.");
+        if (refs.gameModeRef.current === 'test') { // Check if in test mode
+            nextState = 'lost'; // Directly go to 'lost' state for test mode
+            console.log("Test mode: All balls lost.");
+        } else { // Main game mode logic
+            if (refs.livesRef.current > 1) {
+                nextState = 'level_reset';
+            } else {
+                nextState = 'lost';
+                console.log("Game Over! Ran out of lives.");
+            }
         }
     }
 
