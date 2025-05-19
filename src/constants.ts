@@ -86,6 +86,14 @@ export const BIG_BALL_DURATION = 6000;
 export const BUILDER_BALL_DURATION = 6000;
 export const BLACK_BALL_DURATION = 10000;
 
+// Particle Effects
+export const MULTIBALL_PARTICLE_COUNT = 10; // Halved
+export const MULTIBALL_PARTICLE_SPEED_MIN = 2; // Doubled
+export const MULTIBALL_PARTICLE_SPEED_MAX = 6; // Doubled
+export const MULTIBALL_PARTICLE_SIZE = 1; // Fixed tiny size
+export const MULTIBALL_PARTICLE_LIFESPAN_MS = 250; // Halved (milliseconds)
+export const MULTIBALL_PARTICLE_COLOR = '#FFFFFF'; // White particles
+
 // Bonus Gold
 export const INITIAL_BONUS_GOLD = 30;
 export const MINIMUM_BONUS_GOLD = 5;

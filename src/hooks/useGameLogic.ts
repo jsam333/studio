@@ -8,7 +8,7 @@ import {
     ALL_TOGGLEABLE_POWER_UPS, PADDLE_HEIGHT, BOARD_HEIGHT,
     INITIAL_TEST_POWER_UP_SPAWN_CHANCE,
 } from '../constants'; 
-import { Ball, PowerUp, Laser, PowerUpType, GameState, GameMode, GameStateRefs as IGameStateRefs, GameLoopCallbacks, PointsField } from '../interfaces';
+import { Ball, PowerUp, Laser, PowerUpType, GameState, GameMode, GameStateRefs as IGameStateRefs, GameLoopCallbacks, PointsField, Particle } from '../interfaces'; // Added Particle
 import { initialBallState } from '../gameLogic';
 import { useLevelLogic } from './useLevelLogic';
 import { usePaddleLogic } from './usePaddleLogic';
@@ -38,6 +38,7 @@ export function useGameLogic() {
     const paddleXRef = useRef((BOARD_WIDTH - INITIAL_PADDLE_WIDTH) / 2);
     const ballsRef = useRef<Ball[]>([]);
     const powerUpsRef = useRef<PowerUp[]>([]);
+    const particlesRef = useRef<Particle[]>([]); // Added particlesRef
     const scoreRef = useRef(0);
     const goldRef = useRef<number>(0);
     const spawnablePowerUpsRef = useRef<Set<PowerUpType>>(new Set());
@@ -163,6 +164,7 @@ export function useGameLogic() {
             bonusGoldTimerCountdownRef.current = null;
             initialBonusGoldDecrementCompleteRef.current = false;
             pointsFieldsRef.current = [];
+            particlesRef.current = []; // Clear particles on new game/reset
             levelCompletionProcessedRef.current = false;
             testPreviewInitialLaunchDoneRef.current = false; 
             
@@ -237,6 +239,7 @@ export function useGameLogic() {
             bonusGoldTimerCountdownRef.current = null;
             initialBonusGoldDecrementCompleteRef.current = false;
             pointsFieldsRef.current = [];
+            particlesRef.current = []; // Clear particles on level reset
             levelCompletionProcessedRef.current = false;
             setGameOverState('playing');
         } else if (gameOverState !== 'playing') {
@@ -244,6 +247,7 @@ export function useGameLogic() {
             bonusGoldTimerCountdownRef.current = null;
             initialBonusGoldDecrementCompleteRef.current = false;
             pointsFieldsRef.current = [];
+            particlesRef.current = []; // Clear particles if game is not playing (menu, shop, etc.)
             if (gameSpeedFactorRef.current !== BASE_BALL_SPEED_FACTOR) {
                  gameSpeedFactorRef.current = BASE_BALL_SPEED_FACTOR;
             }
@@ -323,6 +327,7 @@ export function useGameLogic() {
         bonusGoldTimerCountdownRef.current = null;
         initialBonusGoldDecrementCompleteRef.current = false;
         pointsFieldsRef.current = [];
+        particlesRef.current = []; // Clear particles on game reset
         levelCompletionProcessedRef.current = false;
         
         // Reset test mode defaults
@@ -447,6 +452,7 @@ export function useGameLogic() {
             bonusGoldTimerCountdownRef.current = null;
             initialBonusGoldDecrementCompleteRef.current = false;
             pointsFieldsRef.current = [];
+            particlesRef.current = []; // Clear particles when starting next level from shop
             levelCompletionProcessedRef.current = false;
             testPreviewInitialLaunchDoneRef.current = false; 
             // Reset test-specific settings to their initial defaults when transitioning from shop to a new main game level
@@ -503,6 +509,7 @@ export function useGameLogic() {
         bonusGoldTimerCountdownRef.current = null;
         initialBonusGoldDecrementCompleteRef.current = false;
         pointsFieldsRef.current = [];
+        particlesRef.current = []; // Clear particles on level reset callback
         resetLevel(mode, resetScoreAndGold);
         isGameStartedRef.current = false; 
         if (mode === 'test' || (gameModeRef.current === 'test' && mode === null)) { 
@@ -511,7 +518,7 @@ export function useGameLogic() {
     }, [resetLevel]);
 
     const gameStateRefs: IGameStateRefs = useMemo(() => ({
-        paddleXRef, ballsRef, powerUpsRef, scoreRef, goldRef, spawnablePowerUpsRef,
+        paddleXRef, ballsRef, powerUpsRef, particlesRef, scoreRef, goldRef, spawnablePowerUpsRef, // Added particlesRef here
         paddleWidthRef, widenLevelRef, laserShotsRef, lasersRef, safetyNetCountRef,
         gameIsRunningRef, gameOverStateRef, gameSpeedFactorRef,
         collectionFieldHeightRef, collectionFieldWidthOffsetRef,
@@ -538,7 +545,7 @@ export function useGameLogic() {
         testBrickColumnsRef, 
         testBrickRowsRef, 
     }), [
-        paddleXRef, ballsRef, powerUpsRef, scoreRef, goldRef, spawnablePowerUpsRef,
+        paddleXRef, ballsRef, powerUpsRef, particlesRef, scoreRef, goldRef, spawnablePowerUpsRef, // Added particlesRef to dependency array
         paddleWidthRef, widenLevelRef, laserShotsRef, lasersRef, safetyNetCountRef,
         gameIsRunningRef, gameOverStateRef, gameSpeedFactorRef,
         collectionFieldHeightRef, collectionFieldWidthOffsetRef,

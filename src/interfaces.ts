@@ -6,15 +6,28 @@ export interface Brick {
   y: number;
   width: number;
   height: number;
-  status: number;
+  status: number; // 0: inactive, 1: active, 2: destroying (flashing/fading)
   strength: number;
   isSpecial: boolean;
   upgradeLevel?: number;
   isBomb?: boolean;
-  holdsBall?: boolean; // Added for the new power-up
-  isFlashing?: boolean; // Added for white flash effect
-  fadeOutAlpha?: number; // Added for fade out animation
-  flashStartTime?: number; // Added to manage flash duration
+  holdsBall?: boolean; 
+  isFlashing?: boolean; 
+  fadeOutAlpha?: number; 
+  flashStartTime?: number; 
+}
+
+export interface Particle {
+    id: number;
+    x: number;
+    y: number;
+    speedX: number;
+    speedY: number;
+    size: number;
+    color: string;
+    alpha: number;
+    lifespan: number; // in milliseconds
+    createdAt: number;
 }
 
 export type PowerUpType =
@@ -26,7 +39,7 @@ export type PowerUpType =
     'REINFORCE_BRICK' | 'REINFORCE_BRICK_L2' | 'REINFORCE_BRICK_L3' |
     'MAKE_SPECIAL' | 'MAKE_SPECIAL_L2' | 'MAKE_SPECIAL_L3' |
     'BLACK_BALL' | 'BLACK_BALL_L2' | 'BLACK_BALL_L3' |
-    'ALL_IN_ONE' | // ALL_IN_ONE remains single level
+    'ALL_IN_ONE' | 
     'PIERCE_BALL' | 'PIERCE_BALL_L2' | 'PIERCE_BALL_L3' |
     'UPGRADE_BRICK' | 'UPGRADE_BRICK_L2' | 'UPGRADE_BRICK_L3' |
     'BUILDER_BALL' | 'BUILDER_BALL_L2' | 'BUILDER_BALL_L3' |
@@ -37,7 +50,7 @@ export type PowerUpType =
     'BOMB_BRICK' | 'BOMB_BRICK_L2' | 'BOMB_BRICK_L3' |
     'RECOVERY_PADDLE' | 'RECOVERY_PADDLE_L2' | 'RECOVERY_PADDLE_L3' |
     'BALL_BRICK' | 'BALL_BRICK_L2' | 'BALL_BRICK_L3' |
-    'POINTS_FIELD' | 'POINTS_FIELD_L2' | 'POINTS_FIELD_L3' | // Added POINTS_FIELD levels
+    'POINTS_FIELD' | 'POINTS_FIELD_L2' | 'POINTS_FIELD_L3' | 
     'NONE';
 
 export interface PowerUp {
@@ -69,19 +82,18 @@ export interface Ball {
   splittingEndTime?: number;
   splittingPausedDuration?: number;
   isHoming?: boolean;
-  stuckOffset?: number; // For top sticking
-  stuckSide?: 'left' | 'right' | null; // For side sticking
-  stuckSideOffset?: number; // Vertical offset for side sticking
-  lastFramePointsFieldIds: Set<number>; // Added to track field entries
+  stuckOffset?: number; 
+  stuckSide?: 'left' | 'right' | null; 
+  stuckSideOffset?: number; 
+  lastFramePointsFieldIds: Set<number>; 
 
-  // Properties for zipping animation during sticky recovery
   isZipping?: boolean;
   zipTargetX?: number;
   zipTargetY?: number;
   zipStartTime?: number;
   initialZipX?: number; 
   initialZipY?: number;
-  targetStuckSideValue?: 'left' | 'right'; // The side it will stick to after zipping
+  targetStuckSideValue?: 'left' | 'right'; 
 }
 
 export type SpawnMarker = 'PENDING' | 'SPAWN_SPECIAL' | 'SPAWN_BALL' | 'NONE';
@@ -120,11 +132,10 @@ export interface PointsField {
     y: number;
     width: number;
     height: number;
-    createdAt: number; // Added createdAt timestamp
-    ballsPassed: number; // Added to track balls passed through
+    createdAt: number; 
+    ballsPassed: number; 
 }
 
-// Add 'level_reset' to GameState
 export type GameState = 'menu' | 'playing' | 'won' | 'lost' | 'shop' | 'level_reset';
 export type GameMode = 'main' | 'test';
 
@@ -133,6 +144,7 @@ export interface GameStateRefsBase {
     ballsRef: React.MutableRefObject<Ball[]>;
     bricksRef: React.MutableRefObject<Brick[][]>;
     powerUpsRef: React.MutableRefObject<PowerUp[]>;
+    particlesRef: React.MutableRefObject<Particle[]>; // Added for particle effects
     scoreRef: React.MutableRefObject<number>;
     targetScoreRef: React.MutableRefObject<number>;
     totalBricksRef: React.MutableRefObject<number>;
@@ -155,7 +167,7 @@ export interface GameStateRefsBase {
     isGameStartedRef: React.MutableRefObject<boolean>;
     bonusCountdownStartedRef: React.MutableRefObject<boolean>;
     brickColumnsRef: React.MutableRefObject<number>; 
-    brickRowsRef: React.MutableRefObject<number>; // General rows, used by main game or default for test
+    brickRowsRef: React.MutableRefObject<number>; 
     gameModeRef: React.MutableRefObject<GameMode | null>;
     livesRef: React.MutableRefObject<number>;
     bonusGoldTimerCountdownRef: React.MutableRefObject<number | null>;
@@ -164,7 +176,7 @@ export interface GameStateRefsBase {
     levelCompletionProcessedRef: React.MutableRefObject<boolean>;
     testPowerUpSpawnChanceRef: React.MutableRefObject<number>;
     testBrickColumnsRef: React.MutableRefObject<number>; 
-    testBrickRowsRef: React.MutableRefObject<number>; // Added for test mode row input
+    testBrickRowsRef: React.MutableRefObject<number>; 
 }
 
 export interface GameStateRefs extends GameStateRefsBase {

@@ -1,6 +1,6 @@
 // src/gameLoop.ts
 import React from 'react';
-import { Ball, PowerUp, Laser, PowerUpType, PowerUpSpawnEvent, GameMode, Brick, GameState, PointsField } from './interfaces';
+import { Ball, PowerUp, Laser, PowerUpType, PowerUpSpawnEvent, GameMode, Brick, GameState, PointsField, Particle } from './interfaces'; // Added Particle
 import { GameStateRefs, GameLoopCallbacks } from './interfaces';
 import { updateLasers } from './gameUpdates/laserUpdates';
 import { updateBalls } from './gameUpdates/ballUpdates';
@@ -8,13 +8,19 @@ import { updatePowerUps } from './gameUpdates/powerUpUpdates';
 import { applyPowerUpEffects } from './gameUpdates/powerUpEffects';
 import { checkGameStatus } from './gameUpdates/gameStatus';
 import { handleSpawnEvents } from './gameUpdates/gameLoopUtils';
+import { updateParticles } from './gameUpdates/particleUpdates'; // Added
 import {
     BOARD_WIDTH, BOARD_HEIGHT, BASE_BALL_SPEED_FACTOR, POWER_UP_COLORS,
     TARGET_FPS, BONUS_GOLD_TARGET, BONUS_GOLD_TIMER_DURATION,
     BALL_SIZE, BIG_BALL_SIZE_INCREASE, POINTS_FIELD_DURATION, POINTS_FIELD_MAX_BALLS,
-    BRICK_FLASH_DURATION, BRICK_FADE_SPEED // Added constants for brick animation
+    BRICK_FLASH_DURATION, BRICK_FADE_SPEED 
 } from './constants'; 
-import { drawPaddle, drawBalls, drawBricks, drawGameInfo, drawPowerUps, drawLasers, drawSafetyNet, drawCollectionFieldRect, drawPowerUpPreviews, drawPointsFields } from './drawFunctions';
+import { 
+    drawPaddle, drawBalls, drawBricks, drawGameInfo, 
+    drawPowerUps, drawLasers, drawSafetyNet, 
+    drawCollectionFieldRect, drawPowerUpPreviews, 
+    drawPointsFields, drawParticles // Added drawParticles
+} from './drawFunctions';
 
 const updatePaddleShrinkTimer = (
     refs: GameStateRefs,
@@ -103,16 +109,16 @@ const updateBrickAnimations = (bricks: Brick[][], columns: number, rows: number,
                     if (brick.flashStartTime === undefined) {
                         brick.flashStartTime = currentTime;
                     }
-                    if (currentTime - brick.flashStartTime >= BRICK_FLASH_DURATION) {
+                    if (currentTime - (brick.flashStartTime || 0) >= BRICK_FLASH_DURATION) {
                         brick.isFlashing = false;
                         brick.fadeOutAlpha = 1.0;
-                        delete brick.flashStartTime; // Remove startTime after use
+                        delete brick.flashStartTime; 
                     }
                 } else if (brick.fadeOutAlpha !== undefined && brick.fadeOutAlpha > 0) {
                     brick.fadeOutAlpha -= BRICK_FADE_SPEED * scaledDeltaTime;
                     if (brick.fadeOutAlpha <= 0) {
                         brick.fadeOutAlpha = 0;
-                        brick.status = 0; // Mark brick as inactive
+                        brick.status = 0; 
                     }
                 }
             }
@@ -128,7 +134,7 @@ export const gameUpdate = (
     ctx: CanvasRenderingContext2D,
     refs: GameStateRefs,
     callbacks: GameLoopCallbacks,
-    elapsedTime: number
+    elapsedTime: number // This is deltaTime from requestAnimationFrame
 ) => {
     const currentGameState = refs.gameOverStateRef.current;
     const gameMode = refs.gameModeRef.current;
@@ -139,6 +145,11 @@ export const gameUpdate = (
         if (currentGameState === 'won' || currentGameState === 'lost') {
             callbacks.drawEndMessage(ctx, currentGameState, refs.scoreRef.current);
         }
+        // Potentially draw particles even on menu/shop if any are left over and it looks good
+        // if (refs.particlesRef.current && refs.particlesRef.current.length > 0) {
+        //     updateParticles(refs, Date.now(), elapsedTime);
+        //     drawParticles(ctx, refs.particlesRef.current);
+        // }
         return;
     }
 
@@ -154,14 +165,13 @@ export const gameUpdate = (
     const columns = refs.brickColumnsRef.current;
     const rows = refs.brickRowsRef.current;
 
-    updateBrickAnimations(refs.bricksRef.current, columns, rows, currentTime, scaledDeltaTime); // Update brick animations
+    updateBrickAnimations(refs.bricksRef.current, columns, rows, currentTime, scaledDeltaTime); 
+    updateParticles(refs, currentTime, elapsedTime); // Update particles
     
-    // Update paddle shrink timer if a shrink is scheduled, regardless of mode
     if (refs.paddleShrinkCountdownRef?.current !== null) {
         updatePaddleShrinkTimer(refs, callbacks, elapsedTime);
     }
 
-    // Bonus gold timer only for main game mode and not in test preview
     if (!isTestPreview) {
         updateBonusGoldTimer(refs, callbacks, elapsedTime);
     }
@@ -194,9 +204,6 @@ export const gameUpdate = (
     if (!refs.isGameStartedRef.current && !isTestPreview) { 
         drawBalls(ctx, [], refs.stuckBallsRef.current); 
         if (gameMode === 'main') {
-            // If power-ups are pre-placed by useLevelLogic into powerUpsRef, 
-            // drawPowerUps below will handle them. drawPowerUpPreviews might be redundant or for a different type of preview.
-            // For now, relying on drawPowerUps to render static pre-placed powerups.
             // drawPowerUpPreviews(ctx, refs.spawnablePowerUpsRef.current);
         }
     } 
@@ -227,16 +234,15 @@ export const gameUpdate = (
         refs.ballsRef.current.push(...newBalls);
     }
 
-    // Only update power-up positions (make them fall) and apply their effects 
-    // if the game has started or if it's the interactive test preview.
     if (refs.isGameStartedRef.current || isTestPreview) {
         updatePowerUps( refs, gameSpeedFactor, [], collectedPowerUpTypesReusable, scaledDeltaTime );
         applyPowerUpEffects(refs, callbacks, collectedPowerUpTypesReusable, currentTime, gameSpeedFactor); 
     }
 
     drawBalls(ctx, refs.ballsRef.current, (isTestPreview || !refs.isGameStartedRef.current) ? [] : refs.stuckBallsRef.current); 
-    drawPowerUps(ctx, refs.powerUpsRef.current); // This will draw all powerups in powerUpsRef
+    drawPowerUps(ctx, refs.powerUpsRef.current); 
     drawLasers(ctx, refs.lasersRef.current);
+    drawParticles(ctx, refs.particlesRef.current); // Draw particles
 
     if (gameSpeedFactor !== BASE_BALL_SPEED_FACTOR) {
         ctx.font = "12px Arial"; ctx.fillStyle = POWER_UP_COLORS['SPEED_UP'] || '#e74c3c'; ctx.textAlign = 'right';

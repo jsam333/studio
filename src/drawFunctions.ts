@@ -1,10 +1,10 @@
-import { Brick, PowerUp, Ball, Laser, PowerUpType, GameState, PointsField } from './interfaces'; // Added GameState, PointsField
+import { Brick, PowerUp, Ball, Laser, PowerUpType, GameState, PointsField, Particle } from './interfaces'; // Added Particle
 import {
     BOARD_WIDTH, BOARD_HEIGHT, PADDLE_HEIGHT, BALL_SIZE, PADDLE_Y,
     BRICK_PADDING, BRICK_OFFSET_LEFT, BRICK_OFFSET_TOP, POWER_UP_SIZE,
     INITIAL_PADDLE_WIDTH, LASER_WIDTH, SAFETY_NET_HEIGHT,
     LASER_STRIPE_WIDTH_PER_SHOT,
-    STICKY_INDICATOR_WIDTH_PER_CHARGE, // Added import
+    STICKY_INDICATOR_WIDTH_PER_CHARGE, 
     NORMAL_BRICK_COLOR, REINFORCED_BRICK_COLOR, UPGRADED_BRICK_COLOR, BUILDER_BRICK_COLOR,
     POWER_UP_COLORS,
     SPECIAL_BRICK_COLOR,
@@ -13,9 +13,9 @@ import {
     BIG_BALL_SIZE_INCREASE,
     BOMB_BRICK_COLOR,
     GOLD_COLOR,
-    BALL_BRICK_COLOR, // Added import for the new brick color
-    POINTS_FIELD_COLOR, // Added import for POINTS_FIELD color
-    BONUS_GOLD_TIMER_DURATION // Import for timer color logic
+    BALL_BRICK_COLOR, 
+    POINTS_FIELD_COLOR, 
+    BONUS_GOLD_TIMER_DURATION 
 } from './constants';
 
 // --- Preload Power-Up Images --- 
@@ -37,7 +37,7 @@ let builderBallImage: HTMLImageElement;
 let homingBallImage: HTMLImageElement;
 let pierceBallImage: HTMLImageElement;
 let splittingBallImage: HTMLImageElement;
-let pointsFieldImage: HTMLImageElement; // Added for POINTS_FIELD
+let pointsFieldImage: HTMLImageElement; 
 
 if (typeof window !== 'undefined') {
     multiBallImage = new Image();
@@ -79,15 +79,12 @@ if (typeof window !== 'undefined') {
     pointsFieldImage = new Image(); 
     pointsFieldImage.src = '/images/points field.png';
 }
-// --------------------------------
 
-// Helper function to get the base power-up type
 const getBasePowerUpType = (type: PowerUpType): PowerUpType => {
     const baseType = type.split('_L')[0];
     return baseType as PowerUpType;
 };
 
-// Helper function to convert hex color to RGB object
 const hexToRgb = (hex: string): { r: number; g: number; b: number } | null => {
     const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
     return result ? {
@@ -97,7 +94,6 @@ const hexToRgb = (hex: string): { r: number; g: number; b: number } | null => {
     } : null;
 };
 
-// Helper function to lighten an RGB color
 const lightenRgb = (rgb: { r: number; g: number; b: number }, factor: number): string => {
     const r = Math.min(255, Math.round(rgb.r + (255 - rgb.r) * factor));
     const g = Math.min(255, Math.round(rgb.g + (255 - rgb.g) * factor));
@@ -105,8 +101,6 @@ const lightenRgb = (rgb: { r: number; g: number; b: number }, factor: number): s
     return `rgb(${r},${g},${b})`;
 };
 
-
-// Draw Paddle (Updated to remove sticky charge count)
 export const drawPaddle = (
     ctx: CanvasRenderingContext2D,
     paddleX: number,
@@ -114,7 +108,6 @@ export const drawPaddle = (
     laserShots: number = 0,
     stickyCharges: number = 0
 ) => {
-  // Always draw the base paddle in white first
   ctx.fillStyle = "#ffffff"; 
   ctx.beginPath();
   ctx.rect(paddleX, PADDLE_Y, currentWidth, PADDLE_HEIGHT);
@@ -122,33 +115,23 @@ export const drawPaddle = (
   ctx.closePath();
 
   if (stickyCharges > 0) {
-      const stickyColor = POWER_UP_COLORS['RECOVERY_PADDLE'] || '#B8860B'; // Default sticky color
-      
-      // Calculate the width of the side indicators based on charges
+      const stickyColor = POWER_UP_COLORS['RECOVERY_PADDLE'] || '#B8860B'; 
       const totalIndicatorWidth = stickyCharges * STICKY_INDICATOR_WIDTH_PER_CHARGE;
-      // Clamp the indicator width to be at most half the paddle width (for each side, so total max is paddle_width)
-      // and at least a minimum visible width (e.g., 1 pixel if charges > 0)
       const clampedIndicatorWidth = Math.max(1, Math.min(totalIndicatorWidth, currentWidth / 2));
-
-      // Draw left side indicator (on top of the white paddle)
-      ctx.fillStyle = stickyColor + '99'; // Apply transparency
+      ctx.fillStyle = stickyColor + '99'; 
       ctx.beginPath();
       ctx.rect(paddleX, PADDLE_Y, clampedIndicatorWidth, PADDLE_HEIGHT);
       ctx.fill();
       ctx.closePath();
-
-      // Draw right side indicator (on top of the white paddle)
       ctx.beginPath();
       ctx.rect(paddleX + currentWidth - clampedIndicatorWidth, PADDLE_Y, clampedIndicatorWidth, PADDLE_HEIGHT);
       ctx.fill();
       ctx.closePath();
-      
-      // Removed the code for drawing the charge count text
   }
 
   if (laserShots > 0) {
       const stripeTotalWidth = laserShots * LASER_STRIPE_WIDTH_PER_SHOT;
-      const clampedStripeWidth = Math.min(stripeTotalWidth, currentWidth - 2); // Ensure stripe doesn't exceed paddle width (minus padding)
+      const clampedStripeWidth = Math.min(stripeTotalWidth, currentWidth - 2); 
       const stripeX = paddleX + (currentWidth / 2) - (clampedStripeWidth / 2);
       const stripePixelExtendAbove = 4;
       const stripeY = PADDLE_Y - stripePixelExtendAbove;
@@ -161,7 +144,6 @@ export const drawPaddle = (
   }
 };
 
-// Draw Collection Field (Unchanged)
 export const drawCollectionFieldRect = (
     ctx: CanvasRenderingContext2D,
     paddleX: number,
@@ -206,7 +188,6 @@ export const drawCollectionFieldRect = (
     ctx.restore();
 };
 
-// Draw Points Fields
 export const drawPointsFields = (ctx: CanvasRenderingContext2D, pointsFields: PointsField[]) => {
     if (!pointsFields) return;
     pointsFields.forEach(field => {
@@ -215,8 +196,7 @@ export const drawPointsFields = (ctx: CanvasRenderingContext2D, pointsFields: Po
         ctx.beginPath();
         ctx.rect(field.x, field.y, field.width, field.height);
         ctx.fill();
-        // Optional: Add a border for better visibility
-        ctx.strokeStyle = 'rgba(0, 255, 0, 0.6)'; // Slightly more opaque neon green
+        ctx.strokeStyle = 'rgba(0, 255, 0, 0.6)'; 
         ctx.lineWidth = 2;
         ctx.stroke();
         ctx.closePath();
@@ -224,15 +204,14 @@ export const drawPointsFields = (ctx: CanvasRenderingContext2D, pointsFields: Po
     });
 };
 
-// Draw Balls (Modified to accept active and stuck balls separately)
 export const drawBalls = (ctx: CanvasRenderingContext2D, activeBalls: Ball[], stuckBalls: Ball[]) => {
-    const drawBall = (ball: Ball) => { // Helper function to draw a single ball
+    const drawBall = (ball: Ball) => { 
          ctx.save();
          const currentRadius = ball.isBig ? BALL_SIZE + BIG_BALL_SIZE_INCREASE : BALL_SIZE;
          ctx.beginPath();
          ctx.arc(ball.x, ball.y, currentRadius, 0, Math.PI * 2);
 
-         if (ball.stuckOffset !== undefined || ball.stuckSide) { // Check both top and side stuck
+         if (ball.stuckOffset !== undefined || ball.stuckSide) { 
              ctx.fillStyle = "#cccccc";
          } else if (ball.isHoming) {
              ctx.fillStyle = POWER_UP_COLORS['HOMING_BALL'] || '#f1c40f';
@@ -249,15 +228,13 @@ export const drawBalls = (ctx: CanvasRenderingContext2D, activeBalls: Ball[], st
          }
          ctx.fill();
 
-         // Adjust stroke logic for clarity
          if (ball.stuckOffset !== undefined || ball.stuckSide) {
-             ctx.strokeStyle = '#000000'; // Black stroke for stuck balls
+             ctx.strokeStyle = '#000000'; 
          } else if (ball.isBlack) {
-             ctx.strokeStyle = '#ffffff'; // White stroke for black ball
+             ctx.strokeStyle = '#ffffff'; 
          } else if (ball.isSplitting || ball.isHoming) {
-             ctx.strokeStyle = '#000000'; // Black stroke for splitting/homing
+             ctx.strokeStyle = '#000000'; 
          }
-         // Apply stroke if a strokeStyle was set
          if (ctx.strokeStyle) {
              ctx.lineWidth = 1;
              ctx.stroke();
@@ -270,23 +247,20 @@ export const drawBalls = (ctx: CanvasRenderingContext2D, activeBalls: Ball[], st
     stuckBalls.forEach(drawBall);
 };
 
-// Draw Bricks (Modified for status, flashing and fading)
 export const drawBricks = (ctx: CanvasRenderingContext2D, bricks: Brick[][], columns: number, rows: number) => {
     if (!bricks) return;
-    const flashLightenFactor = 0.7; // How much to lighten towards white (0 = original, 1 = pure white)
+    const flashLightenFactor = 0.7; 
 
     for (let c = 0; c < columns; c++) {
         if (!bricks[c]) continue;
         for (let r = 0; r < rows; r++) {
             const brick = bricks[c][r];
-
-            // Only draw bricks that are active (status 1) or in the destroying animation (status 2)
             if (brick && (brick.status === 1 || brick.status === 2)) {
                 ctx.save();
                 ctx.beginPath();
                 ctx.rect(brick.x, brick.y, brick.width, brick.height);
 
-                let originalFillStyle = NORMAL_BRICK_COLOR; // Default
+                let originalFillStyle = NORMAL_BRICK_COLOR; 
                 if (brick.holdsBall) {
                     originalFillStyle = BALL_BRICK_COLOR;
                 } else if (brick.isBomb) {
@@ -306,21 +280,20 @@ export const drawBricks = (ctx: CanvasRenderingContext2D, bricks: Brick[][], col
                     if (rgbColor) {
                         ctx.fillStyle = lightenRgb(rgbColor, flashLightenFactor);
                     } else {
-                        ctx.fillStyle = "#FFFFFF"; // Fallback to white if hex conversion fails
+                        ctx.fillStyle = "#FFFFFF"; 
                     }
                     ctx.fill();
                 } else if (brick.status === 2 && brick.fadeOutAlpha !== undefined && brick.fadeOutAlpha > 0) {
                     ctx.globalAlpha = brick.fadeOutAlpha;
                     ctx.fillStyle = originalFillStyle;
                     ctx.fill();
-                } else if (brick.status === 1) { // Normal drawing for active (status 1) bricks
+                } else if (brick.status === 1) { 
                     ctx.fillStyle = originalFillStyle;
                     ctx.fill();
                 }
                 ctx.closePath();
-                ctx.restore(); // Restore globalAlpha and other states
+                ctx.restore(); 
 
-                // Visual indicators (drawn on top)
                 if (brick.status === 1 || (brick.status === 2 && (brick.isFlashing || (brick.fadeOutAlpha && brick.fadeOutAlpha > 0.5)))) {
                     if (brick.isBomb) {
                         ctx.fillStyle = '#000000'; 
@@ -341,8 +314,20 @@ export const drawBricks = (ctx: CanvasRenderingContext2D, bricks: Brick[][], col
     }
 };
 
+export const drawParticles = (ctx: CanvasRenderingContext2D, particles: Particle[]) => {
+    if (!particles) return;
+    particles.forEach(particle => {
+        ctx.save();
+        ctx.globalAlpha = particle.alpha;
+        ctx.fillStyle = particle.color;
+        ctx.beginPath();
+        ctx.arc(particle.x, particle.y, particle.size, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.closePath();
+        ctx.restore();
+    });
+};
 
-// --- MODIFIED: drawGameInfo ---
 export const drawGameInfo = (
     ctx: CanvasRenderingContext2D,
     currentScore: number,
@@ -359,57 +344,45 @@ export const drawGameInfo = (
   const xStart = 8;
   const padding = 15;
 
-  // 1. Draw Score
   const scoreText = `Score: ${currentScore}/${targetScore}`;
   ctx.fillStyle = "#ffffff";
   ctx.textAlign = 'left';
   ctx.fillText(scoreText, xStart, yPos);
   let currentX = xStart + ctx.measureText(scoreText).width + padding;
 
-  // 2. Draw Gold (if not test mode)
   if (!isTestMode) {
     const goldText = `Gold: ${gold}`;
     ctx.fillStyle = GOLD_COLOR || "#FFD700";
     ctx.fillText(goldText, currentX, yPos);
     currentX += ctx.measureText(goldText).width + padding;
 
-    // 3. Draw Bonus Gold (if not test mode and bonus > 0)
     if (bonusGold > 0) {
         const bonusText = `(+${bonusGold})`;
-        ctx.fillStyle = '#90EE90'; // Light green for bonus
+        ctx.fillStyle = '#90EE90'; 
         ctx.fillText(bonusText, currentX, yPos);
-        currentX += ctx.measureText(bonusText).width; // Remove padding here, add after timer if drawn
+        currentX += ctx.measureText(bonusText).width; 
 
-        // *** ADDED: Draw Bonus Gold Timer if active ***
         if (bonusGoldTimerCountdown !== null && bonusGoldTimerCountdown > 0) {
             const secondsLeft = Math.ceil(bonusGoldTimerCountdown / 1000);
-            // --- MODIFIED: Changed timer text format --- 
-            const timerText = ` ${secondsLeft} seconds left!`; // Changed text format
-
-            // Make timer color fade from green to red
+            const timerText = ` ${secondsLeft} seconds left!`; 
             const ratio = Math.max(0, Math.min(1, bonusGoldTimerCountdown / BONUS_GOLD_TIMER_DURATION));
             const red = Math.round(255 * (1 - ratio));
             const green = Math.round(255 * ratio);
-            ctx.fillStyle = `rgb(${red},${green},0)`; // Fade from green to red
-
+            ctx.fillStyle = `rgb(${red},${green},0)`; 
             ctx.fillText(timerText, currentX, yPos);
             currentX += ctx.measureText(timerText).width;
         }
-         // Add padding after bonus gold section (including timer if present)
         currentX += padding;
     }
   }
 
-  // 4. Draw Lives (if not test mode)
   if (!isTestMode) {
     const livesText = `Lives: ${lives}`;
-    ctx.fillStyle = "#ff6347"; // Tomato color for lives
+    ctx.fillStyle = "#ff6347"; 
     ctx.fillText(livesText, currentX, yPos);
   }
 };
-// --- END MODIFICATION ---
 
-// Draw PowerUps (Uses preloaded images)
 export const drawPowerUps = (ctx: CanvasRenderingContext2D, powerUps: PowerUp[]) => {
     const currentTime = Date.now();
     powerUps.forEach(powerUp => {
@@ -439,9 +412,9 @@ export const drawPowerUps = (ctx: CanvasRenderingContext2D, powerUps: PowerUp[])
                 case 'POINTS_FIELD': imageToDraw = pointsFieldImage; break;
             }
 
-            if (imageToDraw && imageToDraw.complete) { // check if image is loaded
+            if (imageToDraw && imageToDraw.complete) { 
                 ctx.drawImage(imageToDraw, powerUp.x, powerUp.y, POWER_UP_SIZE, POWER_UP_SIZE);
-            } else if (!imageToDraw || (baseType === 'POINTS_FIELD' && !imageToDraw)) { // Fallback for non-image power-ups or if image is not defined
+            } else if (!imageToDraw || (baseType === 'POINTS_FIELD' && !imageToDraw)) { 
                 ctx.beginPath(); ctx.rect(powerUp.x, powerUp.y, POWER_UP_SIZE, POWER_UP_SIZE);
                 if (powerUp.type === 'ALL_IN_ONE' && powerUp.timeCreated) {
                     const timeElapsed = currentTime - powerUp.timeCreated;
@@ -462,18 +435,17 @@ export const drawPowerUps = (ctx: CanvasRenderingContext2D, powerUps: PowerUp[])
     });
 };
 
-// Draw PowerUp Previews (Uses preloaded images - Base images only)
 export const drawPowerUpPreviews = (ctx: CanvasRenderingContext2D, spawnablePowerUpTypes: Set<PowerUpType>) => {
     const typesArray = Array.from(spawnablePowerUpTypes);
     const totalSpawnable = typesArray.length;
     if (totalSpawnable === 0) return;
 
     const spacing = (BOARD_WIDTH - (totalSpawnable * POWER_UP_SIZE)) / (totalSpawnable + 1);
-    const startY = (BOARD_HEIGHT * 3) / 5; // Spawn 3/5 down the screen
+    const startY = (BOARD_HEIGHT * 3) / 5; 
     let currentX = spacing;
-    const previewAlpha = '80'; // Hex alpha for ~50% transparency
+    const previewAlpha = '80'; 
 
-    ctx.save(); // Save context state
+    ctx.save(); 
     typesArray.forEach((type) => {
         ctx.globalAlpha = parseFloat((parseInt(previewAlpha, 16) / 255).toFixed(2));
         let imageToDraw: HTMLImageElement | null = null;
@@ -501,11 +473,10 @@ export const drawPowerUpPreviews = (ctx: CanvasRenderingContext2D, spawnablePowe
             case 'POINTS_FIELD': imageToDraw = pointsFieldImage; break;
         }
         
-        if (imageToDraw && imageToDraw.complete) { // check if image is loaded
+        if (imageToDraw && imageToDraw.complete) { 
             ctx.drawImage(imageToDraw, currentX, startY, POWER_UP_SIZE, POWER_UP_SIZE);
-        } else if (!imageToDraw || (baseType === 'POINTS_FIELD' && !imageToDraw)) { // Fallback for non-image power-ups or if image is not defined
-            // Fallback for non-image power-ups
-            ctx.globalAlpha = 1.0; // Reset alpha for non-image power-ups before applying color alpha
+        } else if (!imageToDraw || (baseType === 'POINTS_FIELD' && !imageToDraw)) { 
+            ctx.globalAlpha = 1.0; 
             const color = POWER_UP_COLORS[type] || POWER_UP_COLORS['NONE']!;
             ctx.fillStyle = color + previewAlpha;
             ctx.strokeStyle = color;
@@ -517,33 +488,28 @@ export const drawPowerUpPreviews = (ctx: CanvasRenderingContext2D, spawnablePowe
             ctx.stroke();
             ctx.closePath();
         }
-        ctx.globalAlpha = 1.0; // Reset alpha for the next iteration
+        ctx.globalAlpha = 1.0; 
         currentX += POWER_UP_SIZE + spacing;
     });
-    ctx.restore(); // Restore context state
+    ctx.restore(); 
 };
 
-// Draw Lasers (Unchanged)
 export const drawLasers = (ctx: CanvasRenderingContext2D, lasers: Laser[]) => {
     lasers.forEach(laser => { ctx.beginPath(); ctx.rect(laser.x, laser.y, laser.width, laser.height); ctx.fillStyle = "#e74c3c"; ctx.fill(); ctx.closePath(); });
 };
 
-
-// Draw Safety Net (Unchanged)
 export const drawSafetyNet = (ctx: CanvasRenderingContext2D, count: number) => {
     if (count > 0) {
       ctx.save();
-      ctx.fillStyle = POWER_UP_COLORS['SAFETY_NET'] + 'CC'; // Apply transparency
+      ctx.fillStyle = POWER_UP_COLORS['SAFETY_NET'] + 'CC'; 
       for (let i = 0; i < count; i++) {
          ctx.beginPath();
-         // Stack nets from the bottom up
          const yPosition = BOARD_HEIGHT - (i + 1) * SAFETY_NET_HEIGHT;
-         if (yPosition < 0) continue; // Don't draw off-screen nets
+         if (yPosition < 0) continue; 
          ctx.rect(0, yPosition, BOARD_WIDTH, SAFETY_NET_HEIGHT);
          ctx.fill();
-         // Add a subtle border between stacked nets for visual clarity
          if (i > 0) {
-             ctx.strokeStyle = 'rgba(255, 255, 255, 0.2)'; // Faint white line
+             ctx.strokeStyle = 'rgba(255, 255, 255, 0.2)'; 
              ctx.lineWidth = 0.5;
              ctx.beginPath();
              ctx.moveTo(0, yPosition + SAFETY_NET_HEIGHT);
@@ -556,10 +522,9 @@ export const drawSafetyNet = (ctx: CanvasRenderingContext2D, count: number) => {
     }
 };
 
-// Draw End Message (Unchanged)
 export const drawEndMessage = (
     ctx: CanvasRenderingContext2D,
-    state: GameState, // Use GameState type
+    state: GameState, 
     finalScore: number
 ) => {
     ctx.font = "48px Arial";
@@ -574,7 +539,6 @@ export const drawEndMessage = (
     }
     ctx.fillText(message, BOARD_WIDTH / 2, BOARD_HEIGHT / 2 - 40);
 
-    // Draw final score below the message
     ctx.font = "24px Arial";
     ctx.fillText(`Final Score: ${finalScore}`, BOARD_WIDTH / 2, BOARD_HEIGHT / 2 + 20);
 };
