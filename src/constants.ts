@@ -96,6 +96,14 @@ export const MULTIBALL_PARTICLE_SIZE = 1;
 export const MULTIBALL_PARTICLE_LIFESPAN_MS = 250; 
 export const MULTIBALL_PARTICLE_COLOR = '#FFFFFF'; 
 
+export const LASER_TRAIL_PARTICLE_COUNT_PER_FRAME = 2;
+export const LASER_TRAIL_PARTICLE_SPEED_MIN_Y = 1;
+export const LASER_TRAIL_PARTICLE_SPEED_MAX_Y = 2;
+export const LASER_TRAIL_PARTICLE_SPREAD_X = 0.5; // Max horizontal speed component
+export const LASER_TRAIL_PARTICLE_SIZE = 1;
+export const LASER_TRAIL_PARTICLE_LIFESPAN_MS = 200;
+export const LASER_TRAIL_PARTICLE_COLOR = '#FF0000'; // Red
+
 // Bonus Gold
 export const INITIAL_BONUS_GOLD = 30;
 export const MINIMUM_BONUS_GOLD = 5;
