@@ -281,7 +281,9 @@ export default function Home() {
                             color: '#FFFFFF',
                             boxSizing: 'border-box',
                             gap: '15px',
-                            border: '1px solid white'
+                            borderLeft: '1px solid white',
+                            borderRight: '1px solid white',
+                            borderBottom: '1px solid white'
                         }}
                     >
                         {/* Power-up Spawn Chance Control Group */}
