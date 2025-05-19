@@ -15,7 +15,8 @@ import {
     BALL_SIZE, BIG_BALL_SIZE_INCREASE, POINTS_FIELD_DURATION, POINTS_FIELD_MAX_BALLS,
     BRICK_FLASH_DURATION, BRICK_FADE_SPEED,
     PADDLE_WIDEN_VISUAL_EFFECT_DURATION_MS, PADDLE_WIDEN_VISUAL_EFFECT_AMOUNT,
-    BRICK_REGEN_VISUAL_EFFECT_DURATION_MS, BRICK_DARK_FLASH_DURATION_MS // Added dark flash duration
+    BRICK_REGEN_VISUAL_EFFECT_DURATION_MS, BRICK_DARK_FLASH_DURATION_MS,
+    BRICK_SPECIAL_FLASH_DURATION_MS // Added special flash duration
 } from './constants'; 
 import { 
     drawPaddle, drawBalls, drawBricks, drawGameInfo, 
@@ -137,6 +138,13 @@ const updateBrickStateAndAnimations = (bricks: Brick[][], columns: number, rows:
                     if (currentTime - brick.darkFlashStartTime >= BRICK_DARK_FLASH_DURATION_MS) {
                         brick.isDarkFlashActive = false;
                         delete brick.darkFlashStartTime;
+                    }
+                }
+
+                if (brick.isSpecialFlashActive && brick.specialFlashStartTime) {
+                    if (currentTime - brick.specialFlashStartTime >= BRICK_SPECIAL_FLASH_DURATION_MS) {
+                        brick.isSpecialFlashActive = false;
+                        delete brick.specialFlashStartTime;
                     }
                 }
             }

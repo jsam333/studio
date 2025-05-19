@@ -48,13 +48,13 @@ export const applyBrickEffects = (
                     brick.isSpecial = false;
                     brick.isBomb = false;
                     brick.holdsBall = false; 
-                    // Clear other animation flags
                     brick.isFlashing = false;
                     brick.fadeOutAlpha = 0;
                     delete brick.flashStartTime;
-                    brick.isRegenVisualEffectActive = false; // Ensure pop effect is off
+                    brick.isRegenVisualEffectActive = false; 
                     delete brick.regenVisualEffectStartTime;
-                    // Trigger dark flash effect
+                    brick.isSpecialFlashActive = false; // Ensure special flash is off
+                    delete brick.specialFlashStartTime;
                     brick.isDarkFlashActive = true;
                     brick.darkFlashStartTime = currentTime;
                 }
@@ -87,6 +87,8 @@ export const applyBrickEffects = (
                     delete brick.regenVisualEffectStartTime;
                     brick.isDarkFlashActive = false; 
                     delete brick.darkFlashStartTime;
+                    brick.isSpecialFlashActive = false; 
+                    delete brick.specialFlashStartTime;
                 }
             });
             break;
@@ -117,6 +119,8 @@ export const applyBrickEffects = (
                     delete brick.regenVisualEffectStartTime;
                     brick.isDarkFlashActive = false; 
                     delete brick.darkFlashStartTime;
+                    brick.isSpecialFlashActive = true; // Trigger special flash
+                    brick.specialFlashStartTime = currentTime;
                  }
             });
             break;
@@ -145,6 +149,8 @@ export const applyBrickEffects = (
                     delete brick.flashStartTime;
                     brick.isRegenVisualEffectActive = false; 
                     delete brick.regenVisualEffectStartTime;
+                    brick.isSpecialFlashActive = false; // Ensure special flash is off
+                    delete brick.specialFlashStartTime;
                     brick.isDarkFlashActive = true;
                     brick.darkFlashStartTime = currentTime;
                 }
@@ -174,10 +180,12 @@ export const applyBrickEffects = (
                     brick.isFlashing = false; 
                     brick.fadeOutAlpha = 0;
                     delete brick.flashStartTime;
+                    brick.isDarkFlashActive = false; 
+                    delete brick.darkFlashStartTime;
+                    brick.isSpecialFlashActive = false; 
+                    delete brick.specialFlashStartTime;
                     brick.isRegenVisualEffectActive = true;
                     brick.regenVisualEffectStartTime = currentTime;
-                    brick.isDarkFlashActive = false; // Ensure dark flash is off
-                    delete brick.darkFlashStartTime;
                 }
             });
             break;
@@ -208,6 +216,8 @@ export const applyBrickEffects = (
                     delete brick.regenVisualEffectStartTime;
                     brick.isDarkFlashActive = false; 
                     delete brick.darkFlashStartTime;
+                    brick.isSpecialFlashActive = false; 
+                    delete brick.specialFlashStartTime;
                 }
             });
             break;

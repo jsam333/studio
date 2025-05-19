@@ -15,10 +15,12 @@ export interface Brick {
   isFlashing?: boolean; // For destruction white flash
   fadeOutAlpha?: number; 
   flashStartTime?: number; 
-  isRegenVisualEffectActive?: boolean; // For regen visual pop effect
-  regenVisualEffectStartTime?: number; // For regen visual pop effect
-  isDarkFlashActive?: boolean; // For reinforce/upgrade dark flash effect
-  darkFlashStartTime?: number; // For reinforce/upgrade dark flash effect
+  isRegenVisualEffectActive?: boolean; 
+  regenVisualEffectStartTime?: number; 
+  isDarkFlashActive?: boolean; 
+  darkFlashStartTime?: number; 
+  isSpecialFlashActive?: boolean; // For MAKE_SPECIAL light flash effect
+  specialFlashStartTime?: number; // For MAKE_SPECIAL light flash effect
 }
 
 export interface Particle {

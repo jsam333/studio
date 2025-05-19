@@ -64,11 +64,12 @@ export const BRICK_FADE_SPEED = 0.15;
 export const BRICK_REGEN_VISUAL_EFFECT_DURATION_MS = 100;
 export const BRICK_REGEN_VISUAL_EFFECT_SCALE_AMOUNT = 0.1; 
 export const BRICK_DARK_FLASH_DURATION_MS = 100;
-export const BRICK_DARK_FLASH_DARKEN_AMOUNT = 0.4; // 0: original, 1: black
+export const BRICK_DARK_FLASH_DARKEN_AMOUNT = 0.4; 
+export const BRICK_SPECIAL_FLASH_DURATION_MS = 100;
+export const BRICK_SPECIAL_FLASH_LIGHTEN_AMOUNT = 0.3;
 
 
 // Power-ups
-// ... (rest of power-up constants)
 export const POWER_UP_SIZE = 8;
 export const POWER_UP_SPEED = 2;
 export const BASE_POWER_UP_SPEED = 2;
@@ -116,15 +117,14 @@ export const SAFETY_NET_PARTICLE_LIFESPAN_MS = 300;
 export const SAFETY_NET_PARTICLE_COLOR = '#1E90FF'; 
 
 // Bonus Gold
-// ... (rest of bonus gold constants)
 export const INITIAL_BONUS_GOLD = 30;
 export const MINIMUM_BONUS_GOLD = 5;
 export const BONUS_GOLD_DECREMENT_INTERVAL = 500; 
 export const BONUS_GOLD_TARGET = 5; 
 export const BONUS_GOLD_TIMER_DURATION = 5000; 
 
+
 // Collection Field
-// ... (rest of collection field constants)
 export const FIELD_INITIAL_HEIGHT_OFFSET = 0;
 export const FIELD_HEIGHT_INCREMENT = 6;
 export const FIELD_MAX_HEIGHT_OFFSET = 20;
@@ -136,7 +136,6 @@ export const FIELD_SHRINK_RATE_W = 0.08;
 export const FIELD_SHRINK_INTERVAL = 16;
 
 // Points Field
-// ... (rest of points field constants)
 export const POINTS_FIELD_WIDTH = 50; 
 export const POINTS_FIELD_HEIGHT = 50; 
 export const POINTS_FIELD_COLOR = 'rgba(0, 255, 0, 0.3)';
@@ -330,7 +329,7 @@ export const NORMAL_BRICK_COLOR = '#e67e22';
 export const REINFORCED_BRICK_COLOR = '#A0522D'; 
 export const UPGRADED_BRICK_COLOR = '#8B4513';   
 export const BUILDER_BRICK_COLOR = '#654321';    
-export const SPECIAL_BRICK_COLOR = '#FFD700';
+export const SPECIAL_BRICK_COLOR = '#FFD700'; // Yellow
 export const BOMB_BRICK_COLOR = '#8B0000';
 export const BALL_BRICK_COLOR = '#FFFFFF'; 
 export const RAINBOW_COLORS = ['#FF0000', '#FF7F00', '#FFFF00', '#00FF00', '#0000FF', '#4B0082', '#9400D3'];
