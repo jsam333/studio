@@ -12,11 +12,13 @@ export interface Brick {
   upgradeLevel?: number;
   isBomb?: boolean;
   holdsBall?: boolean; 
-  isFlashing?: boolean; 
+  isFlashing?: boolean; // For destruction white flash
   fadeOutAlpha?: number; 
   flashStartTime?: number; 
-  isRegenVisualEffectActive?: boolean; // For regen visual effect
-  regenVisualEffectStartTime?: number; // For regen visual effect
+  isRegenVisualEffectActive?: boolean; // For regen visual pop effect
+  regenVisualEffectStartTime?: number; // For regen visual pop effect
+  isDarkFlashActive?: boolean; // For reinforce/upgrade dark flash effect
+  darkFlashStartTime?: number; // For reinforce/upgrade dark flash effect
 }
 
 export interface Particle {
@@ -179,8 +181,8 @@ export interface GameStateRefsBase {
     testPowerUpSpawnChanceRef: React.MutableRefObject<number>;
     testBrickColumnsRef: React.MutableRefObject<number>; 
     testBrickRowsRef: React.MutableRefObject<number>; 
-    paddleVisualEffectActiveRef?: React.MutableRefObject<boolean>; // Optional because it's part of GameStateRefs, not Base
-    paddleVisualEffectStartTimeRef?: React.MutableRefObject<number | null>; // Optional
+    paddleVisualEffectActiveRef?: React.MutableRefObject<boolean>; 
+    paddleVisualEffectStartTimeRef?: React.MutableRefObject<number | null>; 
 }
 
 export interface GameStateRefs extends GameStateRefsBase {
@@ -189,9 +191,6 @@ export interface GameStateRefs extends GameStateRefsBase {
     animationFrameIdRef?: React.MutableRefObject<number | null>;
     lastTimeRef?: React.MutableRefObject<number>;
     currentLevelRef: React.MutableRefObject<number>;
-    // These were already correctly in GameStateRefsBase from useGameLogic.ts, so no need to redeclare here if they are always present.
-    // paddleVisualEffectActiveRef: React.MutableRefObject<boolean>; 
-    // paddleVisualEffectStartTimeRef: React.MutableRefObject<number | null>;
 }
 
 export interface GameLoopCallbacks {

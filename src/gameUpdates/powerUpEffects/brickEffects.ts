@@ -12,7 +12,6 @@ function shuffleArray<T>(array: T[]): void {
     }
 }
 
-
 export const applyBrickEffects = (
     refs: GameStateRefs,
     callbacks: GameLoopCallbacks,
@@ -49,6 +48,15 @@ export const applyBrickEffects = (
                     brick.isSpecial = false;
                     brick.isBomb = false;
                     brick.holdsBall = false; 
+                    // Clear other animation flags
+                    brick.isFlashing = false;
+                    brick.fadeOutAlpha = 0;
+                    delete brick.flashStartTime;
+                    brick.isRegenVisualEffectActive = false; // Ensure pop effect is off
+                    delete brick.regenVisualEffectStartTime;
+                    // Trigger dark flash effect
+                    brick.isDarkFlashActive = true;
+                    brick.darkFlashStartTime = currentTime;
                 }
             });
             break;
@@ -72,6 +80,13 @@ export const applyBrickEffects = (
                     brick.isSpecial = false; 
                     brick.holdsBall = false; 
                     brick.upgradeLevel = 0; 
+                    brick.isFlashing = false;
+                    brick.fadeOutAlpha = 0;
+                    delete brick.flashStartTime;
+                    brick.isRegenVisualEffectActive = false; 
+                    delete brick.regenVisualEffectStartTime;
+                    brick.isDarkFlashActive = false; 
+                    delete brick.darkFlashStartTime;
                 }
             });
             break;
@@ -95,6 +110,13 @@ export const applyBrickEffects = (
                     brick.isBomb = false; 
                     brick.holdsBall = false; 
                     brick.upgradeLevel = 0; 
+                    brick.isFlashing = false;
+                    brick.fadeOutAlpha = 0;
+                    delete brick.flashStartTime;
+                    brick.isRegenVisualEffectActive = false; 
+                    delete brick.regenVisualEffectStartTime;
+                    brick.isDarkFlashActive = false; 
+                    delete brick.darkFlashStartTime;
                  }
             });
             break;
@@ -118,6 +140,13 @@ export const applyBrickEffects = (
                     brick.isSpecial = false;
                     brick.isBomb = false;
                     brick.holdsBall = false; 
+                    brick.isFlashing = false;
+                    brick.fadeOutAlpha = 0;
+                    delete brick.flashStartTime;
+                    brick.isRegenVisualEffectActive = false; 
+                    delete brick.regenVisualEffectStartTime;
+                    brick.isDarkFlashActive = true;
+                    brick.darkFlashStartTime = currentTime;
                 }
             });
             break;
@@ -127,7 +156,7 @@ export const applyBrickEffects = (
             for (let c = 0; c < BRICK_COLUMNS; c++) {
                 for (let r = 0; r < BRICK_ROWS; r++) {
                     const brick = refs.bricksRef.current[c]?.[r];
-                    if (brick && brick.status === 0) { // Find destroyed bricks
+                    if (brick && brick.status === 0) { 
                         candidates.push({ c, r });
                     }
                 }
@@ -142,14 +171,13 @@ export const applyBrickEffects = (
                     brick.isBomb = false;
                     brick.holdsBall = false;
                     brick.upgradeLevel = 0; 
-                    // isFlashing and fadeOutAlpha should be cleared or irrelevant for a newly regenerated brick
                     brick.isFlashing = false; 
                     brick.fadeOutAlpha = 0;
                     delete brick.flashStartTime;
-
-                    // Trigger visual effect
                     brick.isRegenVisualEffectActive = true;
                     brick.regenVisualEffectStartTime = currentTime;
+                    brick.isDarkFlashActive = false; // Ensure dark flash is off
+                    delete brick.darkFlashStartTime;
                 }
             });
             break;
@@ -173,6 +201,13 @@ export const applyBrickEffects = (
                     brick.isSpecial = false; 
                     brick.isBomb = false; 
                     brick.upgradeLevel = 0; 
+                    brick.isFlashing = false;
+                    brick.fadeOutAlpha = 0;
+                    delete brick.flashStartTime;
+                    brick.isRegenVisualEffectActive = false; 
+                    delete brick.regenVisualEffectStartTime;
+                    brick.isDarkFlashActive = false; 
+                    delete brick.darkFlashStartTime;
                 }
             });
             break;

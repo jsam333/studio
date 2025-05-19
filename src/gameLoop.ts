@@ -1,6 +1,6 @@
 // src/gameLoop.ts
 import React from 'react';
-import { Ball, PowerUp, Laser, PowerUpType, PowerUpSpawnEvent, GameMode, Brick, GameState, PointsField, Particle } from './interfaces'; // Added Particle
+import { Ball, PowerUp, Laser, PowerUpType, PowerUpSpawnEvent, GameMode, Brick, GameState, PointsField, Particle } from './interfaces'; 
 import { GameStateRefs, GameLoopCallbacks } from './interfaces';
 import { updateLasers } from './gameUpdates/laserUpdates';
 import { updateBalls } from './gameUpdates/ballUpdates';
@@ -15,7 +15,7 @@ import {
     BALL_SIZE, BIG_BALL_SIZE_INCREASE, POINTS_FIELD_DURATION, POINTS_FIELD_MAX_BALLS,
     BRICK_FLASH_DURATION, BRICK_FADE_SPEED,
     PADDLE_WIDEN_VISUAL_EFFECT_DURATION_MS, PADDLE_WIDEN_VISUAL_EFFECT_AMOUNT,
-    BRICK_REGEN_VISUAL_EFFECT_DURATION_MS // Added brick regen effect constant
+    BRICK_REGEN_VISUAL_EFFECT_DURATION_MS, BRICK_DARK_FLASH_DURATION_MS // Added dark flash duration
 } from './constants'; 
 import { 
     drawPaddle, drawBalls, drawBricks, drawGameInfo, 
@@ -101,15 +101,13 @@ const checkPointsFieldCollisions = (
     });
 };
 
-// Consolidate brick animation updates
 const updateBrickStateAndAnimations = (bricks: Brick[][], columns: number, rows: number, currentTime: number, scaledDeltaTime: number) => {
     for (let c = 0; c < columns; c++) {
         if (!bricks[c]) continue;
         for (let r = 0; r < rows; r++) {
             const brick = bricks[c][r];
             if (brick) {
-                // Destruction Animation (Flash and Fade)
-                if (brick.status === 2) { // Only for bricks in destruction phase
+                if (brick.status === 2) { 
                     if (brick.isFlashing) {
                         if (brick.flashStartTime === undefined) {
                             brick.flashStartTime = currentTime;
@@ -123,16 +121,22 @@ const updateBrickStateAndAnimations = (bricks: Brick[][], columns: number, rows:
                         brick.fadeOutAlpha -= BRICK_FADE_SPEED * scaledDeltaTime;
                         if (brick.fadeOutAlpha <= 0) {
                             brick.fadeOutAlpha = 0;
-                            brick.status = 0; // Mark brick as fully inactive
+                            brick.status = 0; 
                         }
                     }
                 }
 
-                // Regen Visual Effect Animation End Check
                 if (brick.isRegenVisualEffectActive && brick.regenVisualEffectStartTime) {
                     if (currentTime - brick.regenVisualEffectStartTime >= BRICK_REGEN_VISUAL_EFFECT_DURATION_MS) {
                         brick.isRegenVisualEffectActive = false;
                         delete brick.regenVisualEffectStartTime;
+                    }
+                }
+
+                if (brick.isDarkFlashActive && brick.darkFlashStartTime) {
+                    if (currentTime - brick.darkFlashStartTime >= BRICK_DARK_FLASH_DURATION_MS) {
+                        brick.isDarkFlashActive = false;
+                        delete brick.darkFlashStartTime;
                     }
                 }
             }
@@ -189,7 +193,6 @@ export const gameUpdate = (
 
     ctx.save();
     ctx.clearRect(0, 0, BOARD_WIDTH, BOARD_HEIGHT);
-    // Pass currentTime to drawBricks for regen animation
     drawBricks(ctx, refs.bricksRef.current, columns, rows, currentTime);
 
     let visualPaddleWidth = refs.paddleWidthRef.current;
