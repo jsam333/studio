@@ -57,6 +57,8 @@ export const BUILDER_BRICK_STRENGTH = 4;
 export const MAX_BRICK_UPGRADE_LEVEL = 3;
 export const BOMB_BRICK_POINTS = 1;
 export const BOMB_DAMAGE_POINTS = 10;
+export const BRICK_FLASH_DURATION = 50; // Duration of the white flash in milliseconds
+export const BRICK_FADE_SPEED = 0.15; // Alpha decrease per frame for fade out (0.05 * 3)
 
 
 // Power-ups

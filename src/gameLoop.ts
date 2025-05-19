@@ -11,7 +11,8 @@ import { handleSpawnEvents } from './gameUpdates/gameLoopUtils';
 import {
     BOARD_WIDTH, BOARD_HEIGHT, BASE_BALL_SPEED_FACTOR, POWER_UP_COLORS,
     TARGET_FPS, BONUS_GOLD_TARGET, BONUS_GOLD_TIMER_DURATION,
-    BALL_SIZE, BIG_BALL_SIZE_INCREASE, POINTS_FIELD_DURATION, POINTS_FIELD_MAX_BALLS
+    BALL_SIZE, BIG_BALL_SIZE_INCREASE, POINTS_FIELD_DURATION, POINTS_FIELD_MAX_BALLS,
+    BRICK_FLASH_DURATION, BRICK_FADE_SPEED // Added constants for brick animation
 } from './constants'; 
 import { drawPaddle, drawBalls, drawBricks, drawGameInfo, drawPowerUps, drawLasers, drawSafetyNet, drawCollectionFieldRect, drawPowerUpPreviews, drawPointsFields } from './drawFunctions';
 
@@ -92,6 +93,33 @@ const checkPointsFieldCollisions = (
     });
 };
 
+const updateBrickAnimations = (bricks: Brick[][], columns: number, rows: number, currentTime: number, scaledDeltaTime: number) => {
+    for (let c = 0; c < columns; c++) {
+        if (!bricks[c]) continue;
+        for (let r = 0; r < rows; r++) {
+            const brick = bricks[c][r];
+            if (brick) {
+                if (brick.isFlashing) {
+                    if (brick.flashStartTime === undefined) {
+                        brick.flashStartTime = currentTime;
+                    }
+                    if (currentTime - brick.flashStartTime >= BRICK_FLASH_DURATION) {
+                        brick.isFlashing = false;
+                        brick.fadeOutAlpha = 1.0;
+                        delete brick.flashStartTime; // Remove startTime after use
+                    }
+                } else if (brick.fadeOutAlpha !== undefined && brick.fadeOutAlpha > 0) {
+                    brick.fadeOutAlpha -= BRICK_FADE_SPEED * scaledDeltaTime;
+                    if (brick.fadeOutAlpha <= 0) {
+                        brick.fadeOutAlpha = 0;
+                        brick.status = 0; // Mark brick as inactive
+                    }
+                }
+            }
+        }
+    }
+};
+
 
 const collectedPowerUpTypesReusable: PowerUpType[] = [];
 const spawnRequestsReusable: PowerUpSpawnEvent[] = [];
@@ -125,6 +153,8 @@ export const gameUpdate = (
 
     const columns = refs.brickColumnsRef.current;
     const rows = refs.brickRowsRef.current;
+
+    updateBrickAnimations(refs.bricksRef.current, columns, rows, currentTime, scaledDeltaTime); // Update brick animations
     
     // Update paddle shrink timer if a shrink is scheduled, regardless of mode
     if (refs.paddleShrinkCountdownRef?.current !== null) {

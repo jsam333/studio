@@ -87,6 +87,24 @@ const getBasePowerUpType = (type: PowerUpType): PowerUpType => {
     return baseType as PowerUpType;
 };
 
+// Helper function to convert hex color to RGB object
+const hexToRgb = (hex: string): { r: number; g: number; b: number } | null => {
+    const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+    return result ? {
+        r: parseInt(result[1], 16),
+        g: parseInt(result[2], 16),
+        b: parseInt(result[3], 16)
+    } : null;
+};
+
+// Helper function to lighten an RGB color
+const lightenRgb = (rgb: { r: number; g: number; b: number }, factor: number): string => {
+    const r = Math.min(255, Math.round(rgb.r + (255 - rgb.r) * factor));
+    const g = Math.min(255, Math.round(rgb.g + (255 - rgb.g) * factor));
+    const b = Math.min(255, Math.round(rgb.b + (255 - rgb.b) * factor));
+    return `rgb(${r},${g},${b})`;
+};
+
 
 // Draw Paddle (Updated to remove sticky charge count)
 export const drawPaddle = (
@@ -252,48 +270,71 @@ export const drawBalls = (ctx: CanvasRenderingContext2D, activeBalls: Ball[], st
     stuckBalls.forEach(drawBall);
 };
 
-// Draw Bricks (Reverted to original implementation)
+// Draw Bricks (Modified for status, flashing and fading)
 export const drawBricks = (ctx: CanvasRenderingContext2D, bricks: Brick[][], columns: number, rows: number) => {
     if (!bricks) return;
+    const flashLightenFactor = 0.7; // How much to lighten towards white (0 = original, 1 = pure white)
+
     for (let c = 0; c < columns; c++) {
         if (!bricks[c]) continue;
         for (let r = 0; r < rows; r++) {
             const brick = bricks[c][r];
-            if (brick && brick.status === 1) {
+
+            // Only draw bricks that are active (status 1) or in the destroying animation (status 2)
+            if (brick && (brick.status === 1 || brick.status === 2)) {
+                ctx.save();
                 ctx.beginPath();
                 ctx.rect(brick.x, brick.y, brick.width, brick.height);
-                // Determine the fill style based on brick properties
-                if (brick.holdsBall) {
-                    ctx.fillStyle = BALL_BRICK_COLOR; // Use the new color for bricks holding a ball
-                } else if (brick.isBomb) {
-                    ctx.fillStyle = BOMB_BRICK_COLOR;
-                } else if (brick.isSpecial) {
-                    ctx.fillStyle = SPECIAL_BRICK_COLOR;
-                } else if (brick.upgradeLevel === 3) {
-                    ctx.fillStyle = BUILDER_BRICK_COLOR;
-                } else if (brick.upgradeLevel === 2) {
-                    ctx.fillStyle = UPGRADED_BRICK_COLOR;
-                } else if (brick.upgradeLevel === 1) {
-                    ctx.fillStyle = REINFORCED_BRICK_COLOR;
-                } else {
-                    ctx.fillStyle = NORMAL_BRICK_COLOR;
-                }
-                ctx.fill();
-                ctx.closePath();
 
-                // Add visual indicator for bomb or ball-holding brick
-                if (brick.isBomb) {
-                    ctx.fillStyle = '#000000'; // Black center for bomb
-                    ctx.beginPath();
-                    ctx.arc(brick.x + brick.width / 2, brick.y + brick.height / 2, brick.width / 4, 0, Math.PI * 2);
+                let originalFillStyle = NORMAL_BRICK_COLOR; // Default
+                if (brick.holdsBall) {
+                    originalFillStyle = BALL_BRICK_COLOR;
+                } else if (brick.isBomb) {
+                    originalFillStyle = BOMB_BRICK_COLOR;
+                } else if (brick.isSpecial) {
+                    originalFillStyle = SPECIAL_BRICK_COLOR;
+                } else if (brick.upgradeLevel === 3) {
+                    originalFillStyle = BUILDER_BRICK_COLOR;
+                } else if (brick.upgradeLevel === 2) {
+                    originalFillStyle = UPGRADED_BRICK_COLOR;
+                } else if (brick.upgradeLevel === 1) {
+                    originalFillStyle = REINFORCED_BRICK_COLOR;
+                }
+
+                if (brick.status === 2 && brick.isFlashing) {
+                    const rgbColor = hexToRgb(originalFillStyle);
+                    if (rgbColor) {
+                        ctx.fillStyle = lightenRgb(rgbColor, flashLightenFactor);
+                    } else {
+                        ctx.fillStyle = "#FFFFFF"; // Fallback to white if hex conversion fails
+                    }
                     ctx.fill();
-                    ctx.closePath();
-                } else if (brick.holdsBall) {
-                    ctx.fillStyle = '#AAAAAA'; // Gray center for ball-holding brick
-                    ctx.beginPath();
-                    ctx.arc(brick.x + brick.width / 2, brick.y + brick.height / 2, brick.width / 4, 0, Math.PI * 2);
+                } else if (brick.status === 2 && brick.fadeOutAlpha !== undefined && brick.fadeOutAlpha > 0) {
+                    ctx.globalAlpha = brick.fadeOutAlpha;
+                    ctx.fillStyle = originalFillStyle;
                     ctx.fill();
-                    ctx.closePath();
+                } else if (brick.status === 1) { // Normal drawing for active (status 1) bricks
+                    ctx.fillStyle = originalFillStyle;
+                    ctx.fill();
+                }
+                ctx.closePath();
+                ctx.restore(); // Restore globalAlpha and other states
+
+                // Visual indicators (drawn on top)
+                if (brick.status === 1 || (brick.status === 2 && (brick.isFlashing || (brick.fadeOutAlpha && brick.fadeOutAlpha > 0.5)))) {
+                    if (brick.isBomb) {
+                        ctx.fillStyle = '#000000'; 
+                        ctx.beginPath();
+                        ctx.arc(brick.x + brick.width / 2, brick.y + brick.height / 2, brick.width / 4, 0, Math.PI * 2);
+                        ctx.fill();
+                        ctx.closePath();
+                    } else if (brick.holdsBall) {
+                        ctx.fillStyle = '#AAAAAA'; 
+                        ctx.beginPath();
+                        ctx.arc(brick.x + brick.width / 2, brick.y + brick.height / 2, brick.width / 4, 0, Math.PI * 2);
+                        ctx.fill();
+                        ctx.closePath();
+                    }
                 }
             }
         }

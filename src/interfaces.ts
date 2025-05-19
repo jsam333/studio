@@ -12,6 +12,9 @@ export interface Brick {
   upgradeLevel?: number;
   isBomb?: boolean;
   holdsBall?: boolean; // Added for the new power-up
+  isFlashing?: boolean; // Added for white flash effect
+  fadeOutAlpha?: number; // Added for fade out animation
+  flashStartTime?: number; // Added to manage flash duration
 }
 
 export type PowerUpType =
