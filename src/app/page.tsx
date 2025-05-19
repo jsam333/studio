@@ -289,7 +289,7 @@ export default function Home() {
                         {/* Power-up Spawn Chance Control Group */}
                         <div style={{display: 'flex', flexDirection: 'column', alignItems: 'center', flex: 2}}>
                             <label htmlFor="powerUpSpawnChance" style={{ marginBottom: '5px' }}>
-                                Spawn Chance: {Math.round(testPowerUpSpawnChance * 100)}%
+                                Powerup Spawn Chance: {Math.round(testPowerUpSpawnChance * 100)}%
                             </label>
                             <input 
                                 type="range" 
@@ -305,7 +305,7 @@ export default function Home() {
                         {/* Brick Rows Control Group */}
                         <div style={{display: 'flex', flexDirection: 'column', alignItems: 'center', flex: 1}}>
                             <label htmlFor="testBrickRows" style={{ marginBottom: '5px' }}>
-                                Rows: {testBrickRows}
+                                Rows:
                             </label>
                             <input 
                                 type="number" 
@@ -326,7 +326,7 @@ export default function Home() {
                         {/* Brick Columns Control Group */}
                         <div style={{display: 'flex', flexDirection: 'column', alignItems: 'center', flex: 1}}>
                             <label htmlFor="testBrickColumns" style={{ marginBottom: '5px' }}>
-                                Columns: {testBrickColumns}
+                                Columns:
                             </label>
                             <input 
                                 type="number" 
