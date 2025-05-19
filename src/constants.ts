@@ -35,6 +35,8 @@ export const SPLIT_BALL_ANGLE_OFFSET = Math.PI / 6;
 export const BIG_BALL_SIZE_INCREASE = 4;
 export const PIERCE_BALL_HITS = 3;
 export const ZIP_TO_PADDLE_DURATION = 100; // milliseconds for the zip animation
+export const BLACK_BALL_VISUAL_EFFECT_DURATION_MS = 500;
+export const BLACK_BALL_GLOW_MAX_RADIUS_ADDITION = 25; // Max additional radius for the glow
 
 // Bricks
 export const BRICK_ROWS = 20; 

@@ -105,6 +105,10 @@ export const applyBallEffects = (
                  // Remove conflicting effects
                 ball.isBlue = false; ball.blueEndTime = undefined;
                 ball.pierceHitsRemaining = 0;
+
+                // Trigger visual effect on the specific ball
+                ball.isGlowEffectActive = true;
+                ball.glowEffectStartTime = currentTime;
             });
             break;
         }

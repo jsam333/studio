@@ -71,8 +71,9 @@ export function useGameLogic() {
     const testPowerUpSpawnChanceRef = useRef<number>(INITIAL_TEST_POWER_UP_SPAWN_CHANCE); 
     const testBrickColumnsRef = useRef<number>(TEST_DEFAULT_BRICK_COLUMNS); 
     const testBrickRowsRef = useRef<number>(TEST_DEFAULT_BRICK_ROWS); 
-    const paddleVisualEffectActiveRef = useRef<boolean>(false); // Added for widen paddle visual effect
-    const paddleVisualEffectStartTimeRef = useRef<number | null>(null); // Added for widen paddle visual effect
+    const paddleVisualEffectActiveRef = useRef<boolean>(false);
+    const paddleVisualEffectStartTimeRef = useRef<number | null>(null);
+    // Removed blackBallEffectActiveRef and blackBallEffectStartTimeRef
 
     const [gameOverState, setGameOverState] = useState<GameState>('menu');
     const gameOverStateRef = useRef(gameOverState);
@@ -167,8 +168,9 @@ export function useGameLogic() {
             particlesRef.current = []; 
             levelCompletionProcessedRef.current = false;
             testPreviewInitialLaunchDoneRef.current = false; 
-            paddleVisualEffectActiveRef.current = false; // Reset visual effect
+            paddleVisualEffectActiveRef.current = false;
             paddleVisualEffectStartTimeRef.current = null;
+            // Removed reset for blackBallEffectActiveRef and blackBallEffectStartTimeRef
             
             gameModeRef.current = mode; 
             setActiveGameMode(mode); 
@@ -235,8 +237,9 @@ export function useGameLogic() {
             pointsFieldsRef.current = [];
             particlesRef.current = []; 
             levelCompletionProcessedRef.current = false;
-            paddleVisualEffectActiveRef.current = false; // Reset visual effect
+            paddleVisualEffectActiveRef.current = false;
             paddleVisualEffectStartTimeRef.current = null;
+            // Removed reset for blackBallEffectActiveRef and blackBallEffectStartTimeRef
             setGameOverState('playing');
         } else if (gameOverState !== 'playing') {
             paddleShrinkCountdownRef.current = null;
@@ -244,8 +247,9 @@ export function useGameLogic() {
             initialBonusGoldDecrementCompleteRef.current = false;
             pointsFieldsRef.current = [];
             particlesRef.current = []; 
-            paddleVisualEffectActiveRef.current = false; // Reset visual effect
+            paddleVisualEffectActiveRef.current = false;
             paddleVisualEffectStartTimeRef.current = null;
+            // Removed reset for blackBallEffectActiveRef and blackBallEffectStartTimeRef
             if (gameSpeedFactorRef.current !== BASE_BALL_SPEED_FACTOR) {
                  gameSpeedFactorRef.current = BASE_BALL_SPEED_FACTOR;
             }
@@ -326,8 +330,9 @@ export function useGameLogic() {
         pointsFieldsRef.current = [];
         particlesRef.current = []; 
         levelCompletionProcessedRef.current = false;
-        paddleVisualEffectActiveRef.current = false; // Reset visual effect
+        paddleVisualEffectActiveRef.current = false;
         paddleVisualEffectStartTimeRef.current = null;
+        // Removed reset for blackBallEffectActiveRef and blackBallEffectStartTimeRef
         
         testPowerUpSpawnChanceRef.current = INITIAL_TEST_POWER_UP_SPAWN_CHANCE; 
         setTestPowerUpSpawnChance(INITIAL_TEST_POWER_UP_SPAWN_CHANCE); 
@@ -453,8 +458,9 @@ export function useGameLogic() {
             particlesRef.current = []; 
             levelCompletionProcessedRef.current = false;
             testPreviewInitialLaunchDoneRef.current = false; 
-            paddleVisualEffectActiveRef.current = false; // Reset visual effect
+            paddleVisualEffectActiveRef.current = false;
             paddleVisualEffectStartTimeRef.current = null;
+            // Removed reset for blackBallEffectActiveRef and blackBallEffectStartTimeRef
             testPowerUpSpawnChanceRef.current = INITIAL_TEST_POWER_UP_SPAWN_CHANCE; 
             setTestPowerUpSpawnChance(INITIAL_TEST_POWER_UP_SPAWN_CHANCE); 
             testBrickColumnsRef.current = TEST_DEFAULT_BRICK_COLUMNS; 
@@ -509,8 +515,9 @@ export function useGameLogic() {
         initialBonusGoldDecrementCompleteRef.current = false;
         pointsFieldsRef.current = [];
         particlesRef.current = []; 
-        paddleVisualEffectActiveRef.current = false; // Reset visual effect
+        paddleVisualEffectActiveRef.current = false;
         paddleVisualEffectStartTimeRef.current = null;
+        // Removed reset for blackBallEffectActiveRef and blackBallEffectStartTimeRef
         resetLevel(mode, resetScoreAndGold);
         isGameStartedRef.current = false; 
         if (mode === 'test' || (gameModeRef.current === 'test' && mode === null)) { 
@@ -545,8 +552,9 @@ export function useGameLogic() {
         testPowerUpSpawnChanceRef, 
         testBrickColumnsRef, 
         testBrickRowsRef, 
-        paddleVisualEffectActiveRef, // Added ref for widen paddle effect
-        paddleVisualEffectStartTimeRef, // Added ref for widen paddle effect
+        paddleVisualEffectActiveRef, 
+        paddleVisualEffectStartTimeRef, 
+        // Removed blackBallEffectActiveRef and blackBallEffectStartTimeRef from gameStateRefs
     }), [
         paddleXRef, ballsRef, powerUpsRef, particlesRef, scoreRef, goldRef, spawnablePowerUpsRef, 
         paddleWidthRef, widenLevelRef, laserShotsRef, lasersRef, safetyNetCountRef,
@@ -574,8 +582,9 @@ export function useGameLogic() {
         testPowerUpSpawnChanceRef, 
         testBrickColumnsRef, 
         testBrickRowsRef,
-        paddleVisualEffectActiveRef, // Added ref to dependency array
-        paddleVisualEffectStartTimeRef, // Added ref to dependency array
+        paddleVisualEffectActiveRef, 
+        paddleVisualEffectStartTimeRef,
+        // Removed blackBallEffectActiveRef and blackBallEffectStartTimeRef from dependency array
     ]);
 
     const drawEndMessageCallback = useCallback((context: CanvasRenderingContext2D, state: GameState, finalScore: number) => {

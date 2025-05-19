@@ -100,6 +100,10 @@ export interface Ball {
   initialZipX?: number; 
   initialZipY?: number;
   targetStuckSideValue?: 'left' | 'right'; 
+
+  // For individual ball glow effect
+  isGlowEffectActive?: boolean;
+  glowEffectStartTime?: number;
 }
 
 export type SpawnMarker = 'PENDING' | 'SPAWN_SPECIAL' | 'SPAWN_BALL' | 'NONE';
@@ -185,6 +189,7 @@ export interface GameStateRefsBase {
     testBrickRowsRef: React.MutableRefObject<number>; 
     paddleVisualEffectActiveRef?: React.MutableRefObject<boolean>; 
     paddleVisualEffectStartTimeRef?: React.MutableRefObject<number | null>; 
+    // blackBallEffectActiveRef and blackBallEffectStartTimeRef are removed from here
 }
 
 export interface GameStateRefs extends GameStateRefsBase {

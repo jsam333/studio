@@ -16,7 +16,7 @@ import {
     BRICK_FLASH_DURATION, BRICK_FADE_SPEED,
     PADDLE_WIDEN_VISUAL_EFFECT_DURATION_MS, PADDLE_WIDEN_VISUAL_EFFECT_AMOUNT,
     BRICK_REGEN_VISUAL_EFFECT_DURATION_MS, BRICK_DARK_FLASH_DURATION_MS,
-    BRICK_SPECIAL_FLASH_DURATION_MS // Added special flash duration
+    BRICK_SPECIAL_FLASH_DURATION_MS, BLACK_BALL_VISUAL_EFFECT_DURATION_MS
 } from './constants'; 
 import { 
     drawPaddle, drawBalls, drawBricks, drawGameInfo, 
@@ -152,6 +152,17 @@ const updateBrickStateAndAnimations = (bricks: Brick[][], columns: number, rows:
     }
 };
 
+const updateBallGlowEffects = (balls: Ball[], currentTime: number) => {
+    balls.forEach(ball => {
+        if (ball.isGlowEffectActive && typeof ball.glowEffectStartTime === 'number') {
+            if (currentTime - ball.glowEffectStartTime >= BLACK_BALL_VISUAL_EFFECT_DURATION_MS) {
+                ball.isGlowEffectActive = false;
+                delete ball.glowEffectStartTime;
+            }
+        }
+    });
+};
+
 const collectedPowerUpTypesReusable: PowerUpType[] = [];
 const spawnRequestsReusable: PowerUpSpawnEvent[] = [];
 
@@ -183,6 +194,10 @@ export const gameUpdate = (
     const columns = refs.brickColumnsRef.current;
     const rows = refs.brickRowsRef.current;
 
+    // Update per-ball glow effect timers
+    updateBallGlowEffects(refs.ballsRef.current, currentTime);
+    updateBallGlowEffects(refs.stuckBallsRef.current, currentTime); // Also for stuck balls
+
     updateBrickStateAndAnimations(refs.bricksRef.current, columns, rows, currentTime, scaledDeltaTime); 
     updateParticles(refs, currentTime, elapsedTime); 
     
@@ -193,6 +208,8 @@ export const gameUpdate = (
     if (!isTestPreview) {
         updateBonusGoldTimer(refs, callbacks, elapsedTime);
     }
+
+    // Removed global black ball effect timer update
 
     updateBalls(refs, callbacks, spawnRequestsReusable, currentTime, gameSpeedFactor, scaledDeltaTime, columns, rows); 
     updateLasers(refs, callbacks, spawnRequestsReusable, currentTime, scaledDeltaTime, columns, rows); 
@@ -235,14 +252,15 @@ export const gameUpdate = (
         drawCollectionFieldRect(ctx, refs.paddleXRef.current, refs.paddleWidthRef.current, refs.collectionFieldHeightRef.current, refs.collectionFieldWidthOffsetRef.current);
     }
 
+    // Updated calls to drawBalls, removing global effect parameters
     if (!refs.isGameStartedRef.current && !isTestPreview) { 
-        drawBalls(ctx, [], refs.stuckBallsRef.current); 
+        drawBalls(ctx, [], refs.stuckBallsRef.current, currentTime); 
         if (gameMode === 'main') {
         }
     } 
     
     if (isTestPreview && !refs.isGameStartedRef.current) {
-        drawBalls(ctx, [], refs.stuckBallsRef.current);
+        drawBalls(ctx, [], refs.stuckBallsRef.current, currentTime);
     }
     
     collectedPowerUpTypesReusable.length = 0; 
@@ -272,7 +290,7 @@ export const gameUpdate = (
         applyPowerUpEffects(refs, callbacks, collectedPowerUpTypesReusable, currentTime, gameSpeedFactor); 
     }
 
-    drawBalls(ctx, refs.ballsRef.current, (isTestPreview || !refs.isGameStartedRef.current) ? [] : refs.stuckBallsRef.current); 
+    drawBalls(ctx, refs.ballsRef.current, (isTestPreview || !refs.isGameStartedRef.current) ? [] : refs.stuckBallsRef.current, currentTime); 
     drawPowerUps(ctx, refs.powerUpsRef.current); 
     drawLasers(ctx, refs.lasersRef.current);
     drawParticles(ctx, refs.particlesRef.current); 
