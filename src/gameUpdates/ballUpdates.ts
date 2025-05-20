@@ -1,14 +1,19 @@
 // src/gameUpdates/ballUpdates.ts
-import { Ball, Brick, PowerUpSpawnEvent } from '../interfaces';
+import { Ball, Brick, PowerUpSpawnEvent, Particle } from '../interfaces';
 import { GameStateRefs, GameLoopCallbacks } from '../interfaces';
 import { checkBrickCollision } from '../gameLogic';
 import { createNewBall, findClosestBrick } from './gameLoopUtils';
+import { hexToRgb, lightenRgb } from '../drawFunctions/drawUtils'; // For particle color
 import {
     BOARD_WIDTH, BOARD_HEIGHT, PADDLE_Y, BALL_SIZE, MAX_BALL_SPEED_X, SAFETY_NET_HEIGHT,
     BIG_BALL_SIZE_INCREASE, BRICK_WIDTH, BRICK_HEIGHT, PADDLE_HEIGHT, BASE_BALL_SPEED_FACTOR,
     PADDLE_SIDE_SAVE_THRESHOLD,
     POINTS_FIELD_DURATION, 
-    ZIP_TO_PADDLE_DURATION
+    ZIP_TO_PADDLE_DURATION,
+    PARTICLE_LIFESPAN, 
+    PARTICLE_SPEED_FACTOR,
+    POWER_UP_COLORS, // For particle color
+    SPLITTING_BALL_PARTICLE_SIZE // For particle size
 } from '../constants';
 
 export const updateBalls = (
@@ -86,19 +91,54 @@ export const updateBalls = (
                 let currentSpeedX = ball.speedX;
                 let currentSpeedY = ball.speedY;
 
-                const brickCollisionResult = checkBrickCollision(ball, refs.bricksRef.current, columns, rows, deltaTime, refs); // Pass gameStateRefs here
+                const brickCollisionResult = checkBrickCollision(ball, refs.bricksRef.current, columns, rows, deltaTime, refs);
                 if (brickCollisionResult.collision) {
                     currentSpeedX = brickCollisionResult.newSpeedX;
                     currentSpeedY = brickCollisionResult.newSpeedY;
                     if (brickCollisionResult.pierceOccurred) { /* Speed unchanged */ }
                     else if (ball.isSplitting && brickCollisionResult.brickHit) {
-                        const newBall = createNewBall(ball.x, ball.y, -brickCollisionResult.newSpeedX, -brickCollisionResult.newSpeedY, 1.0);
+                        const newBallSpeedX = -brickCollisionResult.newSpeedX;
+                        const newBallSpeedY = -brickCollisionResult.newSpeedY;
+                        
+                        const newBall = createNewBall(ball.x, ball.y, newBallSpeedX, newBallSpeedY, 1.0);
                         const speedMagnitude = Math.sqrt(brickCollisionResult.newSpeedX**2 + brickCollisionResult.newSpeedY**2);
                         if (speedMagnitude > 0) {
                             newBall.x -= (brickCollisionResult.newSpeedX / speedMagnitude) * 2 * currentBallSize;
                             newBall.y -= (brickCollisionResult.newSpeedY / speedMagnitude) * 2 * currentBallSize;
                         }
                         ballsToAdd.push(newBall);
+
+                        // Create particle blast
+                        const numParticles = 5;
+                        const particleSpeedBase = Math.sqrt(newBallSpeedX**2 + newBallSpeedY**2) * (PARTICLE_SPEED_FACTOR || 0.5);
+                        
+                        let finalParticleColor = POWER_UP_COLORS.SPLITTING_BALL || '#9370DB'; // Default color
+                        const baseSplittingBallColorHex = POWER_UP_COLORS.SPLITTING_BALL;
+                        if (baseSplittingBallColorHex) {
+                            const rgbColor = hexToRgb(baseSplittingBallColorHex);
+                            if (rgbColor) {
+                                finalParticleColor = lightenRgb(rgbColor, 0.3); // Lighten by 30%
+                            }
+                        }
+
+                        for (let k = 0; k < numParticles; k++) {
+                            const angleOffset = (Math.random() - 0.5) * (Math.PI / 4); // Random offset up to +/- 22.5 degrees
+                            const newAngle = Math.atan2(newBallSpeedY, newBallSpeedX) + angleOffset;
+                            const particleSpeed = particleSpeedBase * (0.8 + Math.random() * 0.4); // Slight speed variation
+
+                            const particle: Particle = {
+                                x: ball.x,
+                                y: ball.y,
+                                speedX: Math.cos(newAngle) * particleSpeed,
+                                speedY: Math.sin(newAngle) * particleSpeed,
+                                lifespan: (PARTICLE_LIFESPAN || 500) * (0.8 + Math.random() * 0.4),
+                                color: finalParticleColor,
+                                size: SPLITTING_BALL_PARTICLE_SIZE || 1,
+                                createdAt: currentTime,
+                                alpha: 1
+                            };
+                            refs.particlesRef.current.push(particle);
+                        }
                     }
                     if (brickCollisionResult.pointsAwarded > 0) { callbacks.updateScoreCallback(brickCollisionResult.pointsAwarded); }
                     spawnRequests.push(...brickCollisionResult.spawnEvents);
@@ -125,7 +165,6 @@ export const updateBalls = (
                     const isNearLeft = Math.abs(nextX - paddleLeft) < PADDLE_SIDE_SAVE_THRESHOLD;
                     const isNearRight = Math.abs(nextX - paddleRight) < PADDLE_SIDE_SAVE_THRESHOLD;
 
-                    // Sticky Paddle, Safety Net now active in test preview if charges/count > 0
                     if (refs.stickyPaddleChargesRef.current > 0 && !ball.isBig && (isNearLeft || isNearRight)) { 
                         refs.stickyPaddleChargesRef.current--;
                         ball.isZipping = true;
@@ -145,9 +184,9 @@ export const updateBalls = (
                     } else if (refs.safetyNetCountRef.current > 0) { 
                         currentSpeedY = -Math.abs(currentSpeedY);
                         ball.y = BOARD_HEIGHT - currentBallSize - refs.safetyNetCountRef.current * SAFETY_NET_HEIGHT;
-                        refs.safetyNetCountRef.current--; // Consume safety net charge
+                        refs.safetyNetCountRef.current--; 
                         nextY = ball.y + currentSpeedY * deltaTime; 
-                    } else { // Ball loss (applies to both main game and test preview if not caught by above)
+                    } else { 
                         ballsToRemoveIds.add(ball.id);
                         processNormalUpdate = false;
                     }
@@ -161,7 +200,6 @@ export const updateBalls = (
                         let deltaX = collisionX - (paddleLeft + refs.paddleWidthRef.current / 2);
                         currentSpeedX = Math.max(-currentMaxBallSpeedX, Math.min(currentMaxBallSpeedX, currentSpeedX + (deltaX * 0.1)));
                         
-                        // Homing ball logic now active in test preview if ball.isHoming
                         if (ball.isHoming) {
                             const closestBrick = findClosestBrick(ball, refs.bricksRef.current, columns, rows);
                             if (closestBrick) {
@@ -176,9 +214,8 @@ export const updateBalls = (
                                     currentSpeedY = -Math.abs(currentSpeedY);
                                 }
                             }
-                            ball.isHoming = false; // Consume homing effect
+                            ball.isHoming = false; 
                         }
-                        // Big ball splitting on paddle now active in test preview if ball.isBig
                         if (ball.isBig) {
                             ballsToAdd.push(createNewBall(collisionX, PADDLE_Y - BALL_SIZE - 5, (Math.random() - 0.5) * 6, -3 - Math.random() * 2, BASE_BALL_SPEED_FACTOR));
                         }

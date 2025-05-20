@@ -97,6 +97,10 @@ export const BUILDER_BALL_DURATION = 6000;
 export const BLACK_BALL_DURATION = 10000;
 
 // Particle Effects
+export const PARTICLE_LIFESPAN = 300; // General particle lifespan in ms (changed from 500)
+export const PARTICLE_SPEED_FACTOR = 0.8; // General particle speed factor relative to source (changed from 0.5)
+export const SPLITTING_BALL_PARTICLE_SIZE = 2; // Size of particles from splitting ball
+
 export const MULTIBALL_PARTICLE_COUNT = 10; 
 export const MULTIBALL_PARTICLE_SPEED_MIN = 2; 
 export const MULTIBALL_PARTICLE_SPEED_MAX = 6; 
