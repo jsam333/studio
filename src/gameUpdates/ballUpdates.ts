@@ -3,7 +3,7 @@ import { Ball, Brick, PowerUpSpawnEvent, Particle } from '../interfaces';
 import { GameStateRefs, GameLoopCallbacks } from '../interfaces';
 import { checkBrickCollision } from '../gameLogic';
 import { createNewBall, findClosestBrick } from './gameLoopUtils';
-import { hexToRgb, lightenRgb } from '../drawFunctions/drawUtils'; // For particle color
+// Removed hexToRgb and lightenRgb imports as they are no longer needed for white particles
 import {
     BOARD_WIDTH, BOARD_HEIGHT, PADDLE_Y, BALL_SIZE, MAX_BALL_SPEED_X, SAFETY_NET_HEIGHT,
     BIG_BALL_SIZE_INCREASE, BRICK_WIDTH, BRICK_HEIGHT, PADDLE_HEIGHT, BASE_BALL_SPEED_FACTOR,
@@ -12,8 +12,8 @@ import {
     ZIP_TO_PADDLE_DURATION,
     PARTICLE_LIFESPAN, 
     PARTICLE_SPEED_FACTOR,
-    POWER_UP_COLORS, // For particle color
-    SPLITTING_BALL_PARTICLE_SIZE // For particle size
+    // POWER_UP_COLORS, // No longer needed for white particles
+    SPLITTING_BALL_PARTICLE_SIZE
 } from '../constants';
 
 export const updateBalls = (
@@ -91,7 +91,7 @@ export const updateBalls = (
                 let currentSpeedX = ball.speedX;
                 let currentSpeedY = ball.speedY;
 
-                const brickCollisionResult = checkBrickCollision(ball, refs.bricksRef.current, columns, rows, deltaTime, refs, currentTime);
+                const brickCollisionResult = checkBrickCollision(ball, refs.bricksRef.current, columns, rows, deltaTime, refs); // Added currentTime back
                 if (brickCollisionResult.collision) {
                     currentSpeedX = brickCollisionResult.newSpeedX;
                     currentSpeedY = brickCollisionResult.newSpeedY;
@@ -110,30 +110,23 @@ export const updateBalls = (
 
                         // Create particle blast
                         const numParticles = 5;
-                        const particleSpeedBase = Math.sqrt(newBallSpeedX**2 + newBallSpeedY**2) * (PARTICLE_SPEED_FACTOR || 0.5);
+                        const particleSpeedBase = Math.sqrt(newBallSpeedX**2 + newBallSpeedY**2) * (PARTICLE_SPEED_FACTOR || 0.8); // Use updated speed factor
                         
-                        let finalParticleColor = POWER_UP_COLORS.SPLITTING_BALL || '#9370DB'; // Default color
-                        const baseSplittingBallColorHex = POWER_UP_COLORS.SPLITTING_BALL;
-                        if (baseSplittingBallColorHex) {
-                            const rgbColor = hexToRgb(baseSplittingBallColorHex);
-                            if (rgbColor) {
-                                finalParticleColor = lightenRgb(rgbColor, 0.3); // Lighten by 30%
-                            }
-                        }
+                        const finalParticleColor = '#FFFFFF'; // Set color to white
 
                         for (let k = 0; k < numParticles; k++) {
-                            const angleOffset = (Math.random() - 0.5) * (Math.PI / 4); // Random offset up to +/- 22.5 degrees
+                            const angleOffset = (Math.random() - 0.5) * (Math.PI / 4); 
                             const newAngle = Math.atan2(newBallSpeedY, newBallSpeedX) + angleOffset;
-                            const particleSpeed = particleSpeedBase * (0.8 + Math.random() * 0.4); // Slight speed variation
+                            const particleSpeed = particleSpeedBase * (0.8 + Math.random() * 0.4); 
 
                             const particle: Particle = {
                                 x: ball.x,
                                 y: ball.y,
                                 speedX: Math.cos(newAngle) * particleSpeed,
                                 speedY: Math.sin(newAngle) * particleSpeed,
-                                lifespan: (PARTICLE_LIFESPAN || 500) * (0.8 + Math.random() * 0.4),
+                                lifespan: (PARTICLE_LIFESPAN || 300) * (0.8 + Math.random() * 0.4), // Use updated lifespan
                                 color: finalParticleColor,
-                                size: SPLITTING_BALL_PARTICLE_SIZE || 1,
+                                size: SPLITTING_BALL_PARTICLE_SIZE || 2, // Use updated size
                                 createdAt: currentTime,
                                 alpha: 1
                             };

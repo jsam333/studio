@@ -104,6 +104,10 @@ export interface Ball {
   // For individual ball glow effect
   isGlowEffectActive?: boolean;
   glowEffectStartTime?: number;
+
+  // For big ball pop effect
+  isPopEffectActive?: boolean;
+  popEffectStartTime?: number;
 }
 
 export type SpawnMarker = 'PENDING' | 'SPAWN_SPECIAL' | 'SPAWN_BALL' | 'NONE';

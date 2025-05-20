@@ -37,6 +37,8 @@ export const PIERCE_BALL_HITS = 3;
 export const ZIP_TO_PADDLE_DURATION = 100; // milliseconds for the zip animation
 export const BLACK_BALL_VISUAL_EFFECT_DURATION_MS = 500;
 export const BLACK_BALL_GLOW_MAX_RADIUS_ADDITION = 25; // Max additional radius for the glow
+export const BALL_POP_EFFECT_DURATION_MS = 100; // Duration of the pop effect
+export const BALL_POP_EFFECT_SCALE_AMOUNT = 0.3; // Scale factor for the pop effect (0.3 = 30% bigger at peak)
 
 // Bricks
 export const BRICK_ROWS = 20; 

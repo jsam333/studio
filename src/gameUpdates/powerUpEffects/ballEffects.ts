@@ -55,7 +55,9 @@ export const applyBallEffects = (
             const ballsToModify = eligibleBalls.slice(0, numToAffect);
             ballsToModify.forEach(ball => {
                 ball.isBig = true;
-                ball.bigEndTime = currentTime + BIG_BALL_DURATION; 
+                ball.bigEndTime = currentTime + BIG_BALL_DURATION;
+                ball.isPopEffectActive = true; // Activate pop effect
+                ball.popEffectStartTime = currentTime; // Set start time for pop effect
             });
             break;
         }

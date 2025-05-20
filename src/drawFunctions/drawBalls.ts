@@ -1,7 +1,8 @@
 import { Ball } from '../interfaces';
 import {
     BALL_SIZE, BIG_BALL_SIZE_INCREASE, POWER_UP_COLORS, 
-    BLACK_BALL_VISUAL_EFFECT_DURATION_MS, BLACK_BALL_GLOW_MAX_RADIUS_ADDITION 
+    BLACK_BALL_VISUAL_EFFECT_DURATION_MS, BLACK_BALL_GLOW_MAX_RADIUS_ADDITION,
+    BALL_POP_EFFECT_DURATION_MS, BALL_POP_EFFECT_SCALE_AMOUNT
 } from '../constants';
 
 const drawRadialGlowEffect = (
@@ -56,7 +57,21 @@ export const drawBalls = (
     const drawBall = (ball: Ball) => { 
          ctx.save();
 
-         const currentRadius = ball.isBig ? BALL_SIZE + BIG_BALL_SIZE_INCREASE : BALL_SIZE;
+         let currentRadius = ball.isBig ? BALL_SIZE + BIG_BALL_SIZE_INCREASE : BALL_SIZE;
+
+         // Apply pop effect if active
+         if (ball.isPopEffectActive && typeof ball.popEffectStartTime === 'number' && typeof currentTime === 'number') {
+            const effectElapsedTime = currentTime - ball.popEffectStartTime;
+            if (effectElapsedTime < BALL_POP_EFFECT_DURATION_MS) {
+                const progress = effectElapsedTime / BALL_POP_EFFECT_DURATION_MS;
+                const scaleAddition = BALL_POP_EFFECT_SCALE_AMOUNT * Math.sin(progress * Math.PI);
+                currentRadius = currentRadius * (1 + scaleAddition);
+            } else {
+                // Effect finished, reset flags (optional, or manage in update logic)
+                // ball.isPopEffectActive = false;
+                // delete ball.popEffectStartTime;
+            }
+        }
          
          // Determine if the glow should be drawn for this ball
          const shouldGlow = ball.isBlack || 
