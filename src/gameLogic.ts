@@ -86,9 +86,9 @@ export const initialBallState: Ball = {
   speedY: 0, 
   id: 0, 
   stuckOffset: INITIAL_PADDLE_WIDTH / 2, 
-  isBlack: false, 
-  blackEndTime: undefined, 
-  blackPausedDuration: undefined, 
+  isDouble: false, 
+  doubleEndTime: undefined, 
+  doublePausedDuration: undefined, 
   isBlue: false, 
   blueEndTime: undefined, 
   bluePausedDuration: undefined, 
@@ -254,8 +254,8 @@ export const checkBrickCollision = ( ball: Ball, bricks: Brick[][], columns: num
                         newSpeedX = tempSpeedX; 
                         newSpeedY = tempSpeedY;
 
-                        // If ball is black, apply splash damage to a neighbor
-                        if (ball.isBlack) {
+                        // If ball is double, apply splash damage to a neighbor
+                        if (ball.isDouble) {
                             const neighbors = [{ nc: c + 1, nr: r }, { nc: c - 1, nr: r }, { nc: c, nr: r + 1 }, { nc: c, nr: r - 1 }];
                             const validNeighbors: { brick: Brick, col: number, row: number }[] = [];
                             neighbors.forEach(n => {

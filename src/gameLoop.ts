@@ -16,7 +16,7 @@ import {
     BRICK_FLASH_DURATION, BRICK_FADE_SPEED,
     PADDLE_WIDEN_VISUAL_EFFECT_DURATION_MS, PADDLE_WIDEN_VISUAL_EFFECT_AMOUNT,
     BRICK_REGEN_VISUAL_EFFECT_DURATION_MS, BRICK_DARK_FLASH_DURATION_MS,
-    BRICK_SPECIAL_FLASH_DURATION_MS, BLACK_BALL_VISUAL_EFFECT_DURATION_MS
+    BRICK_SPECIAL_FLASH_DURATION_MS, DOUBLE_BALL_VISUAL_EFFECT_DURATION_MS
 } from './constants'; 
 import { 
     drawPaddle, drawBalls, drawBricks, drawGameInfo, 
@@ -155,7 +155,7 @@ const updateBrickStateAndAnimations = (bricks: Brick[][], columns: number, rows:
 const updateBallGlowEffects = (balls: Ball[], currentTime: number) => {
     balls.forEach(ball => {
         if (ball.isGlowEffectActive && typeof ball.glowEffectStartTime === 'number') {
-            if (currentTime - ball.glowEffectStartTime >= BLACK_BALL_VISUAL_EFFECT_DURATION_MS) {
+            if (currentTime - ball.glowEffectStartTime >= DOUBLE_BALL_VISUAL_EFFECT_DURATION_MS) {
                 ball.isGlowEffectActive = false;
                 delete ball.glowEffectStartTime;
             }

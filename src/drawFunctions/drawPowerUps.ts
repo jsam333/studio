@@ -29,7 +29,7 @@ export const drawPowerUps = (ctx: CanvasRenderingContext2D, powerUps: PowerUp[])
                 case 'BALL_BRICK': imageToDraw = ballBrickImage; break;
                 case 'COLLECTION_FIELD': imageToDraw = collectionFieldImage; break;
                 case 'BIG_BALL': imageToDraw = bigBallImage; break;
-                case 'BLACK_BALL': imageToDraw = blackBallImage; break;
+                case 'DOUBLE_BALL': imageToDraw = blackBallImage; break;
                 case 'BUILDER_BALL': imageToDraw = builderBallImage; break;
                 case 'HOMING_BALL': imageToDraw = homingBallImage; break;
                 case 'PIERCE_BALL': imageToDraw = pierceBallImage; break;
@@ -49,7 +49,7 @@ export const drawPowerUps = (ctx: CanvasRenderingContext2D, powerUps: PowerUp[])
                     ctx.fillStyle = POWER_UP_COLORS[powerUp.type as PowerUpType] || POWER_UP_COLORS['NONE']!;
                 }
                 ctx.fill();
-                if (powerUp.type === 'BLACK_BALL' || powerUp.type === 'BOMB_BRICK' || powerUp.type === 'ALL_IN_ONE' || powerUp.type === 'RECOVERY_PADDLE') {
+                if (powerUp.type === 'DOUBLE_BALL' || powerUp.type === 'BOMB_BRICK' || powerUp.type === 'ALL_IN_ONE' || powerUp.type === 'RECOVERY_PADDLE') {
                     ctx.strokeStyle = (powerUp.type === 'ALL_IN_ONE') ? '#000000' : '#ffffff';
                     ctx.lineWidth = 1;
                     ctx.stroke();
@@ -90,7 +90,7 @@ export const drawPowerUpPreviews = (ctx: CanvasRenderingContext2D, spawnablePowe
             case 'BALL_BRICK': imageToDraw = ballBrickImage; break;
             case 'COLLECTION_FIELD': imageToDraw = collectionFieldImage; break;
             case 'BIG_BALL': imageToDraw = bigBallImage; break;
-            case 'BLACK_BALL': imageToDraw = blackBallImage; break;
+            case 'DOUBLE_BALL': imageToDraw = blackBallImage; break;
             case 'BUILDER_BALL': imageToDraw = builderBallImage; break;
             case 'HOMING_BALL': imageToDraw = homingBallImage; break;
             case 'PIERCE_BALL': imageToDraw = pierceBallImage; break;

@@ -35,8 +35,8 @@ export const SPLIT_BALL_ANGLE_OFFSET = Math.PI / 6;
 export const BIG_BALL_SIZE_INCREASE = 4;
 export const PIERCE_BALL_HITS = 3;
 export const ZIP_TO_PADDLE_DURATION = 100; // milliseconds for the zip animation
-export const BLACK_BALL_VISUAL_EFFECT_DURATION_MS = 500;
-export const BLACK_BALL_GLOW_MAX_RADIUS_ADDITION = 25; // Max additional radius for the glow
+export const DOUBLE_BALL_VISUAL_EFFECT_DURATION_MS = 500;
+export const DOUBLE_BALL_GLOW_MAX_RADIUS_ADDITION = 25; // Max additional radius for the glow
 export const BALL_POP_EFFECT_DURATION_MS = 100; // Duration of the pop effect
 export const BALL_POP_EFFECT_SCALE_AMOUNT = 0.3; // Scale factor for the pop effect (0.3 = 30% bigger at peak)
 
@@ -84,7 +84,7 @@ export const SAFETY_NET_HEIGHT = 3;
 export const BUILDER_BRICK_MAX_LEVEL = 3;
 export const BUILDER_BALL_SPAWN_CHANCE = 0.15;
 export const MULTI_BALL_COUNT = 3; 
-export const BLACK_BALL_DURATION_MS = 10000;
+export const DOUBLE_BALL_DURATION_MS = 10000;
 export const BOMB_BRICK_SPAWN_CHANCE = 0.1;
 export const BOMB_EXPLOSION_RADIUS_FACTOR = 1.5;
 
@@ -96,7 +96,7 @@ export const POWER_UP_SECOND_CHANCE_REDUCTION_PER_EXTRA = 0.02;
 export const SPLITTING_BALL_DURATION = 4000;
 export const BIG_BALL_DURATION = 6000;
 export const BUILDER_BALL_DURATION = 6000;
-export const BLACK_BALL_DURATION = 10000;
+export const DOUBLE_BALL_DURATION = 10000;
 
 // Particle Effects
 export const PARTICLE_LIFESPAN = 300; // General particle lifespan in ms (changed from 500)
@@ -158,7 +158,7 @@ export const ALL_TOGGLEABLE_POWER_UPS: PowerUpType[] = [
     'SAFETY_NET', 
     'REINFORCE_BRICK', 
     'MAKE_SPECIAL', 
-    'BLACK_BALL', 
+    'DOUBLE_BALL', 
     'PIERCE_BALL',                                                                                               
     'UPGRADE_BRICK', 
     'BUILDER_BALL', 
@@ -194,9 +194,9 @@ export const POWER_UP_COSTS: { [key in PowerUpType]?: number } = {
     MAKE_SPECIAL: 15,
     MAKE_SPECIAL_L2: 20,
     MAKE_SPECIAL_L3: 25,
-    BLACK_BALL: 9,
-    BLACK_BALL_L2: 11,
-    BLACK_BALL_L3: 13,
+    DOUBLE_BALL: 9,
+    DOUBLE_BALL_L2: 11,
+    DOUBLE_BALL_L3: 13,
     PIERCE_BALL: 6,
     PIERCE_BALL_L2: 8,
     PIERCE_BALL_L3: 10,
@@ -256,9 +256,9 @@ export const POWER_UP_DESCRIPTIONS: { [key in PowerUpType | string]?: string } =
     MAKE_SPECIAL: "Turns a basic brick into a special brick. Break it for a special powerup!",
     MAKE_SPECIAL_L2: "Turns 2 basic bricks into special bricks.",
     MAKE_SPECIAL_L3: "Turns 3 basic bricks into special bricks.",
-    BLACK_BALL: "Temporarily upgrades a ball. It destroys 2 bricks per hit",
-    BLACK_BALL_L2: "Temporarily upgrades 2 balls.",
-    BLACK_BALL_L3: "Temporarily upgrades 3 balls.",
+    DOUBLE_BALL: "Temporarily upgrades a ball. It destroys 2 bricks per hit",
+    DOUBLE_BALL_L2: "Temporarily upgrades 2 balls.",
+    DOUBLE_BALL_L3: "Temporarily upgrades 3 balls.",
     PIERCE_BALL: "Makes 1 ball pierce through the next 3 bricks.",
     PIERCE_BALL_L2: "Makes 2 balls piercing.",
     PIERCE_BALL_L3: "Makes 3 balls piercing.",
@@ -304,7 +304,7 @@ export const POWER_UP_IMAGE_PATHS: { [key in PowerUpType]?: string } = {
     SAFETY_NET: '/images/safety net.png',
     REINFORCE_BRICK: '/images/reinforce brick.png',
     MAKE_SPECIAL: '/images/make special.png',
-    BLACK_BALL: '/images/black ball.png',
+    DOUBLE_BALL: '/images/black ball.png',
     PIERCE_BALL: '/images/pierce ball.png',
     UPGRADE_BRICK: '/images/upgrade brick.png',
     BUILDER_BALL: '/images/builder ball.png',
@@ -365,9 +365,9 @@ export const POWER_UP_COLORS: { [key in PowerUpType | 'NONE']?: string } = {
     MAKE_SPECIAL: '#FFD700',
     MAKE_SPECIAL_L2: '#FFD700',
     MAKE_SPECIAL_L3: '#FFD700',
-    BLACK_BALL: '#000000',
-    BLACK_BALL_L2: '#000000',
-    BLACK_BALL_L3: '#000000',
+    DOUBLE_BALL: '#000000',
+    DOUBLE_BALL_L2: '#000000',
+    DOUBLE_BALL_L3: '#000000',
     PIERCE_BALL: '#DC143C',
     PIERCE_BALL_L2: '#DC143C',
     PIERCE_BALL_L3: '#DC143C',

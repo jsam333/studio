@@ -44,7 +44,7 @@ export type PowerUpType =
     'SAFETY_NET' | 'SAFETY_NET_L2' | 'SAFETY_NET_L3' |
     'REINFORCE_BRICK' | 'REINFORCE_BRICK_L2' | 'REINFORCE_BRICK_L3' |
     'MAKE_SPECIAL' | 'MAKE_SPECIAL_L2' | 'MAKE_SPECIAL_L3' |
-    'BLACK_BALL' | 'BLACK_BALL_L2' | 'BLACK_BALL_L3' |
+    'DOUBLE_BALL' | 'DOUBLE_BALL_L2' | 'DOUBLE_BALL_L3' |
     'ALL_IN_ONE' | 
     'PIERCE_BALL' | 'PIERCE_BALL_L2' | 'PIERCE_BALL_L3' |
     'UPGRADE_BRICK' | 'UPGRADE_BRICK_L2' | 'UPGRADE_BRICK_L3' |
@@ -75,9 +75,9 @@ export interface Ball {
   speedX: number;
   speedY: number;
   id: number;
-  isBlack?: boolean;
-  blackEndTime?: number;
-  blackPausedDuration?: number;
+  isDouble?: boolean;
+  doubleEndTime?: number;
+  doublePausedDuration?: number;
   isBlue?: boolean;
   blueEndTime?: number;
   bluePausedDuration?: number;
@@ -194,7 +194,7 @@ export interface GameStateRefsBase {
     paddleVisualEffectActiveRef?: React.MutableRefObject<boolean>; 
     paddleVisualEffectStartTimeRef?: React.MutableRefObject<number | null>; 
     laserIntervalRef: React.MutableRefObject<number | null>; // Added this line
-    // blackBallEffectActiveRef and blackBallEffectStartTimeRef are removed from here
+    // doubleBallEffectActiveRef and doubleBallEffectStartTimeRef are removed from here
 }
 
 export interface GameStateRefs extends GameStateRefsBase {

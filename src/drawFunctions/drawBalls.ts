@@ -1,7 +1,7 @@
 import { Ball } from '../interfaces';
 import {
     BALL_SIZE, BIG_BALL_SIZE_INCREASE, POWER_UP_COLORS, 
-    BLACK_BALL_VISUAL_EFFECT_DURATION_MS, BLACK_BALL_GLOW_MAX_RADIUS_ADDITION,
+    DOUBLE_BALL_VISUAL_EFFECT_DURATION_MS, DOUBLE_BALL_GLOW_MAX_RADIUS_ADDITION,
     BALL_POP_EFFECT_DURATION_MS, BALL_POP_EFFECT_SCALE_AMOUNT
 } from '../constants';
 
@@ -13,15 +13,15 @@ const drawRadialGlowEffect = (
     if (typeof ball.glowEffectStartTime !== 'number') return;
 
     const elapsedTime = currentTime - ball.glowEffectStartTime;
-    if (elapsedTime >= BLACK_BALL_VISUAL_EFFECT_DURATION_MS || elapsedTime < 0) {
+    if (elapsedTime >= DOUBLE_BALL_VISUAL_EFFECT_DURATION_MS || elapsedTime < 0) {
         return;
     }
 
-    const progress = elapsedTime / BLACK_BALL_VISUAL_EFFECT_DURATION_MS;
+    const progress = elapsedTime / DOUBLE_BALL_VISUAL_EFFECT_DURATION_MS;
     const overallEffectAlpha = 1 - progress; 
 
     const sizeFactor = 1 - progress; 
-    const currentGlowRadiusAddition = BLACK_BALL_GLOW_MAX_RADIUS_ADDITION * sizeFactor;
+    const currentGlowRadiusAddition = DOUBLE_BALL_GLOW_MAX_RADIUS_ADDITION * sizeFactor;
     
     const ballPhysicalRadius = ball.isBig ? BALL_SIZE + BIG_BALL_SIZE_INCREASE : BALL_SIZE;
     const glowOuterRadius = ballPhysicalRadius + currentGlowRadiusAddition;
@@ -74,7 +74,7 @@ export const drawBalls = (
         }
          
          // Determine if the glow should be drawn for this ball
-         const shouldGlow = ball.isBlack || 
+         const shouldGlow = ball.isDouble || 
                             (ball.pierceHitsRemaining && ball.pierceHitsRemaining > 0) || 
                             ball.isSplitting ||
                             ball.isBlue || // For Builder Ball
@@ -100,7 +100,7 @@ export const drawBalls = (
              fillStyle = POWER_UP_COLORS['BUILDER_BALL']!;
          } else if (ball.pierceHitsRemaining && ball.pierceHitsRemaining > 0) {
              fillStyle = POWER_UP_COLORS['PIERCE_BALL']!;
-         } else if (ball.isBlack) {
+         } else if (ball.isDouble) {
              fillStyle = "#808080";
          } else {
              fillStyle = "#ffffff";
@@ -113,7 +113,7 @@ export const drawBalls = (
         let strokeStyle: string | undefined = undefined;
         if (ball.stuckOffset !== undefined || ball.stuckSide) { 
             strokeStyle = '#000000'; 
-        } else if (ball.isBlack) {
+        } else if (ball.isDouble) {
             strokeStyle = '#A9A9A9';
         } else if (ball.isSplitting || ball.isHoming || (ball.pierceHitsRemaining && ball.pierceHitsRemaining > 0) || ball.isBlue) {
             strokeStyle = '#000000'; 
