@@ -26,7 +26,7 @@ const getPowerUpTypeForLevel = (baseType: PowerUpType, level: number): PowerUpTy
 
 const UPGRADABLE_POWER_UPS: PowerUpType[] = [
     'MULTI_BALL', 'WIDEN_PADDLE', 'LASER_PADDLE', 'RECOVERY_PADDLE',
-    'REGEN_BRICK', 'SAFETY_NET', 'REINFORCE_BRICK', 'MAKE_SPECIAL', 'BLACK_BALL',
+    'REGEN_BRICK', 'SAFETY_NET', 'REINFORCE_BRICK', 'MAKE_SPECIAL', 'DOUBLE_BALL',
     'PIERCE_BALL', 'UPGRADE_BRICK', 'BUILDER_BALL', 'BIG_BALL', 'SPLITTING_BALL',
     'COLLECTION_FIELD', 'HOMING_BALL', 'BOMB_BRICK',
     'BALL_BRICK',
@@ -73,7 +73,7 @@ export function useGameLogic() {
     const testBrickRowsRef = useRef<number>(TEST_DEFAULT_BRICK_ROWS); 
     const paddleVisualEffectActiveRef = useRef<boolean>(false);
     const paddleVisualEffectStartTimeRef = useRef<number | null>(null);
-    // Removed blackBallEffectActiveRef and blackBallEffectStartTimeRef
+    // Removed doubleBallEffectActiveRef and doubleBallEffectStartTimeRef
 
     const [gameOverState, setGameOverState] = useState<GameState>('menu');
     const gameOverStateRef = useRef(gameOverState);
@@ -170,7 +170,7 @@ export function useGameLogic() {
             testPreviewInitialLaunchDoneRef.current = false; 
             paddleVisualEffectActiveRef.current = false;
             paddleVisualEffectStartTimeRef.current = null;
-            // Removed reset for blackBallEffectActiveRef and blackBallEffectStartTimeRef
+            // Removed reset for doubleBallEffectActiveRef and doubleBallEffectStartTimeRef
             
             gameModeRef.current = mode; 
             setActiveGameMode(mode); 
@@ -239,7 +239,7 @@ export function useGameLogic() {
             levelCompletionProcessedRef.current = false;
             paddleVisualEffectActiveRef.current = false;
             paddleVisualEffectStartTimeRef.current = null;
-            // Removed reset for blackBallEffectActiveRef and blackBallEffectStartTimeRef
+            // Removed reset for doubleBallEffectActiveRef and doubleBallEffectStartTimeRef
             setGameOverState('playing');
         } else if (gameOverState !== 'playing') {
             paddleShrinkCountdownRef.current = null;
@@ -249,7 +249,7 @@ export function useGameLogic() {
             particlesRef.current = []; 
             paddleVisualEffectActiveRef.current = false;
             paddleVisualEffectStartTimeRef.current = null;
-            // Removed reset for blackBallEffectActiveRef and blackBallEffectStartTimeRef
+            // Removed reset for doubleBallEffectActiveRef and doubleBallEffectStartTimeRef
             if (gameSpeedFactorRef.current !== BASE_BALL_SPEED_FACTOR) {
                  gameSpeedFactorRef.current = BASE_BALL_SPEED_FACTOR;
             }
@@ -334,7 +334,7 @@ export function useGameLogic() {
         levelCompletionProcessedRef.current = false;
         paddleVisualEffectActiveRef.current = false;
         paddleVisualEffectStartTimeRef.current = null;
-        // Removed reset for blackBallEffectActiveRef and blackBallEffectStartTimeRef
+        // Removed reset for doubleBallEffectActiveRef and doubleBallEffectStartTimeRef
         
         testPowerUpSpawnChanceRef.current = INITIAL_TEST_POWER_UP_SPAWN_CHANCE; 
         setTestPowerUpSpawnChance(INITIAL_TEST_POWER_UP_SPAWN_CHANCE); 
@@ -430,7 +430,7 @@ export function useGameLogic() {
                 }
             }
 
-            let resumedBlackEndTime = undefined; if (ball.isBlack && ball.blackPausedDuration) resumedBlackEndTime = launchTime + ball.blackPausedDuration;
+            let resumedDoubleEndTime = undefined; if (ball.isDouble && ball.doublePausedDuration) resumedDoubleEndTime = launchTime + ball.doublePausedDuration;
             let resumedBlueEndTime = undefined; if (ball.isBlue && ball.bluePausedDuration) resumedBlueEndTime = launchTime + ball.bluePausedDuration;
             let resumedBigEndTime = undefined; if (ball.isBig && ball.bigPausedDuration) resumedBigEndTime = launchTime + ball.bigPausedDuration;
             let resumedSplittingEndTime = undefined; if (ball.isSplitting && ball.splittingPausedDuration) resumedSplittingEndTime = launchTime + ball.splittingPausedDuration;
@@ -444,11 +444,11 @@ export function useGameLogic() {
                 stuckOffset: undefined,
                 stuckSide: null,
                 stuckSideOffset: undefined,
-                blackEndTime: resumedBlackEndTime ?? ball.blackEndTime,
+                doubleEndTime: resumedDoubleEndTime ?? ball.doubleEndTime,
                 blueEndTime: resumedBlueEndTime ?? ball.blueEndTime,
                 bigEndTime: resumedBigEndTime ?? ball.bigEndTime,
                 splittingEndTime: resumedSplittingEndTime ?? ball.splittingEndTime,
-                blackPausedDuration: undefined,
+                doublePausedDuration: undefined,
                 bluePausedDuration: undefined,
                 bigPausedDuration: undefined,
                 splittingPausedDuration: undefined
@@ -481,7 +481,7 @@ export function useGameLogic() {
             testPreviewInitialLaunchDoneRef.current = false; 
             paddleVisualEffectActiveRef.current = false;
             paddleVisualEffectStartTimeRef.current = null;
-            // Removed reset for blackBallEffectActiveRef and blackBallEffectStartTimeRef
+            // Removed reset for doubleBallEffectActiveRef and doubleBallEffectStartTimeRef
             testPowerUpSpawnChanceRef.current = INITIAL_TEST_POWER_UP_SPAWN_CHANCE; 
             setTestPowerUpSpawnChance(INITIAL_TEST_POWER_UP_SPAWN_CHANCE); 
             testBrickColumnsRef.current = TEST_DEFAULT_BRICK_COLUMNS; 
@@ -538,7 +538,7 @@ export function useGameLogic() {
         particlesRef.current = []; 
         paddleVisualEffectActiveRef.current = false;
         paddleVisualEffectStartTimeRef.current = null;
-        // Removed reset for blackBallEffectActiveRef and blackBallEffectStartTimeRef
+        // Removed reset for doubleBallEffectActiveRef and doubleBallEffectStartTimeRef
         resetLevel(mode, resetScoreAndGold);
         isGameStartedRef.current = false; 
         if (mode === 'test' || (gameModeRef.current === 'test' && mode === null)) { 
@@ -576,7 +576,7 @@ export function useGameLogic() {
         paddleVisualEffectActiveRef, 
         paddleVisualEffectStartTimeRef, 
         laserIntervalRef, // Added this line
-        // Removed blackBallEffectActiveRef and blackBallEffectStartTimeRef from gameStateRefs
+        // Removed doubleBallEffectActiveRef and doubleBallEffectStartTimeRef from gameStateRefs
     }), [
         paddleXRef, ballsRef, powerUpsRef, particlesRef, scoreRef, goldRef, spawnablePowerUpsRef, 
         paddleWidthRef, widenLevelRef, laserShotsRef, lasersRef, safetyNetCountRef,
@@ -607,7 +607,7 @@ export function useGameLogic() {
         paddleVisualEffectActiveRef, 
         paddleVisualEffectStartTimeRef,
         laserIntervalRef, // Added this line to dependency array
-        // Removed blackBallEffectActiveRef and blackBallEffectStartTimeRef from dependency array
+        // Removed doubleBallEffectActiveRef and doubleBallEffectStartTimeRef from dependency array
     ]);
 
     const drawEndMessageCallback = useCallback((context: CanvasRenderingContext2D, state: GameState, finalScore: number) => {
