@@ -147,7 +147,7 @@ export const POINTS_FIELD_WIDTH = 50;
 export const POINTS_FIELD_HEIGHT = 50; 
 export const POINTS_FIELD_COLOR = 'rgba(0, 255, 0, 0.3)';
 export const POINTS_FIELD_DURATION = 5000; 
-export const POINTS_FIELD_MAX_BALLS = 5; 
+export const POINTS_FIELD_MAX_BALLS = 4; 
 
 export const ALL_TOGGLEABLE_POWER_UPS: PowerUpType[] = [
     'MULTI_BALL', 
