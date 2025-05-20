@@ -135,12 +135,12 @@ export const BONUS_GOLD_TIMER_DURATION = 5000;
 // Collection Field
 export const FIELD_INITIAL_HEIGHT_OFFSET = 0;
 export const FIELD_HEIGHT_INCREMENT = 6;
-export const FIELD_MAX_HEIGHT_OFFSET = 20;
+export const FIELD_MAX_HEIGHT_OFFSET = 25;
 export const FIELD_INITIAL_WIDTH_OFFSET = 0;
 export const FIELD_WIDTH_INCREMENT = 8;
-export const FIELD_MAX_WIDTH_OFFSET = 35;
-export const FIELD_SHRINK_RATE_H = 0.1;
-export const FIELD_SHRINK_RATE_W = 0.08;
+export const FIELD_MAX_WIDTH_OFFSET = 45;
+export const FIELD_SHRINK_RATE_H = 0.08;
+export const FIELD_SHRINK_RATE_W = 0.07;
 export const FIELD_SHRINK_INTERVAL = 16;
 
 // Points Field
@@ -206,12 +206,12 @@ export const POWER_UP_COSTS: { [key in PowerUpType]?: number } = {
     BUILDER_BALL: 11,
     BUILDER_BALL_L2: 13,
     BUILDER_BALL_L3: 15,
-    BIG_BALL: 13,
-    BIG_BALL_L2: 15,
-    BIG_BALL_L3: 18,
-    SPLITTING_BALL: 15,
-    SPLITTING_BALL_L2: 17,
-    SPLITTING_BALL_L3: 19,
+    BIG_BALL: 12,
+    BIG_BALL_L2: 14,
+    BIG_BALL_L3: 17,
+    SPLITTING_BALL: 13,
+    SPLITTING_BALL_L2: 15,
+    SPLITTING_BALL_L3: 17,
     COLLECTION_FIELD: 7,
     COLLECTION_FIELD_L2: 9,
     COLLECTION_FIELD_L3: 11,
