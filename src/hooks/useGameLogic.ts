@@ -1,4 +1,3 @@
-// src/hooks/useGameLogic.ts
 import { useRef, useCallback, useEffect, useState, useMemo } from 'react';
 import {
     BOARD_WIDTH, INITIAL_PADDLE_WIDTH, BASE_BALL_SPEED_FACTOR,
@@ -6,7 +5,7 @@ import {
     BALL_SIZE, BIG_BALL_SIZE_INCREASE, PADDLE_Y, INITIAL_BALL_SPEED_Y,
     FIELD_SHRINK_RATE_H, FIELD_SHRINK_RATE_W, FIELD_SHRINK_INTERVAL,
     ALL_TOGGLEABLE_POWER_UPS, PADDLE_HEIGHT, BOARD_HEIGHT,
-    INITIAL_TEST_POWER_UP_SPAWN_CHANCE,
+    INITIAL_TEST_POWER_UP_SPAWN_CHANCE, MIN_BALL_SPEED_Y,
 } from '../constants'; 
 import { Ball, PowerUp, Laser, PowerUpType, GameState, GameMode, GameStateRefs as IGameStateRefs, GameLoopCallbacks, PointsField, Particle } from '../interfaces'; // Added Particle
 import { initialBallState } from '../gameLogic';
@@ -137,7 +136,7 @@ export function useGameLogic() {
         spawnablePowerUpsRef,
         initialBonusGoldDecrementCompleteRef,
         testBrickColumnsRef,
-        testBrickRowsRef, 
+        testBrickRowsRef,
     });
 
     useEffect(() => {
@@ -367,29 +366,31 @@ export function useGameLogic() {
         const currentPaddleWidth = paddleWidthRef.current;
 
         let trulyInitialLaunch = false;
-        let launchSpeedX = 0;
-        const launchSpeedY = -Math.abs(INITIAL_BALL_SPEED_Y);
+        let initialLaunchSpeedX = 0;
+        let initialLaunchSpeedY = -Math.abs(INITIAL_BALL_SPEED_Y);
 
         if (isTestModePreview) {
             if (!testPreviewInitialLaunchDoneRef.current) {
-                launchSpeedX = 3; 
+                initialLaunchSpeedX = 3; 
                 testPreviewInitialLaunchDoneRef.current = true;
                 trulyInitialLaunch = true; 
             } else {
-                launchSpeedX = 0; 
+                initialLaunchSpeedX = 0; 
             }
         } else { 
             if (isInitialLaunchArgument) { 
-                launchSpeedX = 3;
+                initialLaunchSpeedX = 3;
                 trulyInitialLaunch = true;
             } else {
-                launchSpeedX = 0;
+                initialLaunchSpeedX = 0;
             }
         }
 
         const launchedBalls = stuckBallsRef.current.map(ball => {
             const currentBallSize = ball.isBig ? BALL_SIZE + BIG_BALL_SIZE_INCREASE : BALL_SIZE;
             let currentLaunchX = 0, currentLaunchY = 0;
+            let speedX = initialLaunchSpeedX;
+            let speedY = initialLaunchSpeedY;
 
             if (ball.stuckSide) {
                  const sideOffset = currentBallSize;
@@ -397,7 +398,24 @@ export function useGameLogic() {
                      ? currentPaddleX - sideOffset
                      : currentPaddleX + currentPaddleWidth + sideOffset;
                  currentLaunchY = PADDLE_Y + PADDLE_HEIGHT / 2 + (ball.stuckSideOffset ?? 0);
-                 currentLaunchY = Math.min(BOARD_HEIGHT - currentBallSize -1, Math.max(currentBallSize + 1, currentLaunchY))
+                 currentLaunchY = Math.min(BOARD_HEIGHT - currentBallSize -1, Math.max(currentBallSize + 1, currentLaunchY));
+
+                // Add random angle and speed variation for Recovery Paddle releases
+                const angleDeviation = (Math.random() - 0.5) * (6 * Math.PI / 180); // +/- 3 degrees in radians
+                const speedMultiplier = 1 + (Math.random() - 0.5) * 0.2; // +/- 10% speed variation
+
+                const baseSpeed = Math.sqrt(speedX * speedX + speedY * speedY); // Magnitude of initial speed
+                const currentAngle = Math.atan2(speedY, speedX);
+
+                let newAngle = currentAngle + angleDeviation;
+                let newSpeed = baseSpeed * speedMultiplier;
+
+                // Ensure ball goes generally upwards for Recovery Paddle releases
+                // Set newSpeedY to be negative (upwards) and at least MIN_BALL_SPEED_Y magnitude
+                speedX = newSpeed * Math.cos(newAngle);
+                speedY = -Math.abs(newSpeed * Math.sin(newAngle)); // Ensure it's negative for upwards
+                speedY = Math.min(speedY, -MIN_BALL_SPEED_Y); // Ensure minimum upward speed
+
             } else {
                  currentLaunchX = currentPaddleX + (ball.stuckOffset ?? currentPaddleWidth / 2);
                  currentLaunchY = PADDLE_Y - currentBallSize - 1;
@@ -421,8 +439,8 @@ export function useGameLogic() {
                 ...ball,
                 x: currentLaunchX,
                 y: currentLaunchY,
-                speedX: launchSpeedX, 
-                speedY: launchSpeedY,
+                speedX: speedX, 
+                speedY: speedY,
                 stuckOffset: undefined,
                 stuckSide: null,
                 stuckSideOffset: undefined,

@@ -16,7 +16,7 @@ export const PADDLE_Y = BOARD_HEIGHT - PADDLE_HEIGHT;
 export const PADDLE_SPEED = 7;
 export const PADDLE_FRICTION = 0.9;
 export const PADDLE_EDGE_STICK_THRESHOLD = 0.15; // 15% of paddle width from edge for top-sticking
-export const PADDLE_SIDE_SAVE_THRESHOLD = 90; // Pixels from paddle side to trigger bottom save
+export const PADDLE_SIDE_SAVE_THRESHOLD = 120; // Pixels from paddle side to trigger bottom save
 export const PADDLE_WIDEN_VISUAL_EFFECT_DURATION_MS = 100; 
 export const PADDLE_WIDEN_VISUAL_EFFECT_AMOUNT = 6; // Total visual expansion
 
@@ -227,9 +227,9 @@ export const POWER_UP_COSTS: { [key in PowerUpType]?: number } = {
     BALL_BRICK: 7,
     BALL_BRICK_L2: 9, 
     BALL_BRICK_L3: 11, 
-    POINTS_FIELD: 13,
-    POINTS_FIELD_L2: 15, 
-    POINTS_FIELD_L3: 17,
+    POINTS_FIELD: 15,
+    POINTS_FIELD_L2: 18, 
+    POINTS_FIELD_L3: 21,
     ALL_IN_ONE: 100, 
     NONE: 0
 };
