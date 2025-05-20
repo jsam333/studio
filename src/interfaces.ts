@@ -193,6 +193,7 @@ export interface GameStateRefsBase {
     testBrickRowsRef: React.MutableRefObject<number>; 
     paddleVisualEffectActiveRef?: React.MutableRefObject<boolean>; 
     paddleVisualEffectStartTimeRef?: React.MutableRefObject<number | null>; 
+    laserIntervalRef: React.MutableRefObject<number | null>; // Added this line
     // blackBallEffectActiveRef and blackBallEffectStartTimeRef are removed from here
 }
 

@@ -48,6 +48,7 @@ export function useGameLogic() {
     const paddleShrinkCountdownRef = useRef<number | null>(null);
     const laserShotsRef = useRef(0);
     const lasersRef = useRef<Laser[]>([]);
+    const laserIntervalRef = useRef<number | null>(null); // Added this line
     const safetyNetCountRef = useRef(0);
     const gameSpeedFactorRef = useRef<number>(BASE_BALL_SPEED_FACTOR);
     const collectionFieldHeightRef = useRef<number>(FIELD_INITIAL_HEIGHT_OFFSET);
@@ -319,6 +320,8 @@ export function useGameLogic() {
         testPreviewInitialLaunchDoneRef.current = false; 
         if (collectionFieldShrinkTimerRef.current) clearInterval(collectionFieldShrinkTimerRef.current);
         collectionFieldShrinkTimerRef.current = null;
+        if (laserIntervalRef.current) clearInterval(laserIntervalRef.current); // Clear laser interval on reset
+        laserIntervalRef.current = null;
 
         scoreRef.current = 0;
         goldRef.current = 0;
@@ -554,6 +557,7 @@ export function useGameLogic() {
         testBrickRowsRef, 
         paddleVisualEffectActiveRef, 
         paddleVisualEffectStartTimeRef, 
+        laserIntervalRef, // Added this line
         // Removed blackBallEffectActiveRef and blackBallEffectStartTimeRef from gameStateRefs
     }), [
         paddleXRef, ballsRef, powerUpsRef, particlesRef, scoreRef, goldRef, spawnablePowerUpsRef, 
@@ -584,6 +588,7 @@ export function useGameLogic() {
         testBrickRowsRef,
         paddleVisualEffectActiveRef, 
         paddleVisualEffectStartTimeRef,
+        laserIntervalRef, // Added this line to dependency array
         // Removed blackBallEffectActiveRef and blackBallEffectStartTimeRef from dependency array
     ]);
 

@@ -14,7 +14,7 @@ interface SetupGameCanvasArgs {
     scaleRef: React.MutableRefObject<number>; 
     animationFrameIdRef: React.MutableRefObject<number | null>;
     handleResetGame: () => void;
-    gameStateRefs: GameStateRefs; 
+    gameStateRefs: GameStateRefs; // Assumes GameStateRefs now includes laserIntervalRef: React.MutableRefObject<number | null>;
     gameLoopCallbacks: GameLoopCallbacks;
     lastTimeRef: React.MutableRefObject<number>; 
     totalSidebarSpace: number; 
@@ -149,6 +149,62 @@ export const setupGameCanvas = ({
         return false;
     };
 
+    const startContinuousFire = () => {
+        if (gameStateRefs.stuckBallsRef.current.length === 0 && (gameStateRefs.gameOverStateRef.current === 'playing' || (gameStateRefs.gameModeRef.current === 'test' && gameStateRefs.gameOverStateRef.current === 'menu'))) {
+            if (fireLaser()) { // Fire once immediately
+                if (gameStateRefs.laserIntervalRef.current) clearInterval(gameStateRefs.laserIntervalRef.current);
+                gameStateRefs.laserIntervalRef.current = window.setInterval(() => {
+                    if (!fireLaser()) { // If run out of shots or can't fire
+                        if (gameStateRefs.laserIntervalRef.current) clearInterval(gameStateRefs.laserIntervalRef.current);
+                        gameStateRefs.laserIntervalRef.current = null;
+                    }
+                }, 150); // Changed from 200 to 150
+            }
+        }
+    };
+
+    const stopContinuousFire = () => {
+        if (gameStateRefs.laserIntervalRef.current) {
+            clearInterval(gameStateRefs.laserIntervalRef.current);
+            gameStateRefs.laserIntervalRef.current = null;
+        }
+    };
+
+    const handleMouseDown = (event: MouseEvent) => {
+        if (event.button !== 0) return; // Only left click
+        const currentState = gameStateRefs.gameOverStateRef.current;
+        const isTestModePreview = gameStateRefs.gameModeRef.current === 'test' && currentState === 'menu';
+
+        if (currentState === 'won' || currentState === 'lost') {
+            handleResetGame();
+        } else if (currentState === 'playing' || isTestModePreview) {
+            if (!canvas) return;
+
+            if (isTestModePreview) {
+                if (gameStateRefs.stuckBallsRef.current.length > 0) {
+                    launchStuckBalls(true);
+                } else {
+                    startContinuousFire();
+                }
+            } else { // Main game logic (currentState === 'playing' && !isTestModePreview)
+                if (!gameStateRefs.isGameStartedRef.current) {
+                    launchStuckBalls(true); // Initial launch for main game
+                } else {
+                    if (gameStateRefs.stuckBallsRef.current.length > 0) {
+                        launchStuckBalls(false); // Subsequent stuck ball launches for main game
+                    } else {
+                        startContinuousFire();
+                    }
+                }
+            }
+        }
+    };
+
+    const handleMouseUp = (event: MouseEvent) => {
+        if (event.button !== 0) return; // Only left click
+        stopContinuousFire();
+    };
+
     const handleTouchStart = (event: TouchEvent) => {
         event.preventDefault();
         const currentState = gameStateRefs.gameOverStateRef.current;
@@ -156,34 +212,35 @@ export const setupGameCanvas = ({
 
         if (currentState === 'won' || currentState === 'lost') {
             handleResetGame();
-        } else if (currentState === 'playing' || isTestModePreview) {
-            if (event.touches.length > 0) {
-                const touchX = event.touches[0].clientX;
-                updatePaddlePosition(touchX); // Update paddle position based on touch
+        } else if ((currentState === 'playing' || isTestModePreview) && event.touches.length > 0) {
+            const touchX = event.touches[0].clientX;
+            updatePaddlePosition(touchX);
 
-                if (isTestModePreview) {
-                    if (gameStateRefs.stuckBallsRef.current.length > 0) {
-                        launchStuckBalls(true);
+            if (isTestModePreview) {
+                if (gameStateRefs.stuckBallsRef.current.length > 0) {
+                    launchStuckBalls(true);
+                } else {
+                    startContinuousFire();
+                }
+            } else { // Main game logic
+                if (!gameStateRefs.isGameStartedRef.current) {
+                    launchStuckBalls(true);
+                } else {
+                    if (isMobile && gameStateRefs.stuckBallsRef.current.length > 0) {
+                        launchStuckBalls(false); 
+                    } else if (gameStateRefs.stuckBallsRef.current.length > 0) {
+                        launchStuckBalls(false);
                     } else {
-                        fireLaser(); // Attempt to fire laser if no stuck balls
-                    }
-                } else { // Main game logic (currentState === 'playing' && !isTestModePreview)
-                    if (!gameStateRefs.isGameStartedRef.current) {
-                        launchStuckBalls(true);
-                    } else {
-                        // Mobile-specific sticky paddle release - launchStuckBalls(false) will be called
-                        if (isMobile && gameStateRefs.stuckBallsRef.current.length > 0) {
-                            launchStuckBalls(false); 
-                        } else if (gameStateRefs.stuckBallsRef.current.length > 0) {
-                            // Non-mobile or no sticky, just launch remaining stuck balls if any
-                            launchStuckBalls(false);
-                        }else {
-                            fireLaser(); // Attempt to fire laser if no stuck balls and not sticky release
-                        }
+                        startContinuousFire();
                     }
                 }
             }
         }
+    };
+
+    const handleTouchEnd = (event: TouchEvent) => {
+        event.preventDefault();
+        stopContinuousFire();
     };
 
     const handleTouchMove = (event: TouchEvent) => {
@@ -192,36 +249,6 @@ export const setupGameCanvas = ({
         if ((gameStateRefs.gameOverStateRef.current === 'playing' || isTestModePreview) && event.touches.length > 0) {
             updatePaddlePosition(event.touches[0].clientX);
         }
-    };
-
-    const handleClick = (event: MouseEvent) => {
-         if (event.button !== 0) return;
-         const currentState = gameStateRefs.gameOverStateRef.current;
-         const isTestModePreview = gameStateRefs.gameModeRef.current === 'test' && currentState === 'menu';
-
-         if (currentState === 'won' || currentState === 'lost') {
-            handleResetGame();
-         } else if (currentState === 'playing' || isTestModePreview) {
-             if (!canvas) return; 
-
-             if (isTestModePreview) {
-                 if (gameStateRefs.stuckBallsRef.current.length > 0) {
-                     launchStuckBalls(true);
-                 } else {
-                     fireLaser(); // Attempt to fire laser if no stuck balls
-                 }
-             } else { // Main game logic (currentState === 'playing' && !isTestModePreview)
-                 if (!gameStateRefs.isGameStartedRef.current) {
-                     launchStuckBalls(true); // Initial launch for main game
-                 } else {
-                     if (gameStateRefs.stuckBallsRef.current.length > 0) {
-                         launchStuckBalls(false); // Subsequent stuck ball launches for main game
-                     } else {
-                         fireLaser(); // Attempt to fire laser if no stuck balls
-                     }
-                 }
-             }
-         }
     };
 
     const handleKeyDown = (event: KeyboardEvent) => {
@@ -246,20 +273,31 @@ export const setupGameCanvas = ({
     handleResize(); 
     window.addEventListener('resize', handleResize);
     window.addEventListener('mousemove', handleMouseMove); 
+    canvas.addEventListener('mousedown', handleMouseDown);
+    window.addEventListener('mouseup', handleMouseUp); // Listen on window for mouseup
     canvas.addEventListener('touchstart', handleTouchStart, { passive: false }); 
     canvas.addEventListener('touchmove', handleTouchMove, { passive: false });  
-    canvas.addEventListener('click', handleClick); 
+    canvas.addEventListener('touchend', handleTouchEnd);
+    canvas.addEventListener('touchcancel', handleTouchEnd); // Good practice to also clear on touchcancel
     window.addEventListener('keydown', handleKeyDown); 
 
     return () => {
         window.removeEventListener('resize', handleResize);
         window.removeEventListener('mousemove', handleMouseMove);
         if (canvas) { 
+            canvas.removeEventListener('mousedown', handleMouseDown);
             canvas.removeEventListener('touchstart', handleTouchStart);
             canvas.removeEventListener('touchmove', handleTouchMove);
-            canvas.removeEventListener('click', handleClick);
+            canvas.removeEventListener('touchend', handleTouchEnd);
+            canvas.removeEventListener('touchcancel', handleTouchEnd);
         }
+        window.removeEventListener('mouseup', handleMouseUp);
         window.removeEventListener('keydown', handleKeyDown); 
+
+        if (gameStateRefs.laserIntervalRef.current) { // Clear interval on cleanup
+            clearInterval(gameStateRefs.laserIntervalRef.current);
+            gameStateRefs.laserIntervalRef.current = null;
+        }
         if (animationFrameIdRef.current) {
             cancelAnimationFrame(animationFrameIdRef.current);
             animationFrameIdRef.current = null;
