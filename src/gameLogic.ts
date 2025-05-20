@@ -105,7 +105,7 @@ export const initialBallState: Ball = {
 };
 
 // Returns points awarded. Modifies brick status directly.
-export const damageBrick = (brick: Brick, spawnEvents: PowerUpSpawnEvent[], gameStateRefs: GameStateRefs): number => {
+export const damageBrick = (brick: Brick, spawnEvents: PowerUpSpawnEvent[], gameStateRefs: GameStateRefs, currentTime: number): number => {
     // Brick must be active (status 1) to be damaged.
     if (brick.status !== 1) return 0;
 
@@ -135,7 +135,8 @@ export const damageBrick = (brick: Brick, spawnEvents: PowerUpSpawnEvent[], game
     if (willBeDestroyed) {
         brick.status = 2; // Set to Destroying phase
         brick.isFlashing = true; // Start flashing animation
-        // fadeOutAlpha and flashStartTime will be handled by updateBrickAnimations
+        brick.flashStartTime = currentTime; // Set flash start time
+        // fadeOutAlpha will be handled by updateBrickAnimations
 
         let marker: SpawnMarker = 'NONE';
         if (wasHoldingBall) {
@@ -160,12 +161,12 @@ export const damageBrick = (brick: Brick, spawnEvents: PowerUpSpawnEvent[], game
     return points;
 };
 
-export const handleBombExplosion = ( bombBrick: Brick, bombC: number, bombR: number, bricks: Brick[][], columns: number, rows: number, spawnEvents: PowerUpSpawnEvent[], gameStateRefs: GameStateRefs ): number => {
+export const handleBombExplosion = ( bombBrick: Brick, bombC: number, bombR: number, bricks: Brick[][], columns: number, rows: number, spawnEvents: PowerUpSpawnEvent[], gameStateRefs: GameStateRefs, currentTime: number ): number => {
     let explosionPoints = 0; 
     // Ensure the bomb itself is marked as destroying if it wasn't already (e.g. direct hit vs chain reaction)
     if (bombBrick.status === 1) {
         // Directly call damageBrick; it returns points for the bomb itself, which we will add here.
-        explosionPoints += damageBrick(bombBrick, spawnEvents, gameStateRefs); 
+        explosionPoints += damageBrick(bombBrick, spawnEvents, gameStateRefs, currentTime); 
     }
 
     const neighbors = [ { nc: bombC + 1, nr: bombR }, { nc: bombC - 1, nr: bombR }, { nc: bombC, nr: bombR + 1 }, { nc: bombC, nr: bombR - 1 } ];
@@ -175,11 +176,11 @@ export const handleBombExplosion = ( bombBrick: Brick, bombC: number, bombR: num
             // Only damage active (status 1) neighbors
             if (neighborBrick && neighborBrick.status === 1) { 
                 const previousStatus = neighborBrick.status;
-                const pointsFromNeighborHit = damageBrick(neighborBrick, spawnEvents, gameStateRefs); 
+                const pointsFromNeighborHit = damageBrick(neighborBrick, spawnEvents, gameStateRefs, currentTime); 
                 explosionPoints += pointsFromNeighborHit;
                 // If this neighbor was a bomb and was just destroyed (status changed from 1 to 2)
                 if (neighborBrick.isBomb && previousStatus === 1 && neighborBrick.status === 2) { 
-                    explosionPoints += handleBombExplosion(neighborBrick, nc, nr, bricks, columns, rows, spawnEvents, gameStateRefs); 
+                    explosionPoints += handleBombExplosion(neighborBrick, nc, nr, bricks, columns, rows, spawnEvents, gameStateRefs, currentTime); 
                 }
             } 
         } 
@@ -187,7 +188,7 @@ export const handleBombExplosion = ( bombBrick: Brick, bombC: number, bombR: num
     return explosionPoints;
 };
 
-export const checkBrickCollision = ( ball: Ball, bricks: Brick[][], columns: number, rows: number, deltaTime: number, gameStateRefs: GameStateRefs ): CollisionResult => {
+export const checkBrickCollision = ( ball: Ball, bricks: Brick[][], columns: number, rows: number, deltaTime: number, gameStateRefs: GameStateRefs, currentTime: number ): CollisionResult => {
     let newSpeedX = ball.speedX; let newSpeedY = ball.speedY; let pointsAwarded = 0; const spawnEvents: PowerUpSpawnEvent[] = []; let pierceOccurred = false; let builderHitOccurred = false; let collisionDetected = false; let brickWasHit = false; const currentBallSize = ball.isBig ? BALL_SIZE + BIG_BALL_SIZE_INCREASE : BALL_SIZE; const nextBallX = ball.x + ball.speedX * deltaTime; const nextBallY = ball.y + ball.speedY * deltaTime; const checkRadius = currentBallSize;
     
     for (let c = 0; c < columns; c++) {
@@ -225,10 +226,10 @@ export const checkBrickCollision = ( ball: Ball, bricks: Brick[][], columns: num
                         pierceOccurred = true;
                         // @ts-ignore
                         ball.pierceHitsRemaining--;
-                        pointsAwarded += damageBrick(brick, spawnEvents, gameStateRefs); 
+                        pointsAwarded += damageBrick(brick, spawnEvents, gameStateRefs, currentTime); 
                         // If the pierced brick was a bomb and was just set to destroying (status 2)
                         if (brick.isBomb && originalBrickStatus === 1 && brick.status === 2) {
-                            pointsAwarded += handleBombExplosion(brick, c, r, bricks, columns, rows, spawnEvents, gameStateRefs);
+                            pointsAwarded += handleBombExplosion(brick, c, r, bricks, columns, rows, spawnEvents, gameStateRefs, currentTime);
                         }
                         newSpeedX = ball.speedX; // Ball continues without changing direction
                         newSpeedY = ball.speedY;
@@ -236,12 +237,20 @@ export const checkBrickCollision = ( ball: Ball, bricks: Brick[][], columns: num
                         builderHitOccurred = true;
                         if (!brick.isSpecial && !brick.isBomb && !brick.holdsBall) { 
                             brick.upgradeLevel = Math.min((brick.upgradeLevel || 0) + 1, MAX_BRICK_UPGRADE_LEVEL);
-                            // No status change for builder ball hit, it only upgrades
+                            brick.isDarkFlashActive = true;
+                            brick.darkFlashStartTime = currentTime;
+                            // Reset other flash states
+                            brick.isFlashing = false;
+                            delete brick.flashStartTime;
+                            brick.isRegenVisualEffectActive = false;
+                            delete brick.regenVisualEffectStartTime;
+                            brick.isSpecialFlashActive = false;
+                            delete brick.specialFlashStartTime;
                         }
                         newSpeedX = tempSpeedX; 
                         newSpeedY = tempSpeedY;
                     } else { // Regular hit
-                        pointsAwarded += damageBrick(brick, spawnEvents, gameStateRefs);
+                        pointsAwarded += damageBrick(brick, spawnEvents, gameStateRefs, currentTime);
                         newSpeedX = tempSpeedX; 
                         newSpeedY = tempSpeedY;
 
@@ -262,18 +271,18 @@ export const checkBrickCollision = ( ball: Ball, bricks: Brick[][], columns: num
                                 const targetNeighborData = validNeighbors[Math.floor(Math.random() * validNeighbors.length)];
                                 const targetNeighbor = targetNeighborData.brick;
                                 const neighborOriginalStatus = targetNeighbor.status; // Will be 1
-                                const splashPoints = damageBrick(targetNeighbor, spawnEvents, gameStateRefs);
+                                const splashPoints = damageBrick(targetNeighbor, spawnEvents, gameStateRefs, currentTime);
                                 pointsAwarded += splashPoints;
                                 // If the splashed neighbor was a bomb and was just set to destroying
                                  if(targetNeighbor.isBomb && neighborOriginalStatus === 1 && targetNeighbor.status === 2){
-                                     pointsAwarded += handleBombExplosion(targetNeighbor, targetNeighborData.col, targetNeighborData.row, bricks, columns, rows, spawnEvents, gameStateRefs);
+                                     pointsAwarded += handleBombExplosion(targetNeighbor, targetNeighborData.col, targetNeighborData.row, bricks, columns, rows, spawnEvents, gameStateRefs, currentTime);
                                 }
                             }
                         }
 
                         // If the primary brick was a bomb and was just set to destroying (status 2)
                         if (brick.isBomb && originalBrickStatus === 1 && brick.status === 2) { 
-                            pointsAwarded += handleBombExplosion(brick, c, r, bricks, columns, rows, spawnEvents, gameStateRefs);
+                            pointsAwarded += handleBombExplosion(brick, c, r, bricks, columns, rows, spawnEvents, gameStateRefs, currentTime);
                         }
                     }
                     return { collision: true, newSpeedX, newSpeedY, spawnEvents, pointsAwarded, pierceOccurred, builderHitOccurred, brickHit: true };
