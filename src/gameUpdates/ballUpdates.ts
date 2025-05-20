@@ -155,19 +155,29 @@ export const updateBalls = (
                     nextY = currentBallSize + overshoot;
                 }
                 else if (nextY + currentBallSize > BOARD_HEIGHT) { 
-                    const isNearLeft = Math.abs(nextX - paddleLeft) < PADDLE_SIDE_SAVE_THRESHOLD;
-                    const isNearRight = Math.abs(nextX - paddleRight) < PADDLE_SIDE_SAVE_THRESHOLD;
+                    let stickToSide: 'left' | 'right' | null = null;
+                    const paddleCenterX = paddleLeft + refs.paddleWidthRef.current / 2;
 
-                    if (refs.stickyPaddleChargesRef.current > 0 && !ball.isBig && (isNearLeft || isNearRight)) { 
+                    if (nextX < paddleCenterX) { // Ball is to the left of (or at) paddle center
+                        if (Math.abs(nextX - paddleLeft) < PADDLE_SIDE_SAVE_THRESHOLD) {
+                            stickToSide = 'left';
+                        }
+                    } else { // Ball is to the right of paddle center
+                        if (Math.abs(nextX - paddleRight) < PADDLE_SIDE_SAVE_THRESHOLD) {
+                            stickToSide = 'right';
+                        }
+                    }
+
+                    if (refs.stickyPaddleChargesRef.current > 0 && !ball.isBig && stickToSide) { 
                         refs.stickyPaddleChargesRef.current--;
                         ball.isZipping = true;
                         ball.zipStartTime = currentTime;
                         ball.initialZipX = ball.x; 
                         ball.initialZipY = ball.y;
-                        ball.targetStuckSideValue = isNearLeft ? 'left' : 'right';
+                        ball.targetStuckSideValue = stickToSide;
                         const sideOffset = currentBallSize;
-                        ball.zipTargetX = ball.targetStuckSideValue === 'left' ? paddleLeft - sideOffset : paddleRight + sideOffset;
-                        ball.zipTargetY = PADDLE_Y + PADDLE_HEIGHT / 2 - PADDLE_HEIGHT / 2;
+                        ball.zipTargetX = stickToSide === 'left' ? paddleLeft - sideOffset : paddleRight + sideOffset;
+                        ball.zipTargetY = PADDLE_Y; // Ball will stick to the vertical center of paddle side, at PADDLE_Y
                         ball.speedX = 0; ball.speedY = 0; 
                         if (ball.isHoming) { ball.isHoming = false; }
                         if (ball.isBlack && ball.blackEndTime) { ball.blackPausedDuration = ball.blackEndTime - currentTime; ball.blackEndTime = undefined; }
