@@ -84,7 +84,6 @@ export const SAFETY_NET_HEIGHT = 3;
 export const BUILDER_BRICK_MAX_LEVEL = 3;
 export const BUILDER_BALL_SPAWN_CHANCE = 0.15;
 export const MULTI_BALL_COUNT = 3; 
-export const DOUBLE_BALL_DURATION_MS = 10000;
 export const BOMB_BRICK_SPAWN_CHANCE = 0.1;
 export const BOMB_EXPLOSION_RADIUS_FACTOR = 1.5;
 
@@ -96,7 +95,7 @@ export const POWER_UP_SECOND_CHANCE_REDUCTION_PER_EXTRA = 0.02;
 export const SPLITTING_BALL_DURATION = 4000;
 export const BIG_BALL_DURATION = 6000;
 export const BUILDER_BALL_DURATION = 6000;
-export const DOUBLE_BALL_DURATION = 10000;
+export const DOUBLE_BALL_DURATION = 8000;
 
 // Particle Effects
 export const PARTICLE_LIFESPAN = 300; // General particle lifespan in ms (changed from 500)
@@ -227,9 +226,9 @@ export const POWER_UP_COSTS: { [key in PowerUpType]?: number } = {
     BALL_BRICK: 7,
     BALL_BRICK_L2: 9, 
     BALL_BRICK_L3: 11, 
-    POINTS_FIELD: 15,
-    POINTS_FIELD_L2: 18, 
-    POINTS_FIELD_L3: 21,
+    POINTS_FIELD: 13,
+    POINTS_FIELD_L2: 16, 
+    POINTS_FIELD_L3: 19,
     ALL_IN_ONE: 100, 
     NONE: 0
 };

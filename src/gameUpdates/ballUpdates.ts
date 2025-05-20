@@ -13,7 +13,8 @@ import {
     PARTICLE_LIFESPAN, 
     PARTICLE_SPEED_FACTOR,
     // POWER_UP_COLORS, // No longer needed for white particles
-    SPLITTING_BALL_PARTICLE_SIZE
+    SPLITTING_BALL_PARTICLE_SIZE,
+    DOUBLE_BALL_DURATION
 } from '../constants';
 
 export const updateBalls = (
@@ -82,7 +83,7 @@ export const updateBalls = (
 
             if (processNormalUpdate) {
                 if (ball.stuckOffset === undefined && !ball.stuckSide) { 
-                    if (ball.isBlack && ball.blackEndTime && currentTime >= ball.blackEndTime) { ball.isBlack = false; ball.blackEndTime = undefined; }
+                    if (ball.isDouble && ball.doubleEndTime && currentTime >= ball.doubleEndTime) { ball.isDouble = false; ball.doubleEndTime = undefined; }
                     if (ball.isBlue && ball.blueEndTime && currentTime >= ball.blueEndTime) { ball.isBlue = false; ball.blueEndTime = undefined; }
                     if (ball.isBig && ball.bigEndTime && currentTime >= ball.bigEndTime) { ball.isBig = false; ball.bigEndTime = undefined; }
                     if (ball.isSplitting && ball.splittingEndTime && currentTime >= ball.splittingEndTime) { ball.isSplitting = false; ball.splittingEndTime = undefined; }
@@ -91,7 +92,7 @@ export const updateBalls = (
                 let currentSpeedX = ball.speedX;
                 let currentSpeedY = ball.speedY;
 
-                const brickCollisionResult = checkBrickCollision(ball, refs.bricksRef.current, columns, rows, deltaTime, refs); 
+                const brickCollisionResult = checkBrickCollision(ball, refs.bricksRef.current, columns, rows, deltaTime, refs, currentTime); 
                 if (brickCollisionResult.collision) {
                     currentSpeedX = brickCollisionResult.newSpeedX;
                     currentSpeedY = brickCollisionResult.newSpeedY;
@@ -118,6 +119,7 @@ export const updateBalls = (
                             const particleSpeed = particleSpeedBase * (0.8 + Math.random() * 0.4); 
 
                             const particle: Particle = {
+                                id: Date.now() + Math.random(), // Ensure unique ID
                                 x: ball.x,
                                 y: ball.y,
                                 speedX: Math.cos(newAngle) * particleSpeed,
@@ -178,7 +180,7 @@ export const updateBalls = (
                         ball.zipTargetY = PADDLE_Y; 
                         ball.speedX = 0; ball.speedY = 0; 
                         if (ball.isHoming) { ball.isHoming = false; }
-                        if (ball.isBlack && ball.blackEndTime) { ball.blackPausedDuration = ball.blackEndTime - currentTime; ball.blackEndTime = undefined; }
+                        if (ball.isDouble && ball.doubleEndTime) { ball.doublePausedDuration = ball.doubleEndTime - currentTime; ball.doubleEndTime = undefined; }
                         if (ball.isBlue && ball.blueEndTime) { ball.bluePausedDuration = ball.blueEndTime - currentTime; ball.blueEndTime = undefined; }
                         if (ball.isSplitting && ball.splittingEndTime) { ball.splittingPausedDuration = ball.splittingEndTime - currentTime; ball.splittingEndTime = undefined; }
                         processNormalUpdate = false; 
