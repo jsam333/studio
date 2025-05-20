@@ -91,7 +91,7 @@ export const updateBalls = (
                 let currentSpeedX = ball.speedX;
                 let currentSpeedY = ball.speedY;
 
-                const brickCollisionResult = checkBrickCollision(ball, refs.bricksRef.current, columns, rows, deltaTime, refs); // Added currentTime back
+                const brickCollisionResult = checkBrickCollision(ball, refs.bricksRef.current, columns, rows, deltaTime, refs); 
                 if (brickCollisionResult.collision) {
                     currentSpeedX = brickCollisionResult.newSpeedX;
                     currentSpeedY = brickCollisionResult.newSpeedY;
@@ -108,11 +108,9 @@ export const updateBalls = (
                         }
                         ballsToAdd.push(newBall);
 
-                        // Create particle blast
                         const numParticles = 5;
-                        const particleSpeedBase = Math.sqrt(newBallSpeedX**2 + newBallSpeedY**2) * (PARTICLE_SPEED_FACTOR || 0.8); // Use updated speed factor
-                        
-                        const finalParticleColor = '#FFFFFF'; // Set color to white
+                        const particleSpeedBase = Math.sqrt(newBallSpeedX**2 + newBallSpeedY**2) * (PARTICLE_SPEED_FACTOR || 0.8); 
+                        const finalParticleColor = '#FFFFFF'; 
 
                         for (let k = 0; k < numParticles; k++) {
                             const angleOffset = (Math.random() - 0.5) * (Math.PI / 4); 
@@ -124,9 +122,9 @@ export const updateBalls = (
                                 y: ball.y,
                                 speedX: Math.cos(newAngle) * particleSpeed,
                                 speedY: Math.sin(newAngle) * particleSpeed,
-                                lifespan: (PARTICLE_LIFESPAN || 300) * (0.8 + Math.random() * 0.4), // Use updated lifespan
+                                lifespan: (PARTICLE_LIFESPAN || 300) * (0.8 + Math.random() * 0.4), 
                                 color: finalParticleColor,
-                                size: SPLITTING_BALL_PARTICLE_SIZE || 2, // Use updated size
+                                size: SPLITTING_BALL_PARTICLE_SIZE || 2, 
                                 createdAt: currentTime,
                                 alpha: 1
                             };
@@ -158,11 +156,11 @@ export const updateBalls = (
                     let stickToSide: 'left' | 'right' | null = null;
                     const paddleCenterX = paddleLeft + refs.paddleWidthRef.current / 2;
 
-                    if (nextX < paddleCenterX) { // Ball is to the left of (or at) paddle center
+                    if (nextX < paddleCenterX) { 
                         if (Math.abs(nextX - paddleLeft) < PADDLE_SIDE_SAVE_THRESHOLD) {
                             stickToSide = 'left';
                         }
-                    } else { // Ball is to the right of paddle center
+                    } else { 
                         if (Math.abs(nextX - paddleRight) < PADDLE_SIDE_SAVE_THRESHOLD) {
                             stickToSide = 'right';
                         }
@@ -177,7 +175,7 @@ export const updateBalls = (
                         ball.targetStuckSideValue = stickToSide;
                         const sideOffset = currentBallSize;
                         ball.zipTargetX = stickToSide === 'left' ? paddleLeft - sideOffset : paddleRight + sideOffset;
-                        ball.zipTargetY = PADDLE_Y; // Ball will stick to the vertical center of paddle side, at PADDLE_Y
+                        ball.zipTargetY = PADDLE_Y; 
                         ball.speedX = 0; ball.speedY = 0; 
                         if (ball.isHoming) { ball.isHoming = false; }
                         if (ball.isBlack && ball.blackEndTime) { ball.blackPausedDuration = ball.blackEndTime - currentTime; ball.blackEndTime = undefined; }
@@ -197,28 +195,41 @@ export const updateBalls = (
                 else if (currentSpeedY > 0 && ball.y + currentBallSize <= PADDLE_Y && nextY + currentBallSize > PADDLE_Y) {
                     const timeToPaddleY = (PADDLE_Y - (ball.y + currentBallSize)) / effectiveSpeedY;
                     const collisionX = ball.x + effectiveSpeedX * timeToPaddleY;
+
                     if (collisionX + currentBallSize > paddleLeft && collisionX - currentBallSize < paddleRight) {
                         ball.y = PADDLE_Y - currentBallSize;
-                        currentSpeedY = -Math.abs(currentSpeedY);
-                        let deltaX = collisionX - (paddleLeft + refs.paddleWidthRef.current / 2);
-                        currentSpeedX = Math.max(-currentMaxBallSpeedX, Math.min(currentMaxBallSpeedX, currentSpeedX + (deltaX * 0.1)));
                         
+                        const incomingSpeedX = currentSpeedX; // Store incoming X speed
+                        const incomingSpeedY = currentSpeedY; // Store incoming Y speed
+                        
+                        currentSpeedY = -Math.abs(incomingSpeedY); // Set Y speed to incoming magnitude, but upwards
+
                         if (ball.isHoming) {
                             const closestBrick = findClosestBrick(ball, refs.bricksRef.current, columns, rows);
                             if (closestBrick) {
                                 const targetX = closestBrick.x + BRICK_WIDTH / 2;
                                 const targetY = closestBrick.y + BRICK_HEIGHT / 2;
-                                const dX = targetX - ball.x, dY = targetY - ball.y;
-                                const mag = Math.sqrt(dX**2 + dY**2);
-                                const speedMag = Math.sqrt(currentSpeedX**2 + currentSpeedY**2);
-                                if (mag > 0) {
-                                    currentSpeedX = (dX / mag) * speedMag;
-                                    currentSpeedY = (dY / mag) * speedMag;
-                                    currentSpeedY = -Math.abs(currentSpeedY);
+                                const dX = targetX - ball.x;
+                                const dY = targetY - ball.y; // dY will be negative
+
+                                if (dY !== 0) { // Prevent division by zero
+                                    currentSpeedX = (dX / dY) * currentSpeedY;
+                                    // Cap the speed to avoid extreme values if dY is very small
+                                    currentSpeedX = Math.max(-currentMaxBallSpeedX, Math.min(currentMaxBallSpeedX, currentSpeedX));
+                                } else {
+                                    // Fallback if dY is zero (shouldn't happen if brick is above paddle)
+                                    // Aim directly up, use incoming X speed as a fallback or set to 0
+                                    currentSpeedX = incomingSpeedX; 
                                 }
                             }
                             ball.isHoming = false; 
+                        } else {
+                            // Apply standard paddle angle adjustment only if not homing
+                            // Use incomingSpeedX as the base for this adjustment
+                            let deltaX = collisionX - (paddleLeft + refs.paddleWidthRef.current / 2);
+                            currentSpeedX = Math.max(-currentMaxBallSpeedX, Math.min(currentMaxBallSpeedX, incomingSpeedX + (deltaX * 0.1)));
                         }
+                        
                         if (ball.isBig) {
                             ballsToAdd.push(createNewBall(collisionX, PADDLE_Y - BALL_SIZE - 5, (Math.random() - 0.5) * 6, -3 - Math.random() * 2, BASE_BALL_SPEED_FACTOR));
                         }
