@@ -1,9 +1,8 @@
 // src/gameUpdates/ballUpdates.ts
-import { Ball, Brick, PowerUpSpawnEvent, Particle } from '../interfaces';
+import { Ball, Brick, PowerUpSpawnEvent, Particle, HomingTrail } from '../interfaces'; // Added HomingTrail
 import { GameStateRefs, GameLoopCallbacks } from '../interfaces';
 import { checkBrickCollision } from '../gameLogic';
 import { createNewBall, findClosestBrick } from './gameLoopUtils';
-// Removed hexToRgb and lightenRgb imports as they are no longer needed for white particles
 import {
     BOARD_WIDTH, BOARD_HEIGHT, PADDLE_Y, BALL_SIZE, MAX_BALL_SPEED_X, SAFETY_NET_HEIGHT,
     BIG_BALL_SIZE_INCREASE, PADDLE_HEIGHT, BASE_BALL_SPEED_FACTOR,
@@ -12,9 +11,10 @@ import {
     ZIP_TO_PADDLE_DURATION,
     PARTICLE_LIFESPAN, 
     PARTICLE_SPEED_FACTOR,
-    // POWER_UP_COLORS, // No longer needed for white particles
+    POWER_UP_COLORS, // Added POWER_UP_COLORS
     SPLITTING_BALL_PARTICLE_SIZE,
-    DOUBLE_BALL_DURATION
+    DOUBLE_BALL_DURATION,
+    HOMING_TRAIL_DURATION // Added HOMING_TRAIL_DURATION
 } from '../constants';
 
 export const updateBalls = (
@@ -30,6 +30,13 @@ export const updateBalls = (
     const currentMaxBallSpeedX = MAX_BALL_SPEED_X * gameSpeedFactor;
     let ballsToAdd: Ball[] = [];
     let ballsToRemoveIds = new Set<number>();
+
+    // Update and filter homing trails
+    if (refs.homingTrailsRef) { // Ensure ref is initialized
+        refs.homingTrailsRef.current = refs.homingTrailsRef.current.filter(
+            trail => currentTime - trail.createdAt < HOMING_TRAIL_DURATION
+        );
+    }
 
     refs.stuckBallsRef.current.forEach(stuckBall => {
         const currentBallSize = stuckBall.isBig ? BALL_SIZE + BIG_BALL_SIZE_INCREASE : BALL_SIZE;
@@ -199,35 +206,47 @@ export const updateBalls = (
                     const collisionX = ball.x + effectiveSpeedX * timeToPaddleY;
 
                     if (collisionX + currentBallSize > paddleLeft && collisionX - currentBallSize < paddleRight) {
-                        ball.y = PADDLE_Y - currentBallSize;
+                        const paddleImpactX = collisionX;
+                        const paddleImpactY = PADDLE_Y - currentBallSize;
+                        ball.y = paddleImpactY;
                         
-                        const incomingSpeedX = currentSpeedX; // Store incoming X speed
-                        const incomingSpeedY = currentSpeedY; // Store incoming Y speed
+                        const incomingSpeedX = currentSpeedX; 
+                        const incomingSpeedY = currentSpeedY; 
                         
-                        currentSpeedY = -Math.abs(incomingSpeedY); // Set Y speed to incoming magnitude, but upwards
+                        currentSpeedY = -Math.abs(incomingSpeedY); 
 
                         if (ball.isHoming) {
                             const closestBrick = findClosestBrick(ball, refs.bricksRef.current, columns, rows);
                             if (closestBrick) {
-                                const targetX = closestBrick.x + closestBrick.width / 2; // MODIFIED
-                                const targetY = closestBrick.y + closestBrick.height / 2; // MODIFIED
-                                const dX = targetX - ball.x;
-                                const dY = targetY - ball.y; // dY will be negative
+                                const targetX = closestBrick.x + closestBrick.width / 2;
+                                const targetY = closestBrick.y + closestBrick.height / 2;
+                                
+                                // Create homing trail
+                                if (refs.homingTrailsRef) {
+                                    const trail: HomingTrail = {
+                                        id: Date.now() + Math.random(),
+                                        startX: paddleImpactX,
+                                        startY: paddleImpactY,
+                                        endX: targetX,
+                                        endY: targetY,
+                                        color: POWER_UP_COLORS.HOMING_BALL || '#DAA520', // Fallback color
+                                        createdAt: currentTime,
+                                    };
+                                    refs.homingTrailsRef.current.push(trail);
+                                }
 
-                                if (dY !== 0) { // Prevent division by zero
+                                const dX = targetX - ball.x;
+                                const dY = targetY - ball.y; 
+
+                                if (dY !== 0) { 
                                     currentSpeedX = (dX / dY) * currentSpeedY;
-                                    // Cap the speed to avoid extreme values if dY is very small
                                     currentSpeedX = Math.max(-currentMaxBallSpeedX, Math.min(currentMaxBallSpeedX, currentSpeedX));
                                 } else {
-                                    // Fallback if dY is zero (shouldn't happen if brick is above paddle)
-                                    // Aim directly up, use incoming X speed as a fallback or set to 0
                                     currentSpeedX = incomingSpeedX; 
                                 }
                             }
                             ball.isHoming = false; 
                         } else {
-                            // Apply standard paddle angle adjustment only if not homing
-                            // Use incomingSpeedX as the base for this adjustment
                             let deltaX = collisionX - (paddleLeft + refs.paddleWidthRef.current / 2);
                             currentSpeedX = Math.max(-currentMaxBallSpeedX, Math.min(currentMaxBallSpeedX, incomingSpeedX + (deltaX * 0.1)));
                         }

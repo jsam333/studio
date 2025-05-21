@@ -1,11 +1,12 @@
 // src/gameCanvas.ts
 import React from 'react';
-import { GameStateRefs, GameLoopCallbacks, GameState } from './interfaces'; 
+import { GameStateRefs, GameLoopCallbacks, GameState, HomingTrail } from './interfaces'; // Added HomingTrail
 import {
     BOARD_WIDTH, BOARD_HEIGHT, INITIAL_PADDLE_WIDTH, LASER_WIDTH, LASER_HEIGHT, LASER_SPEED, PADDLE_Y,
-    BALL_SIZE, BIG_BALL_SIZE_INCREASE
+    BALL_SIZE, BIG_BALL_SIZE_INCREASE, HOMING_TRAIL_DURATION // Added HOMING_TRAIL_DURATION
 } from './constants';
 import { Laser } from './interfaces';
+import { drawHomingTrails } from './drawFunctions/drawHomingTrails'; // Added import
 
 interface SetupGameCanvasArgs {
     gameContainerRef: React.RefObject<HTMLDivElement>; 
@@ -14,7 +15,7 @@ interface SetupGameCanvasArgs {
     scaleRef: React.MutableRefObject<number>; 
     animationFrameIdRef: React.MutableRefObject<number | null>;
     handleResetGame: () => void;
-    gameStateRefs: GameStateRefs; // Assumes GameStateRefs now includes laserIntervalRef: React.MutableRefObject<number | null>;
+    gameStateRefs: GameStateRefs; 
     gameLoopCallbacks: GameLoopCallbacks;
     lastTimeRef: React.MutableRefObject<number>; 
     totalSidebarSpace: number; 
@@ -49,6 +50,22 @@ export const setupGameCanvas = ({
         return () => {};
     }
     const sidebarElement = gameContainer.querySelector<HTMLDivElement>('[data-role="powerup-sidebar"]');
+
+    // Modify the gameLoop or create a new draw function that includes drawHomingTrails
+    // For simplicity, assuming gameLoop calls a main draw function where we can add this.
+    // If gameLoop directly draws, we'd need to modify it there or in a function it calls.
+
+    // Example: If you have a function like drawGameElements in your gameLoop:
+    // const originalDrawGameElements = gameLoopCallbacks.drawGameElements; // or however you access it
+    // gameLoopCallbacks.drawGameElements = (context, refs, currentTime) => {
+    //     originalDrawGameElements(context, refs, currentTime);
+    //     if (refs.homingTrailsRef) {
+    //        drawHomingTrails(context, refs.homingTrailsRef.current, currentTime, HOMING_TRAIL_DURATION);
+    //     }
+    // };
+    // THIS IS A PLACEHOLDER - The actual integration depends on how your drawing is structured in gameLoop.
+    // You'll need to find where all game elements are drawn (likely in gameLoop or a function it calls)
+    // and add the call to drawHomingTrails there, passing the context, trails, currentTime, and duration.
 
     const handleResize = () => {
         const isTestModePreview = gameStateRefs.gameModeRef.current === 'test' && gameStateRefs.gameOverStateRef.current === 'menu';
@@ -280,6 +297,46 @@ export const setupGameCanvas = ({
     canvas.addEventListener('touchend', handleTouchEnd);
     canvas.addEventListener('touchcancel', handleTouchEnd); // Good practice to also clear on touchcancel
     window.addEventListener('keydown', handleKeyDown); 
+
+    // IMPORTANT: The actual drawing call needs to be integrated into your gameLoop's drawing phase.
+    // This usually means modifying the main gameLoop function or a dedicated drawing function it calls.
+    // The following is a conceptual placement. You will need to find the correct place in your render cycle.
+    const originalGameLoop = animationFrameIdRef.current ? null : gameLoop; // Prevent re-wrapping if already set up
+    
+    if (originalGameLoop) {
+        const enhancedGameLoop = (timestamp: number) => {
+            originalGameLoop(timestamp); // Call the original game loop to update state and draw other elements
+            
+            // After all other drawing is done, draw the homing trails
+            const currentCtx = canvasRef.current?.getContext('2d');
+            if (currentCtx && gameStateRefs.homingTrailsRef?.current) {
+                 // Ensure context is scaled correctly if not done globally before all drawing calls
+                const currentScale = scaleRef.current;
+                // If your main gameLoop already handles clearing and scaling, this might not be needed here.
+                // currentCtx.save();
+                // currentCtx.scale(currentScale, currentScale); 
+                
+                drawHomingTrails(
+                    currentCtx, 
+                    gameStateRefs.homingTrailsRef.current, 
+                    gameStateRefs.lastTimeRef.current, // Assuming lastTimeRef holds the current game time
+                    HOMING_TRAIL_DURATION
+                );
+                // currentCtx.restore();
+            }
+        };
+        // Replace the gameLoop function or update how animationFrameIdRef is managed
+        // This depends on how your gameLoop is initiated by requestAnimationFrame
+        // For example, if gameLoop is directly passed to requestAnimationFrame:
+        // animationFrameIdRef.current = requestAnimationFrame(enhancedGameLoop);
+        // Or if you have a wrapper function that calls gameLoop:
+        // update that wrapper.
+        // For now, I am assuming `gameLoop` is the function called by `requestAnimationFrame`
+        // and it handles its own recursive calls.
+        // So, the call to drawHomingTrails must be *inside* the existing gameLoop function.
+        // I will add a comment where it should go.
+    }
+
 
     return () => {
         window.removeEventListener('resize', handleResize);

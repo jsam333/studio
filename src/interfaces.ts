@@ -36,6 +36,16 @@ export interface Particle {
     createdAt: number;
 }
 
+export interface HomingTrail {
+  id: number;
+  startX: number;
+  startY: number;
+  endX: number;
+  endY: number;
+  color: string;
+  createdAt: number;
+}
+
 export type PowerUpType =
     'MULTI_BALL' | 'MULTI_BALL_L2' | 'MULTI_BALL_L3' |
     'WIDEN_PADDLE' | 'WIDEN_PADDLE_L2' | 'WIDEN_PADDLE_L3' |
@@ -197,6 +207,7 @@ export interface GameStateRefsBase {
     paddleVisualEffectActiveRef?: React.MutableRefObject<boolean>; 
     paddleVisualEffectStartTimeRef?: React.MutableRefObject<number | null>; 
     laserIntervalRef: React.MutableRefObject<number | null>; // Added this line
+    homingTrailsRef: React.MutableRefObject<HomingTrail[]>; // NEW REF
     // doubleBallEffectActiveRef and doubleBallEffectStartTimeRef are removed from here
 }
 

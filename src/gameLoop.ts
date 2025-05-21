@@ -1,6 +1,6 @@
 // src/gameLoop.ts
 import React from 'react';
-import { Ball, PowerUp, Laser, PowerUpType, PowerUpSpawnEvent, GameMode, Brick, GameState, PointsField, Particle } from './interfaces'; 
+import { Ball, PowerUp, Laser, PowerUpType, PowerUpSpawnEvent, GameMode, Brick, GameState, PointsField, Particle, HomingTrail } from './interfaces'; // Added HomingTrail
 import { GameStateRefs, GameLoopCallbacks } from './interfaces';
 import { updateLasers } from './gameUpdates/laserUpdates';
 import { updateBalls } from './gameUpdates/ballUpdates';
@@ -16,13 +16,15 @@ import {
     BRICK_FLASH_DURATION, BRICK_FADE_SPEED,
     PADDLE_WIDEN_VISUAL_EFFECT_DURATION_MS, PADDLE_WIDEN_VISUAL_EFFECT_AMOUNT,
     BRICK_REGEN_VISUAL_EFFECT_DURATION_MS, BRICK_DARK_FLASH_DURATION_MS,
-    BRICK_SPECIAL_FLASH_DURATION_MS, DOUBLE_BALL_VISUAL_EFFECT_DURATION_MS
+    BRICK_SPECIAL_FLASH_DURATION_MS, DOUBLE_BALL_VISUAL_EFFECT_DURATION_MS,
+    HOMING_TRAIL_DURATION // Added HOMING_TRAIL_DURATION
 } from './constants'; 
 import { 
     drawPaddle, drawBalls, drawBricks, drawGameInfo, 
     drawPowerUps, drawLasers, drawSafetyNet, 
-    drawPowerUpPreviews, // Removed drawCollectionFieldRect
-    drawPointsFields, drawParticles 
+    drawPowerUpPreviews, 
+    drawPointsFields, drawParticles,
+    drawHomingTrails // Added drawHomingTrails
 } from './drawFunctions';
 
 const updatePaddleShrinkTimer = (
@@ -185,6 +187,7 @@ export const gameUpdate = (
     }
 
     const currentTime = Date.now();
+    refs.lastTimeRef.current = currentTime; // Update lastTimeRef for trail duration calculation
     const gameSpeedFactor = refs.gameSpeedFactorRef.current;
     const targetFrameTime = 1000 / TARGET_FPS;
     const scaledDeltaTime = elapsedTime / targetFrameTime;
@@ -194,9 +197,8 @@ export const gameUpdate = (
     const columns = refs.brickColumnsRef.current;
     const rows = refs.brickRowsRef.current;
 
-    // Update per-ball glow effect timers
     updateBallGlowEffects(refs.ballsRef.current, currentTime);
-    updateBallGlowEffects(refs.stuckBallsRef.current, currentTime); // Also for stuck balls
+    updateBallGlowEffects(refs.stuckBallsRef.current, currentTime); 
 
     updateBrickStateAndAnimations(refs.bricksRef.current, columns, rows, currentTime, scaledDeltaTime); 
     updateParticles(refs, currentTime, elapsedTime); 
@@ -208,8 +210,6 @@ export const gameUpdate = (
     if (!isTestPreview) {
         updateBonusGoldTimer(refs, callbacks, elapsedTime);
     }
-
-    // Removed global black ball effect timer update
 
     updateBalls(refs, callbacks, spawnRequestsReusable, currentTime, gameSpeedFactor, scaledDeltaTime, columns, rows); 
     updateLasers(refs, callbacks, spawnRequestsReusable, currentTime, scaledDeltaTime, columns, rows); 
@@ -235,7 +235,6 @@ export const gameUpdate = (
         }
     }
 
-    // Updated drawPaddle call to include collection field parameters
     drawPaddle(
         ctx, 
         visualPaddleX, 
@@ -257,9 +256,7 @@ export const gameUpdate = (
         refs.bonusGoldTimerCountdownRef.current
     );
     drawSafetyNet(ctx, refs.safetyNetCountRef.current);
-    // Removed the old drawCollectionFieldRect call block
 
-    // Updated calls to drawBalls, removing global effect parameters
     if (!refs.isGameStartedRef.current && !isTestPreview) { 
         drawBalls(ctx, [], refs.stuckBallsRef.current, currentTime); 
         if (gameMode === 'main') {
@@ -301,6 +298,16 @@ export const gameUpdate = (
     drawPowerUps(ctx, refs.powerUpsRef.current); 
     drawLasers(ctx, refs.lasersRef.current);
     drawParticles(ctx, refs.particlesRef.current); 
+
+    // Draw Homing Trails
+    if (refs.homingTrailsRef?.current) {
+        drawHomingTrails(
+            ctx,
+            refs.homingTrailsRef.current,
+            currentTime,
+            HOMING_TRAIL_DURATION
+        );
+    }
 
     if (gameSpeedFactor !== BASE_BALL_SPEED_FACTOR) {
         ctx.font = "12px Arial"; ctx.fillStyle = POWER_UP_COLORS['SPEED_UP'] || '#e74c3c'; ctx.textAlign = 'right';

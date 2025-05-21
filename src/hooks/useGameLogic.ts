@@ -7,7 +7,7 @@ import {
     ALL_TOGGLEABLE_POWER_UPS, PADDLE_HEIGHT, BOARD_HEIGHT,
     INITIAL_TEST_POWER_UP_SPAWN_CHANCE, MIN_BALL_SPEED_Y,
 } from '../constants'; 
-import { Ball, PowerUp, Laser, PowerUpType, GameState, GameMode, GameStateRefs as IGameStateRefs, GameLoopCallbacks, PointsField, Particle } from '../interfaces'; // Added Particle
+import { Ball, PowerUp, Laser, PowerUpType, GameState, GameMode, GameStateRefs as IGameStateRefs, GameLoopCallbacks, PointsField, Particle, HomingTrail } from '../interfaces'; // Added Particle, HomingTrail
 import { initialBallState } from '../gameLogic';
 import { useLevelLogic } from './useLevelLogic';
 import { usePaddleLogic } from './usePaddleLogic';
@@ -38,6 +38,7 @@ export function useGameLogic() {
     const ballsRef = useRef<Ball[]>([]);
     const powerUpsRef = useRef<PowerUp[]>([]);
     const particlesRef = useRef<Particle[]>([]); 
+    const homingTrailsRef = useRef<HomingTrail[]>([]); // INITIALIZED HOMING TRAILS REF
     const scoreRef = useRef(0);
     const goldRef = useRef<number>(0);
     const spawnablePowerUpsRef = useRef<Set<PowerUpType>>(new Set());
@@ -47,7 +48,7 @@ export function useGameLogic() {
     const paddleShrinkCountdownRef = useRef<number | null>(null);
     const laserShotsRef = useRef(0);
     const lasersRef = useRef<Laser[]>([]);
-    const laserIntervalRef = useRef<number | null>(null); // Added this line
+    const laserIntervalRef = useRef<number | null>(null); 
     const safetyNetCountRef = useRef(0);
     const gameSpeedFactorRef = useRef<number>(BASE_BALL_SPEED_FACTOR);
     const collectionFieldHeightRef = useRef<number>(FIELD_INITIAL_HEIGHT_OFFSET);
@@ -73,7 +74,6 @@ export function useGameLogic() {
     const testBrickRowsRef = useRef<number>(TEST_DEFAULT_BRICK_ROWS); 
     const paddleVisualEffectActiveRef = useRef<boolean>(false);
     const paddleVisualEffectStartTimeRef = useRef<number | null>(null);
-    // Removed doubleBallEffectActiveRef and doubleBallEffectStartTimeRef
 
     const [gameOverState, setGameOverState] = useState<GameState>('menu');
     const gameOverStateRef = useRef(gameOverState);
@@ -166,11 +166,11 @@ export function useGameLogic() {
             initialBonusGoldDecrementCompleteRef.current = false;
             pointsFieldsRef.current = [];
             particlesRef.current = []; 
+            homingTrailsRef.current = []; // RESET HOMING TRAILS
             levelCompletionProcessedRef.current = false;
             testPreviewInitialLaunchDoneRef.current = false; 
             paddleVisualEffectActiveRef.current = false;
             paddleVisualEffectStartTimeRef.current = null;
-            // Removed reset for doubleBallEffectActiveRef and doubleBallEffectStartTimeRef
             
             gameModeRef.current = mode; 
             setActiveGameMode(mode); 
@@ -236,10 +236,10 @@ export function useGameLogic() {
             initialBonusGoldDecrementCompleteRef.current = false;
             pointsFieldsRef.current = [];
             particlesRef.current = []; 
+            homingTrailsRef.current = []; // RESET HOMING TRAILS
             levelCompletionProcessedRef.current = false;
             paddleVisualEffectActiveRef.current = false;
             paddleVisualEffectStartTimeRef.current = null;
-            // Removed reset for doubleBallEffectActiveRef and doubleBallEffectStartTimeRef
             setGameOverState('playing');
         } else if (gameOverState !== 'playing') {
             paddleShrinkCountdownRef.current = null;
@@ -247,9 +247,9 @@ export function useGameLogic() {
             initialBonusGoldDecrementCompleteRef.current = false;
             pointsFieldsRef.current = [];
             particlesRef.current = []; 
+            homingTrailsRef.current = []; // RESET HOMING TRAILS
             paddleVisualEffectActiveRef.current = false;
             paddleVisualEffectStartTimeRef.current = null;
-            // Removed reset for doubleBallEffectActiveRef and doubleBallEffectStartTimeRef
             if (gameSpeedFactorRef.current !== BASE_BALL_SPEED_FACTOR) {
                  gameSpeedFactorRef.current = BASE_BALL_SPEED_FACTOR;
             }
@@ -319,7 +319,7 @@ export function useGameLogic() {
         testPreviewInitialLaunchDoneRef.current = false; 
         if (collectionFieldShrinkTimerRef.current) clearInterval(collectionFieldShrinkTimerRef.current);
         collectionFieldShrinkTimerRef.current = null;
-        if (laserIntervalRef.current) clearInterval(laserIntervalRef.current); // Clear laser interval on reset
+        if (laserIntervalRef.current) clearInterval(laserIntervalRef.current); 
         laserIntervalRef.current = null;
 
         scoreRef.current = 0;
@@ -331,10 +331,10 @@ export function useGameLogic() {
         initialBonusGoldDecrementCompleteRef.current = false;
         pointsFieldsRef.current = [];
         particlesRef.current = []; 
+        homingTrailsRef.current = []; // RESET HOMING TRAILS
         levelCompletionProcessedRef.current = false;
         paddleVisualEffectActiveRef.current = false;
         paddleVisualEffectStartTimeRef.current = null;
-        // Removed reset for doubleBallEffectActiveRef and doubleBallEffectStartTimeRef
         
         testPowerUpSpawnChanceRef.current = INITIAL_TEST_POWER_UP_SPAWN_CHANCE; 
         setTestPowerUpSpawnChance(INITIAL_TEST_POWER_UP_SPAWN_CHANCE); 
@@ -400,21 +400,18 @@ export function useGameLogic() {
                  currentLaunchY = PADDLE_Y + PADDLE_HEIGHT / 2 + (ball.stuckSideOffset ?? 0);
                  currentLaunchY = Math.min(BOARD_HEIGHT - currentBallSize -1, Math.max(currentBallSize + 1, currentLaunchY));
 
-                // Add random angle and speed variation for Recovery Paddle releases
-                const angleDeviation = (Math.random() - 0.5) * (6 * Math.PI / 180); // +/- 3 degrees in radians
-                const speedMultiplier = 1 + (Math.random() - 0.5) * 0.2; // +/- 10% speed variation
+                const angleDeviation = (Math.random() - 0.5) * (6 * Math.PI / 180); 
+                const speedMultiplier = 1 + (Math.random() - 0.5) * 0.2; 
 
-                const baseSpeed = Math.sqrt(speedX * speedX + speedY * speedY); // Magnitude of initial speed
+                const baseSpeed = Math.sqrt(speedX * speedX + speedY * speedY); 
                 const currentAngle = Math.atan2(speedY, speedX);
 
                 let newAngle = currentAngle + angleDeviation;
                 let newSpeed = baseSpeed * speedMultiplier;
 
-                // Ensure ball goes generally upwards for Recovery Paddle releases
-                // Set newSpeedY to be negative (upwards) and at least MIN_BALL_SPEED_Y magnitude
                 speedX = newSpeed * Math.cos(newAngle);
-                speedY = -Math.abs(newSpeed * Math.sin(newAngle)); // Ensure it's negative for upwards
-                speedY = Math.min(speedY, -MIN_BALL_SPEED_Y); // Ensure minimum upward speed
+                speedY = -Math.abs(newSpeed * Math.sin(newAngle)); 
+                speedY = Math.min(speedY, -MIN_BALL_SPEED_Y); 
 
             } else {
                  currentLaunchX = currentPaddleX + (ball.stuckOffset ?? currentPaddleWidth / 2);
@@ -477,11 +474,11 @@ export function useGameLogic() {
             initialBonusGoldDecrementCompleteRef.current = false;
             pointsFieldsRef.current = [];
             particlesRef.current = []; 
+            homingTrailsRef.current = []; // RESET HOMING TRAILS
             levelCompletionProcessedRef.current = false;
             testPreviewInitialLaunchDoneRef.current = false; 
             paddleVisualEffectActiveRef.current = false;
             paddleVisualEffectStartTimeRef.current = null;
-            // Removed reset for doubleBallEffectActiveRef and doubleBallEffectStartTimeRef
             testPowerUpSpawnChanceRef.current = INITIAL_TEST_POWER_UP_SPAWN_CHANCE; 
             setTestPowerUpSpawnChance(INITIAL_TEST_POWER_UP_SPAWN_CHANCE); 
             testBrickColumnsRef.current = TEST_DEFAULT_BRICK_COLUMNS; 
@@ -536,9 +533,9 @@ export function useGameLogic() {
         initialBonusGoldDecrementCompleteRef.current = false;
         pointsFieldsRef.current = [];
         particlesRef.current = []; 
+        homingTrailsRef.current = []; // RESET HOMING TRAILS
         paddleVisualEffectActiveRef.current = false;
         paddleVisualEffectStartTimeRef.current = null;
-        // Removed reset for doubleBallEffectActiveRef and doubleBallEffectStartTimeRef
         resetLevel(mode, resetScoreAndGold);
         isGameStartedRef.current = false; 
         if (mode === 'test' || (gameModeRef.current === 'test' && mode === null)) { 
@@ -547,7 +544,7 @@ export function useGameLogic() {
     }, [resetLevel]);
 
     const gameStateRefs: IGameStateRefs = useMemo(() => ({
-        paddleXRef, ballsRef, powerUpsRef, particlesRef, scoreRef, goldRef, spawnablePowerUpsRef, 
+        paddleXRef, ballsRef, powerUpsRef, particlesRef, homingTrailsRef, scoreRef, goldRef, spawnablePowerUpsRef, // Added homingTrailsRef
         paddleWidthRef, widenLevelRef, laserShotsRef, lasersRef, safetyNetCountRef,
         gameIsRunningRef, gameOverStateRef, gameSpeedFactorRef,
         collectionFieldHeightRef, collectionFieldWidthOffsetRef,
@@ -575,10 +572,9 @@ export function useGameLogic() {
         testBrickRowsRef, 
         paddleVisualEffectActiveRef, 
         paddleVisualEffectStartTimeRef, 
-        laserIntervalRef, // Added this line
-        // Removed doubleBallEffectActiveRef and doubleBallEffectStartTimeRef from gameStateRefs
+        laserIntervalRef, 
     }), [
-        paddleXRef, ballsRef, powerUpsRef, particlesRef, scoreRef, goldRef, spawnablePowerUpsRef, 
+        paddleXRef, ballsRef, powerUpsRef, particlesRef, homingTrailsRef, scoreRef, goldRef, spawnablePowerUpsRef, // Added homingTrailsRef
         paddleWidthRef, widenLevelRef, laserShotsRef, lasersRef, safetyNetCountRef,
         gameIsRunningRef, gameOverStateRef, gameSpeedFactorRef,
         collectionFieldHeightRef, collectionFieldWidthOffsetRef,
@@ -606,8 +602,7 @@ export function useGameLogic() {
         testBrickRowsRef,
         paddleVisualEffectActiveRef, 
         paddleVisualEffectStartTimeRef,
-        laserIntervalRef, // Added this line to dependency array
-        // Removed doubleBallEffectActiveRef and doubleBallEffectStartTimeRef from dependency array
+        laserIntervalRef, 
     ]);
 
     const drawEndMessageCallback = useCallback((context: CanvasRenderingContext2D, state: GameState, finalScore: number) => {

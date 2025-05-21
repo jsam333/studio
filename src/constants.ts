@@ -39,6 +39,7 @@ export const DOUBLE_BALL_VISUAL_EFFECT_DURATION_MS = 500;
 export const DOUBLE_BALL_GLOW_MAX_RADIUS_ADDITION = 25; // Max additional radius for the glow
 export const BALL_POP_EFFECT_DURATION_MS = 100; // Duration of the pop effect
 export const BALL_POP_EFFECT_SCALE_AMOUNT = 0.3; // Scale factor for the pop effect (0.3 = 30% bigger at peak)
+export const HOMING_TRAIL_DURATION = 500; // NEW CONSTANT: Duration in milliseconds for homing trail
 
 // Bricks
 export const BRICK_ROWS = 20; 
