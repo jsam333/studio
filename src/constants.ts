@@ -134,14 +134,15 @@ export const BONUS_GOLD_TIMER_DURATION = 5000;
 
 // Collection Field
 export const FIELD_INITIAL_HEIGHT_OFFSET = 0;
-export const FIELD_HEIGHT_INCREMENT = 6;
-export const FIELD_MAX_HEIGHT_OFFSET = 25;
+export const FIELD_HEIGHT_INCREMENT = 7;
+export const FIELD_MAX_HEIGHT_OFFSET = 30;
 export const FIELD_INITIAL_WIDTH_OFFSET = 0;
-export const FIELD_WIDTH_INCREMENT = 8;
-export const FIELD_MAX_WIDTH_OFFSET = 45;
+export const FIELD_WIDTH_INCREMENT = 9;
+export const FIELD_MAX_WIDTH_OFFSET = 70;
 export const FIELD_SHRINK_RATE_H = 0.08;
-export const FIELD_SHRINK_RATE_W = 0.07;
+export const FIELD_SHRINK_RATE_W = 0.08;
 export const FIELD_SHRINK_INTERVAL = 16;
+export const FIELD_SHRINK_ACCELERATION_FACTOR = 1.0;
 
 // Points Field
 export const POINTS_FIELD_WIDTH = 50; 

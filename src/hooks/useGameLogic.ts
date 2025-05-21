@@ -6,6 +6,7 @@ import {
     FIELD_SHRINK_RATE_H, FIELD_SHRINK_RATE_W, FIELD_SHRINK_INTERVAL,
     ALL_TOGGLEABLE_POWER_UPS, PADDLE_HEIGHT, BOARD_HEIGHT,
     INITIAL_TEST_POWER_UP_SPAWN_CHANCE, MIN_BALL_SPEED_Y,
+    FIELD_MAX_HEIGHT_OFFSET, FIELD_MAX_WIDTH_OFFSET, FIELD_SHRINK_ACCELERATION_FACTOR // Added imports
 } from '../constants'; 
 import { Ball, PowerUp, Laser, PowerUpType, GameState, GameMode, GameStateRefs as IGameStateRefs, GameLoopCallbacks, PointsField, Particle, HomingTrail } from '../interfaces'; // Added Particle, HomingTrail
 import { initialBallState } from '../gameLogic';
@@ -289,14 +290,21 @@ export function useGameLogic() {
         collectionFieldShrinkTimerRef.current = setInterval(() => {
             let heightChanged = false;
             let widthChanged = false;
+
             if (collectionFieldHeightRef.current > 0) {
-                collectionFieldHeightRef.current = Math.max(0, collectionFieldHeightRef.current - FIELD_SHRINK_RATE_H);
+                const heightRatio = collectionFieldHeightRef.current / FIELD_MAX_HEIGHT_OFFSET;
+                const dynamicShrinkRateH = FIELD_SHRINK_RATE_H * (1 + heightRatio * FIELD_SHRINK_ACCELERATION_FACTOR);
+                collectionFieldHeightRef.current = Math.max(0, collectionFieldHeightRef.current - dynamicShrinkRateH);
                 heightChanged = true;
             }
+
             if (collectionFieldWidthOffsetRef.current > 0) {
-                collectionFieldWidthOffsetRef.current = Math.max(0, collectionFieldWidthOffsetRef.current - FIELD_SHRINK_RATE_W);
+                const widthRatio = collectionFieldWidthOffsetRef.current / FIELD_MAX_WIDTH_OFFSET;
+                const dynamicShrinkRateW = FIELD_SHRINK_RATE_W * (1 + widthRatio * FIELD_SHRINK_ACCELERATION_FACTOR);
+                collectionFieldWidthOffsetRef.current = Math.max(0, collectionFieldWidthOffsetRef.current - dynamicShrinkRateW);
                 widthChanged = true;
             }
+
             if (!heightChanged && !widthChanged && collectionFieldShrinkTimerRef.current) {
                  clearInterval(collectionFieldShrinkTimerRef.current);
                  collectionFieldShrinkTimerRef.current = null;
