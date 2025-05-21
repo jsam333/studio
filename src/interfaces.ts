@@ -63,10 +63,13 @@ export interface PowerUp {
   x: number;
   y: number;
   type: PowerUpType;
-  status: 'falling' | 'collected';
+  status: 'falling' | 'collected' | 'animatingToPaddle'; // Added 'animatingToPaddle'
   id: number;
   timeCreated?: number;
   speedY?: number;
+  animationStartTime?: number; // For animation towards paddle
+  startX?: number;             // Start X for animation
+  startY?: number;             // Start Y for animation
 }
 
 export interface Ball {

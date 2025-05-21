@@ -11,7 +11,7 @@ import {
 export const drawPowerUps = (ctx: CanvasRenderingContext2D, powerUps: PowerUp[]) => {
     const currentTime = Date.now();
     powerUps.forEach(powerUp => {
-        if (powerUp.status === 'falling') {
+        if (powerUp.status === 'falling' || powerUp.status === 'animatingToPaddle') { // Modified condition
             let imageToDraw: HTMLImageElement | null = null;
             const baseType = getBasePowerUpType(powerUp.type);
 
