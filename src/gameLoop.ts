@@ -21,7 +21,7 @@ import {
 import { 
     drawPaddle, drawBalls, drawBricks, drawGameInfo, 
     drawPowerUps, drawLasers, drawSafetyNet, 
-    drawCollectionFieldRect, drawPowerUpPreviews, 
+    drawPowerUpPreviews, // Removed drawCollectionFieldRect
     drawPointsFields, drawParticles 
 } from './drawFunctions';
 
@@ -235,7 +235,16 @@ export const gameUpdate = (
         }
     }
 
-    drawPaddle( ctx, visualPaddleX, visualPaddleWidth, refs.laserShotsRef.current, refs.stickyPaddleChargesRef.current );
+    // Updated drawPaddle call to include collection field parameters
+    drawPaddle(
+        ctx, 
+        visualPaddleX, 
+        visualPaddleWidth, 
+        refs.laserShotsRef.current, 
+        refs.stickyPaddleChargesRef.current,
+        refs.collectionFieldHeightRef.current, 
+        refs.collectionFieldWidthOffsetRef.current
+    );
     drawPointsFields(ctx, refs.pointsFieldsRef.current); 
     drawGameInfo(
         ctx,
@@ -248,9 +257,7 @@ export const gameUpdate = (
         refs.bonusGoldTimerCountdownRef.current
     );
     drawSafetyNet(ctx, refs.safetyNetCountRef.current);
-    if (refs.collectionFieldHeightRef.current > 0 || refs.collectionFieldWidthOffsetRef.current > 0) {
-        drawCollectionFieldRect(ctx, refs.paddleXRef.current, refs.paddleWidthRef.current, refs.collectionFieldHeightRef.current, refs.collectionFieldWidthOffsetRef.current);
-    }
+    // Removed the old drawCollectionFieldRect call block
 
     // Updated calls to drawBalls, removing global effect parameters
     if (!refs.isGameStartedRef.current && !isTestPreview) { 
