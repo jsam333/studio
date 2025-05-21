@@ -6,7 +6,7 @@ import { createNewBall, findClosestBrick } from './gameLoopUtils';
 // Removed hexToRgb and lightenRgb imports as they are no longer needed for white particles
 import {
     BOARD_WIDTH, BOARD_HEIGHT, PADDLE_Y, BALL_SIZE, MAX_BALL_SPEED_X, SAFETY_NET_HEIGHT,
-    BIG_BALL_SIZE_INCREASE, BRICK_WIDTH, BRICK_HEIGHT, PADDLE_HEIGHT, BASE_BALL_SPEED_FACTOR,
+    BIG_BALL_SIZE_INCREASE, PADDLE_HEIGHT, BASE_BALL_SPEED_FACTOR,
     PADDLE_SIDE_SAVE_THRESHOLD,
     POINTS_FIELD_DURATION, 
     ZIP_TO_PADDLE_DURATION,
@@ -209,8 +209,8 @@ export const updateBalls = (
                         if (ball.isHoming) {
                             const closestBrick = findClosestBrick(ball, refs.bricksRef.current, columns, rows);
                             if (closestBrick) {
-                                const targetX = closestBrick.x + BRICK_WIDTH / 2;
-                                const targetY = closestBrick.y + BRICK_HEIGHT / 2;
+                                const targetX = closestBrick.x + closestBrick.width / 2; // MODIFIED
+                                const targetY = closestBrick.y + closestBrick.height / 2; // MODIFIED
                                 const dX = targetX - ball.x;
                                 const dY = targetY - ball.y; // dY will be negative
 
