@@ -16,7 +16,7 @@ export const PADDLE_Y = BOARD_HEIGHT - PADDLE_HEIGHT;
 export const PADDLE_SPEED = 7;
 export const PADDLE_FRICTION = 0.9;
 export const PADDLE_EDGE_STICK_THRESHOLD = 0.15; // 15% of paddle width from edge for top-sticking
-export const PADDLE_SIDE_SAVE_THRESHOLD = 120; // Pixels from paddle side to trigger bottom save
+export const PADDLE_SIDE_SAVE_THRESHOLD = 180; // Pixels from paddle side to trigger bottom save
 export const PADDLE_WIDEN_VISUAL_EFFECT_DURATION_MS = 100; 
 export const PADDLE_WIDEN_VISUAL_EFFECT_AMOUNT = 6; // Total visual expansion
 
