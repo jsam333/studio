@@ -51,11 +51,11 @@ export const drawCollectionFieldRect = (
     fieldWidthOffset: number
 ) => {
     if (fieldHeightOffset <= 0 && fieldWidthOffset <= 0) return;
+
     const fieldTopY = PADDLE_Y - fieldHeightOffset;
     const fieldX = paddleX - fieldWidthOffset;
     const fieldWidth = paddleWidth + (fieldWidthOffset * 2);
-    const fieldHeight = fieldHeightOffset;
-    const paddleTopY = PADDLE_Y;
+
     ctx.save();
     const fieldColor = POWER_UP_COLORS['COLLECTION_FIELD'] || '#2ecc71';
     let r = 0, g = 0, b = 0;
@@ -67,22 +67,18 @@ export const drawCollectionFieldRect = (
     ctx.fillStyle = `rgba(${r}, ${g}, ${b}, 0.15)`;
     ctx.strokeStyle = `rgba(${r}, ${g}, ${b}, 0.4)`;
     ctx.lineWidth = 1;
+
+    // NEW MERGED DRAWING LOGIC
+    // The rectangle's height will be the sum of the paddle's height and the offset above the paddle.
+    const singleRectHeight = PADDLE_HEIGHT + fieldHeightOffset;
+
     ctx.beginPath();
-    if (fieldHeight > 0) { ctx.rect(fieldX, fieldTopY, fieldWidth, fieldHeight); }
-    if (fieldWidthOffset > 0) { ctx.rect(fieldX, paddleTopY, fieldWidthOffset, PADDLE_HEIGHT); ctx.rect(paddleX + paddleWidth, paddleTopY, fieldWidthOffset, PADDLE_HEIGHT); }
+    // Draw the single encompassing rectangle using fieldX, fieldTopY, fieldWidth, and singleRectHeight
+    ctx.rect(fieldX, fieldTopY, fieldWidth, singleRectHeight);
     ctx.fill();
+    ctx.stroke(); 
     ctx.closePath();
-    if (fieldHeight > 0) { ctx.strokeRect(fieldX, fieldTopY, fieldWidth, fieldHeight); }
-    if (fieldWidthOffset > 0) {
-        ctx.beginPath();
-        ctx.moveTo(fieldX, paddleTopY + PADDLE_HEIGHT);
-        ctx.lineTo(fieldX, paddleTopY);
-        if (fieldHeight <= 0) ctx.lineTo(fieldX + fieldWidthOffset, paddleTopY);
-        ctx.moveTo(paddleX + paddleWidth, paddleTopY);
-        if (fieldHeight <= 0) ctx.lineTo(paddleX + paddleWidth + fieldWidthOffset, paddleTopY);
-        ctx.lineTo(paddleX + paddleWidth + fieldWidthOffset, paddleTopY + PADDLE_HEIGHT);
-        ctx.stroke();
-        ctx.closePath();
-    }
+    // END OF NEW MERGED DRAWING LOGIC
+
     ctx.restore();
 };
