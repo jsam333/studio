@@ -84,18 +84,29 @@ export const applyBallEffects = (
         case 'BUILDER_BALL':
         case 'BUILDER_BALL_L2':
         case 'BUILDER_BALL_L3': {
-            const eligibleBalls = refs.ballsRef.current.filter(
-                b => !b.isDouble && !b.isBlue && (!b.pierceHitsRemaining || b.pierceHitsRemaining <= 0)
-            );
-            const ballsToModify = eligibleBalls.slice(0, numToAffect);
-            ballsToModify.forEach(ball => {
-                ball.isBlue = true;
-                ball.blueEndTime = currentTime + BUILDER_BALL_DURATION; 
-                ball.isDouble = false; ball.doubleEndTime = undefined;
-                ball.pierceHitsRemaining = 0;
-                ball.isGlowEffectActive = true;
-                ball.glowEffectStartTime = currentTime;
-            });
+            let numberOfBallsToSpawn = 1;
+            if (type === 'BUILDER_BALL_L2') {
+                numberOfBallsToSpawn = 2;
+            } else if (type === 'BUILDER_BALL_L3') {
+                numberOfBallsToSpawn = 3;
+            }
+            for (let i = 0; i < numberOfBallsToSpawn; i++) {
+                let sx = (Math.random() - 0.5) * 6;
+                let sy = -3 - Math.random() * 2;
+                const newBall = createNewBall(
+                    refs.paddleXRef.current + refs.paddleWidthRef.current / 2 + (Math.random() - 0.5) * 10,
+                    BOARD_HEIGHT - PADDLE_HEIGHT - BALL_SIZE - 5,
+                    sx, sy, BASE_BALL_SPEED_FACTOR
+                );
+                newBall.isBlue = true;
+                newBall.blueEndTime = currentTime + BUILDER_BALL_DURATION;
+                newBall.isDouble = false; 
+                newBall.doubleEndTime = undefined;
+                newBall.pierceHitsRemaining = 0;
+                newBall.isGlowEffectActive = true;
+                newBall.glowEffectStartTime = currentTime;
+                refs.ballsRef.current.push(newBall);
+            }
             break;
         }
         case 'DOUBLE_BALL':
