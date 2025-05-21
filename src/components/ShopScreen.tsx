@@ -8,7 +8,8 @@ import {
     POWER_UP_DESCRIPTIONS,
     POWER_UP_IMAGE_PATHS,
     BASE_SHOP_WIDTH,
-    BASE_SHOP_HEIGHT
+    BASE_SHOP_HEIGHT,
+    POWER_UP_REROLL_COST
 } from '../constants';
 import { shuffleArray } from '../utils/helpers';
 import { calculateBaseSpawnChance } from '../gameUpdates/gameLoopUtils';
@@ -115,20 +116,24 @@ export const ShopScreen: React.FC<ShopScreenProps> = ({
     return () => window.removeEventListener('resize', updateScaleFactor);
   }, [updateScaleFactor]);
 
-  useEffect(() => {
+  const generateShopItems = useCallback(() => {
     const ownedPowerUps = gameStateRefs.spawnablePowerUpsRef.current;
     let potentialShopPool = ALL_TOGGLEABLE_POWER_UPS.filter(p => p !== 'ALL_IN_ONE');
     potentialShopPool = shuffleArray(potentialShopPool);
     const currentShopSelection = potentialShopPool.slice(0, SHOP_ITEMS_COUNT);
     setShopItems(currentShopSelection);
-    setPurchasedInSession(new Map());
+    setPurchasedInSession(new Map()); // Reset purchases when items reroll
+  }, [gameStateRefs.spawnablePowerUpsRef]);
+
+  useEffect(() => {
+    generateShopItems();
     setGoldDisplay(gameStateRefs.goldRef.current);
-    const chance = calculateBaseSpawnChance(ownedPowerUps, 'main');
+    const chance = calculateBaseSpawnChance(gameStateRefs.spawnablePowerUpsRef.current, 'main');
     setCurrentSpawnChance(chance);
-    setDisplaySpawnablePowerUps(Array.from(ownedPowerUps).sort());
+    setDisplaySpawnablePowerUps(Array.from(gameStateRefs.spawnablePowerUpsRef.current).sort());
     setKnownPowerUps(getPowerUpsFromLocalStorage());
     setHighestLevelReachedByPlayer(getHighestLevel());
-  }, [gameStateRefs.goldRef, gameStateRefs.spawnablePowerUpsRef]);
+  }, [gameStateRefs.goldRef, gameStateRefs.spawnablePowerUpsRef, generateShopItems]);
 
   useEffect(() => {
     const nextLevelVal = currentLevel + 1;
@@ -204,6 +209,17 @@ export const ShopScreen: React.FC<ShopScreenProps> = ({
     const newChance = calculateBaseSpawnChance(gameStateRefs.spawnablePowerUpsRef.current, 'main');
     setCurrentSpawnChance(newChance);
     setDisplaySpawnablePowerUps(Array.from(gameStateRefs.spawnablePowerUpsRef.current).sort());
+  };
+
+  const handleReroll = () => {
+    if (gameStateRefs.goldRef.current >= POWER_UP_REROLL_COST) {
+        gameStateRefs.goldRef.current -= POWER_UP_REROLL_COST;
+        setGoldDisplay(gameStateRefs.goldRef.current);
+        generateShopItems(); // This will generate new items and reset purchasedInSession
+    } else {
+        // Optionally, provide feedback that the player doesn't have enough gold
+        console.log("Not enough gold to reroll.");
+    }
   };
 
   const handleStartNextLevel = () => {
@@ -329,6 +345,14 @@ export const ShopScreen: React.FC<ShopScreenProps> = ({
                     >
                         Gold: {goldDisplay}
                     </p>
+                    <Button
+                        onClick={handleReroll}
+                        disabled={goldDisplay < POWER_UP_REROLL_COST}
+                        className="text-white bg-blue-600 hover:bg-blue-500 border border-white disabled:opacity-50"
+                        style={{fontSize: scaled.fontSize(14), padding: `${scaled.py(4)}px ${scaled.px(8)}px`}}
+                    >
+                        Reroll ({POWER_UP_REROLL_COST} Gold)
+                    </Button>
                     <p
                         className="text-blue-300"
                         style={{

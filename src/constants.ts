@@ -203,9 +203,9 @@ export const POWER_UP_COSTS: { [key in PowerUpType]?: number } = {
     UPGRADE_BRICK: 10,
     UPGRADE_BRICK_L2: 12,
     UPGRADE_BRICK_L3: 14,
-    BUILDER_BALL: 12,
-    BUILDER_BALL_L2: 14,
-    BUILDER_BALL_L3: 16,
+    BUILDER_BALL: 13,
+    BUILDER_BALL_L2: 15,
+    BUILDER_BALL_L3: 18,
     BIG_BALL: 12,
     BIG_BALL_L2: 14,
     BIG_BALL_L3: 17,
@@ -233,6 +233,8 @@ export const POWER_UP_COSTS: { [key in PowerUpType]?: number } = {
     ALL_IN_ONE: 100, 
     NONE: 0
 };
+
+export const POWER_UP_REROLL_COST = 5;
 
 export const POWER_UP_DESCRIPTIONS: { [key in PowerUpType | string]?: string } = {
     MULTI_BALL: "Spawns a new ball at the paddle.",
