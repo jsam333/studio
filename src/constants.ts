@@ -135,7 +135,7 @@ export const BONUS_GOLD_TIMER_DURATION = 5000;
 // Collection Field
 export const FIELD_INITIAL_HEIGHT_OFFSET = 0;
 export const FIELD_HEIGHT_INCREMENT = 7;
-export const FIELD_MAX_HEIGHT_OFFSET = 30;
+export const FIELD_MAX_HEIGHT_OFFSET = 40;
 export const FIELD_INITIAL_WIDTH_OFFSET = 0;
 export const FIELD_WIDTH_INCREMENT = 9;
 export const FIELD_MAX_WIDTH_OFFSET = 70;
