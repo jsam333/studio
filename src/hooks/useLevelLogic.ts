@@ -94,21 +94,21 @@ export const getLevelStats = (level: number, gameMode: GameMode | null, testBric
 
     let scoreGoal = count;
     if (gameMode === 'main') {
-        if (level === 6) { scoreGoal += 3; }
-        else if (level === 7) { scoreGoal += 8; }
-        else if (level === 8) { scoreGoal += 16; }
-        else if (level === 9) { scoreGoal += 26; }
-        else if (level === 10) { scoreGoal += 39; }
-        else if (level === 11) { scoreGoal += 61; }
-        else if (level === 12) { scoreGoal += 89; }
-        else if (level === 13) { scoreGoal += 125; }
-        else if (level === 14) { scoreGoal += 170; }
-        else if (level === 15) { scoreGoal += 216; }
-        else if (level === 16) { scoreGoal += 298; } // Updated for level 16
-        else if (level === 17) { scoreGoal += 399; } // Updated for level 17
-        else if (level === 18) { scoreGoal += 500; } // Updated for level 18
-        else if (level === 19) { scoreGoal += 670; } // Updated for level 19
-        else if (level >= 20) { scoreGoal += 894; } // Updated for level 20 and above
+        if (level === 6) { scoreGoal += 2; } // Updated
+        else if (level === 7) { scoreGoal += 6; } // Updated
+        else if (level === 8) { scoreGoal += 13; } // Updated
+        else if (level === 9) { scoreGoal += 21; } // Updated
+        else if (level === 10) { scoreGoal += 31; } // Updated
+        else if (level === 11) { scoreGoal += 49; } // Updated
+        else if (level === 12) { scoreGoal += 71; } // Updated
+        else if (level === 13) { scoreGoal += 100; } // Updated
+        else if (level === 14) { scoreGoal += 136; } // Updated
+        else if (level === 15) { scoreGoal += 173; } // Updated
+        else if (level === 16) { scoreGoal += 238; } // Updated
+        else if (level === 17) { scoreGoal += 319; } // Updated
+        else if (level === 18) { scoreGoal += 400; } // Updated
+        else if (level === 19) { scoreGoal += 536; } // Updated
+        else if (level >= 20) { scoreGoal += 715; } // Updated for level 20 and above
     }
     return { totalBricks: count, targetScore: scoreGoal };
 };
@@ -173,7 +173,7 @@ export function useLevelLogic({
 
         const currentLevel = currentLevelRef.current;
         const baseDelay = 5000;
-        const incrementPerLevel = 900;
+        const incrementPerLevel = 1000;
         let startDelay = baseDelay + (currentLevel - 1) * incrementPerLevel;
 
         const maxDelayForLevel20 = baseDelay + (20 - 1) * incrementPerLevel;
