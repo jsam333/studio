@@ -121,6 +121,11 @@ export interface Ball {
   // For big ball pop effect
   isPopEffectActive?: boolean;
   popEffectStartTime?: number;
+
+  // For homing speed boost
+  originalSpeedX?: number;
+  originalSpeedY?: number;
+  isHomingSpeedActive?: boolean;
 }
 
 export type SpawnMarker = 'PENDING' | 'SPAWN_SPECIAL' | 'SPAWN_BALL' | 'NONE';

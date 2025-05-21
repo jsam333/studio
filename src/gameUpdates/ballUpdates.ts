@@ -13,8 +13,7 @@ import {
     PARTICLE_SPEED_FACTOR,
     POWER_UP_COLORS, // Added POWER_UP_COLORS
     SPLITTING_BALL_PARTICLE_SIZE,
-    DOUBLE_BALL_DURATION,
-    HOMING_TRAIL_DURATION // Added HOMING_TRAIL_DURATION
+    HOMING_TRAIL_DURATION
 } from '../constants';
 
 export const updateBalls = (
@@ -31,8 +30,7 @@ export const updateBalls = (
     let ballsToAdd: Ball[] = [];
     let ballsToRemoveIds = new Set<number>();
 
-    // Update and filter homing trails
-    if (refs.homingTrailsRef) { // Ensure ref is initialized
+    if (refs.homingTrailsRef) {
         refs.homingTrailsRef.current = refs.homingTrailsRef.current.filter(
             trail => currentTime - trail.createdAt < HOMING_TRAIL_DURATION
         );
@@ -46,7 +44,7 @@ export const updateBalls = (
                 ? refs.paddleXRef.current - sideOffset
                 : refs.paddleXRef.current + refs.paddleWidthRef.current + sideOffset;
             stuckBall.y = PADDLE_Y + PADDLE_HEIGHT / 2 + (stuckBall.stuckSideOffset ?? -PADDLE_HEIGHT / 2);
-        } else { 
+        } else {
             const offset = stuckBall.stuckOffset ?? refs.paddleWidthRef.current / 2;
             stuckBall.x = refs.paddleXRef.current + offset;
             stuckBall.y = PADDLE_Y - currentBallSize;
@@ -55,11 +53,10 @@ export const updateBalls = (
 
     const isTestModePreview = refs.gameModeRef.current === 'test' && refs.gameOverStateRef.current === 'menu';
 
-    if (refs.isGameStartedRef.current || isTestModePreview) { 
+    if (refs.isGameStartedRef.current || isTestModePreview) {
         for (let i = 0; i < refs.ballsRef.current.length; i++) {
             const ball = refs.ballsRef.current[i];
-            let processNormalUpdate = true; 
-
+            let processNormalUpdate = true;
             const currentBallSize = ball.isBig ? BALL_SIZE + BIG_BALL_SIZE_INCREASE : BALL_SIZE;
 
             if (ball.isZipping) {
@@ -69,27 +66,27 @@ export const updateBalls = (
                         const progress = elapsedZipTime / ZIP_TO_PADDLE_DURATION;
                         ball.x = ball.initialZipX + (ball.zipTargetX - ball.initialZipX) * progress;
                         ball.y = ball.initialZipY + (ball.zipTargetY - ball.initialZipY) * progress;
-                        processNormalUpdate = false; 
+                        processNormalUpdate = false;
                     } else {
                         ball.x = ball.zipTargetX;
                         ball.y = ball.zipTargetY;
                         ball.isZipping = false;
                         ball.stuckSide = ball.targetStuckSideValue;
-                        ball.stuckSideOffset = -PADDLE_HEIGHT / 2; 
+                        ball.stuckSideOffset = -PADDLE_HEIGHT / 2;
                         ball.speedX = 0;
                         ball.speedY = 0;
-                        ball.stuckOffset = undefined; 
+                        ball.stuckOffset = undefined;
                         refs.stuckBallsRef.current.push(ball);
                         ballsToRemoveIds.add(ball.id);
                         processNormalUpdate = false;
                     }
                 } else {
-                    ball.isZipping = false; 
+                    ball.isZipping = false;
                 }
             }
 
             if (processNormalUpdate) {
-                if (ball.stuckOffset === undefined && !ball.stuckSide) { 
+                if (ball.stuckOffset === undefined && !ball.stuckSide) {
                     if (ball.isDouble && ball.doubleEndTime && currentTime >= ball.doubleEndTime) { ball.isDouble = false; ball.doubleEndTime = undefined; }
                     if (ball.isBlue && ball.blueEndTime && currentTime >= ball.blueEndTime) { ball.isBlue = false; ball.blueEndTime = undefined; }
                     if (ball.isBig && ball.bigEndTime && currentTime >= ball.bigEndTime) { ball.isBig = false; ball.bigEndTime = undefined; }
@@ -99,15 +96,41 @@ export const updateBalls = (
                 let currentSpeedX = ball.speedX;
                 let currentSpeedY = ball.speedY;
 
-                const brickCollisionResult = checkBrickCollision(ball, refs.bricksRef.current, columns, rows, deltaTime, refs, currentTime); 
+                const brickCollisionResult = checkBrickCollision(ball, refs.bricksRef.current, columns, rows, deltaTime, refs, currentTime);
                 if (brickCollisionResult.collision) {
                     currentSpeedX = brickCollisionResult.newSpeedX;
                     currentSpeedY = brickCollisionResult.newSpeedY;
+
+                    if (ball.isHomingSpeedActive && ball.originalSpeedX !== undefined && ball.originalSpeedY !== undefined) {
+                        const currentMagnitude = Math.sqrt(currentSpeedX * currentSpeedX + currentSpeedY * currentSpeedY);
+                        const originalMagnitude = Math.sqrt(ball.originalSpeedX * ball.originalSpeedX + ball.originalSpeedY * ball.originalSpeedY);
+
+                        if (currentMagnitude > 0 && originalMagnitude > 0) { // Avoid division by zero
+                            const factor = originalMagnitude / currentMagnitude;
+                            currentSpeedX *= factor;
+                            currentSpeedY *= factor;
+                        }
+                        // If currentMagnitude is 0, it means the ball stopped, perhaps due to a specific brick type.
+                        // In this case, we might want to revert to originalSpeedX/Y directly or handle it differently.
+                        // For now, if it stopped, it remains stopped unless originalMagnitude was also 0.
+                        else if (currentMagnitude === 0 && originalMagnitude > 0) {
+                            // This case is unlikely with normal brick ricochet but could happen with special bricks.
+                            // Defaulting to a fraction of original speed in the last direction or a default upward bounce.
+                            // For simplicity, let's use originalSpeedX and a negated originalSpeedY if it was moving downwards.
+                            currentSpeedX = ball.originalSpeedX; 
+                            currentSpeedY = ball.originalSpeedY > 0 ? -ball.originalSpeedY : ball.originalSpeedY; // Attempt to bounce up if it was going down
+                        }
+
+
+                        ball.isHomingSpeedActive = false;
+                        ball.originalSpeedX = undefined;
+                        ball.originalSpeedY = undefined;
+                    }
+
                     if (brickCollisionResult.pierceOccurred) { /* Speed unchanged */ }
                     else if (ball.isSplitting && brickCollisionResult.brickHit) {
                         const newBallSpeedX = -brickCollisionResult.newSpeedX;
                         const newBallSpeedY = -brickCollisionResult.newSpeedY;
-                        
                         const newBall = createNewBall(ball.x, ball.y, newBallSpeedX, newBallSpeedY, 1.0);
                         const speedMagnitude = Math.sqrt(brickCollisionResult.newSpeedX**2 + brickCollisionResult.newSpeedY**2);
                         if (speedMagnitude > 0) {
@@ -115,27 +138,22 @@ export const updateBalls = (
                             newBall.y -= (brickCollisionResult.newSpeedY / speedMagnitude) * 2 * currentBallSize;
                         }
                         ballsToAdd.push(newBall);
-
                         const numParticles = 5;
-                        const particleSpeedBase = Math.sqrt(newBallSpeedX**2 + newBallSpeedY**2) * (PARTICLE_SPEED_FACTOR || 0.8); 
-                        const finalParticleColor = '#FFFFFF'; 
-
+                        const particleSpeedBase = Math.sqrt(newBallSpeedX**2 + newBallSpeedY**2) * (PARTICLE_SPEED_FACTOR || 0.8);
+                        const finalParticleColor = '#FFFFFF';
                         for (let k = 0; k < numParticles; k++) {
-                            const angleOffset = (Math.random() - 0.5) * (Math.PI / 4); 
+                            const angleOffset = (Math.random() - 0.5) * (Math.PI / 4);
                             const newAngle = Math.atan2(newBallSpeedY, newBallSpeedX) + angleOffset;
-                            const particleSpeed = particleSpeedBase * (0.8 + Math.random() * 0.4); 
-
+                            const particleSpeed = particleSpeedBase * (0.8 + Math.random() * 0.4);
                             const particle: Particle = {
-                                id: Date.now() + Math.random(), // Ensure unique ID
-                                x: ball.x,
-                                y: ball.y,
+                                id: Date.now() + Math.random(),
+                                x: ball.x, y: ball.y,
                                 speedX: Math.cos(newAngle) * particleSpeed,
                                 speedY: Math.sin(newAngle) * particleSpeed,
-                                lifespan: (PARTICLE_LIFESPAN || 300) * (0.8 + Math.random() * 0.4), 
+                                lifespan: (PARTICLE_LIFESPAN || 300) * (0.8 + Math.random() * 0.4),
                                 color: finalParticleColor,
-                                size: SPLITTING_BALL_PARTICLE_SIZE || 2, 
-                                createdAt: currentTime,
-                                alpha: 1
+                                size: SPLITTING_BALL_PARTICLE_SIZE || 2,
+                                createdAt: currentTime, alpha: 1
                             };
                             refs.particlesRef.current.push(particle);
                         }
@@ -161,42 +179,39 @@ export const updateBalls = (
                     currentSpeedY = -currentSpeedY;
                     nextY = currentBallSize + overshoot;
                 }
-                else if (nextY + currentBallSize > BOARD_HEIGHT) { 
+                else if (nextY + currentBallSize > BOARD_HEIGHT) {
                     let stickToSide: 'left' | 'right' | null = null;
                     const paddleCenterX = paddleLeft + refs.paddleWidthRef.current / 2;
-
-                    if (nextX < paddleCenterX) { 
-                        if (Math.abs(nextX - paddleLeft) < PADDLE_SIDE_SAVE_THRESHOLD) {
-                            stickToSide = 'left';
-                        }
-                    } else { 
-                        if (Math.abs(nextX - paddleRight) < PADDLE_SIDE_SAVE_THRESHOLD) {
-                            stickToSide = 'right';
-                        }
+                    if (nextX < paddleCenterX) {
+                        if (Math.abs(nextX - paddleLeft) < PADDLE_SIDE_SAVE_THRESHOLD) stickToSide = 'left';
+                    } else {
+                        if (Math.abs(nextX - paddleRight) < PADDLE_SIDE_SAVE_THRESHOLD) stickToSide = 'right';
                     }
-
-                    if (refs.stickyPaddleChargesRef.current > 0 && !ball.isBig && stickToSide) { 
+                    if (refs.stickyPaddleChargesRef.current > 0 && !ball.isBig && stickToSide) {
                         refs.stickyPaddleChargesRef.current--;
                         ball.isZipping = true;
                         ball.zipStartTime = currentTime;
-                        ball.initialZipX = ball.x; 
-                        ball.initialZipY = ball.y;
+                        ball.initialZipX = ball.x; ball.initialZipY = ball.y;
                         ball.targetStuckSideValue = stickToSide;
                         const sideOffset = currentBallSize;
                         ball.zipTargetX = stickToSide === 'left' ? paddleLeft - sideOffset : paddleRight + sideOffset;
-                        ball.zipTargetY = PADDLE_Y; 
-                        ball.speedX = 0; ball.speedY = 0; 
-                        if (ball.isHoming) { ball.isHoming = false; }
+                        ball.zipTargetY = PADDLE_Y;
+                        ball.speedX = 0; ball.speedY = 0;
+                        if (ball.isHoming) ball.isHoming = false;
+                        if (ball.isHomingSpeedActive) {
+                            ball.isHomingSpeedActive = false;
+                            ball.originalSpeedX = undefined; ball.originalSpeedY = undefined;
+                        }
                         if (ball.isDouble && ball.doubleEndTime) { ball.doublePausedDuration = ball.doubleEndTime - currentTime; ball.doubleEndTime = undefined; }
                         if (ball.isBlue && ball.blueEndTime) { ball.bluePausedDuration = ball.blueEndTime - currentTime; ball.blueEndTime = undefined; }
                         if (ball.isSplitting && ball.splittingEndTime) { ball.splittingPausedDuration = ball.splittingEndTime - currentTime; ball.splittingEndTime = undefined; }
-                        processNormalUpdate = false; 
-                    } else if (refs.safetyNetCountRef.current > 0) { 
+                        processNormalUpdate = false;
+                    } else if (refs.safetyNetCountRef.current > 0) {
                         currentSpeedY = -Math.abs(currentSpeedY);
                         ball.y = BOARD_HEIGHT - currentBallSize - refs.safetyNetCountRef.current * SAFETY_NET_HEIGHT;
-                        refs.safetyNetCountRef.current--; 
-                        nextY = ball.y + currentSpeedY * deltaTime; 
-                    } else { 
+                        refs.safetyNetCountRef.current--;
+                        nextY = ball.y + currentSpeedY * deltaTime;
+                    } else {
                         ballsToRemoveIds.add(ball.id);
                         processNormalUpdate = false;
                     }
@@ -204,53 +219,67 @@ export const updateBalls = (
                 else if (currentSpeedY > 0 && ball.y + currentBallSize <= PADDLE_Y && nextY + currentBallSize > PADDLE_Y) {
                     const timeToPaddleY = (PADDLE_Y - (ball.y + currentBallSize)) / effectiveSpeedY;
                     const collisionX = ball.x + effectiveSpeedX * timeToPaddleY;
-
                     if (collisionX + currentBallSize > paddleLeft && collisionX - currentBallSize < paddleRight) {
                         const paddleImpactX = collisionX;
                         const paddleImpactY = PADDLE_Y - currentBallSize;
                         ball.y = paddleImpactY;
-                        
-                        const incomingSpeedX = currentSpeedX; 
-                        const incomingSpeedY = currentSpeedY; 
-                        
-                        currentSpeedY = -Math.abs(incomingSpeedY); 
+                        const incomingSpeedX = currentSpeedX;
+                        const incomingSpeedY = currentSpeedY;
+                        currentSpeedY = -Math.abs(incomingSpeedY);
 
                         if (ball.isHoming) {
                             const closestBrick = findClosestBrick(ball, refs.bricksRef.current, columns, rows);
                             if (closestBrick) {
                                 const targetX = closestBrick.x + closestBrick.width / 2;
                                 const targetY = closestBrick.y + closestBrick.height / 2;
-                                
-                                // Create homing trail
                                 if (refs.homingTrailsRef) {
-                                    const trail: HomingTrail = {
+                                    refs.homingTrailsRef.current.push({
                                         id: Date.now() + Math.random(),
-                                        startX: paddleImpactX,
-                                        startY: paddleImpactY,
-                                        endX: targetX,
-                                        endY: targetY,
-                                        color: POWER_UP_COLORS.HOMING_BALL || '#DAA520', // Fallback color
+                                        startX: paddleImpactX, startY: paddleImpactY,
+                                        endX: targetX, endY: targetY,
+                                        color: POWER_UP_COLORS.HOMING_BALL || '#DAA520',
                                         createdAt: currentTime,
-                                    };
-                                    refs.homingTrailsRef.current.push(trail);
+                                    });
                                 }
-
                                 const dX = targetX - ball.x;
-                                const dY = targetY - ball.y; 
+                                const dY = targetY - ball.y;
+                                if (dY !== 0) {
+                                    // Store the speed *after* normal paddle reflection but *before* homing direction change
+                                    ball.originalSpeedX = incomingSpeedX; // Speed X before homing adjustment
+                                    ball.originalSpeedY = -Math.abs(incomingSpeedY); // Speed Y after normal paddle bounce
+                                    ball.isHomingSpeedActive = true;
 
-                                if (dY !== 0) { 
-                                    currentSpeedX = (dX / dY) * currentSpeedY;
-                                    currentSpeedX = Math.max(-currentMaxBallSpeedX, Math.min(currentMaxBallSpeedX, currentSpeedX));
+                                    let newSpeedX = (dX / dY) * currentSpeedY; // currentSpeedY is already reflected and pointing upwards
+                                    let newSpeedY = currentSpeedY;
+
+                                    // Calculate the magnitude of the original speed (after paddle bounce)
+                                    const baseMagnitude = Math.sqrt(ball.originalSpeedX * ball.originalSpeedX + ball.originalSpeedY * ball.originalSpeedY);
+                                    const targetMagnitude = baseMagnitude * 3;
+
+                                    // Calculate the magnitude of the new direction vector (towards the brick)
+                                    const homingDirectionMagnitude = Math.sqrt(newSpeedX * newSpeedX + newSpeedY * newSpeedY);
+                                    
+                                    if (homingDirectionMagnitude > 0) {
+                                        const factor = targetMagnitude / homingDirectionMagnitude;
+                                        currentSpeedX = newSpeedX * factor;
+                                        currentSpeedY = newSpeedY * factor;
+                                    } else {
+                                        // Fallback if dY was 0 or something unexpected, maintain original direction with 3x speed
+                                        currentSpeedX = ball.originalSpeedX * 3;
+                                        currentSpeedY = ball.originalSpeedY * 3; 
+                                    }
+
+                                    currentSpeedX = Math.max(-currentMaxBallSpeedX * 3, Math.min(currentMaxBallSpeedX * 3, currentSpeedX));
+                                    currentSpeedY = Math.max(-MAX_BALL_SPEED_X * 3, Math.min(MAX_BALL_SPEED_X * 3, currentSpeedY)); // Should also use a constant for max Y speed if different
                                 } else {
-                                    currentSpeedX = incomingSpeedX; 
+                                    currentSpeedX = incomingSpeedX;
                                 }
                             }
-                            ball.isHoming = false; 
+                            ball.isHoming = false;
                         } else {
                             let deltaX = collisionX - (paddleLeft + refs.paddleWidthRef.current / 2);
                             currentSpeedX = Math.max(-currentMaxBallSpeedX, Math.min(currentMaxBallSpeedX, incomingSpeedX + (deltaX * 0.1)));
                         }
-                        
                         if (ball.isBig) {
                             ballsToAdd.push(createNewBall(collisionX, PADDLE_Y - BALL_SIZE - 5, (Math.random() - 0.5) * 6, -3 - Math.random() * 2, BASE_BALL_SPEED_FACTOR));
                         }
@@ -266,9 +295,9 @@ export const updateBalls = (
                     ball.speedX = currentSpeedX;
                     ball.speedY = currentSpeedY;
                 }
-            } 
-        } 
-    } 
+            }
+        }
+    }
 
     if (refs.pointsFieldsRef.current && refs.pointsFieldsRef.current.length > 0) {
         refs.pointsFieldsRef.current = refs.pointsFieldsRef.current.filter(field => {
@@ -290,6 +319,6 @@ export const updateBalls = (
     }
 
     if (ballsToAdd.length > 0) {
-         refs.ballsRef.current.push(...ballsToAdd);
+        refs.ballsRef.current.push(...ballsToAdd);
     }
 };
