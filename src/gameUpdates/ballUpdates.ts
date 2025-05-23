@@ -13,7 +13,8 @@ import {
     PARTICLE_SPEED_FACTOR,
     POWER_UP_COLORS, // Added POWER_UP_COLORS
     SPLITTING_BALL_PARTICLE_SIZE,
-    HOMING_TRAIL_DURATION
+    HOMING_TRAIL_DURATION,
+    INITIAL_BALL_SPEED_Y // Added for default split speed
 } from '../constants';
 
 export const updateBalls = (
@@ -98,6 +99,10 @@ export const updateBalls = (
 
                 const brickCollisionResult = checkBrickCollision(ball, refs.bricksRef.current, columns, rows, deltaTime, refs, currentTime);
                 if (brickCollisionResult.collision) {
+                    // Store the speeds *before* homing deactivation, for splitting logic if it was homing
+                    const speedXBeforeHomingDeactivation = brickCollisionResult.newSpeedX;
+                    const speedYBeforeHomingDeactivation = brickCollisionResult.newSpeedY;
+
                     currentSpeedX = brickCollisionResult.newSpeedX;
                     currentSpeedY = brickCollisionResult.newSpeedY;
 
@@ -105,45 +110,54 @@ export const updateBalls = (
                         const currentMagnitude = Math.sqrt(currentSpeedX * currentSpeedX + currentSpeedY * currentSpeedY);
                         const originalMagnitude = Math.sqrt(ball.originalSpeedX * ball.originalSpeedX + ball.originalSpeedY * ball.originalSpeedY);
 
-                        if (currentMagnitude > 0 && originalMagnitude > 0) { // Avoid division by zero
+                        if (currentMagnitude > 0 && originalMagnitude > 0) {
                             const factor = originalMagnitude / currentMagnitude;
                             currentSpeedX *= factor;
                             currentSpeedY *= factor;
                         }
-                        // If currentMagnitude is 0, it means the ball stopped, perhaps due to a specific brick type.
-                        // In this case, we might want to revert to originalSpeedX/Y directly or handle it differently.
-                        // For now, if it stopped, it remains stopped unless originalMagnitude was also 0.
                         else if (currentMagnitude === 0 && originalMagnitude > 0) {
-                            // This case is unlikely with normal brick ricochet but could happen with special bricks.
-                            // Defaulting to a fraction of original speed in the last direction or a default upward bounce.
-                            // For simplicity, let's use originalSpeedX and a negated originalSpeedY if it was moving downwards.
                             currentSpeedX = ball.originalSpeedX; 
-                            currentSpeedY = ball.originalSpeedY > 0 ? -ball.originalSpeedY : ball.originalSpeedY; // Attempt to bounce up if it was going down
+                            currentSpeedY = ball.originalSpeedY > 0 ? -ball.originalSpeedY : ball.originalSpeedY;
                         }
-
-
+                        // After this block, currentSpeedX and currentSpeedY are now the 1x speeds.
                         ball.isHomingSpeedActive = false;
                         ball.originalSpeedX = undefined;
                         ball.originalSpeedY = undefined;
                     }
 
-                    if (brickCollisionResult.pierceOccurred) { /* Speed unchanged */ }
+                    if (brickCollisionResult.pierceOccurred) { /* Speed unchanged by pierce itself, homing deactivation handled above */ }
                     else if (ball.isSplitting && brickCollisionResult.brickHit) {
-                        const newBallSpeedX = -brickCollisionResult.newSpeedX;
-                        const newBallSpeedY = -brickCollisionResult.newSpeedY;
-                        const newBall = createNewBall(ball.x, ball.y, newBallSpeedX, newBallSpeedY, 1.0);
-                        const speedMagnitude = Math.sqrt(brickCollisionResult.newSpeedX**2 + brickCollisionResult.newSpeedY**2);
-                        if (speedMagnitude > 0) {
-                            newBall.x -= (brickCollisionResult.newSpeedX / speedMagnitude) * 2 * currentBallSize;
-                            newBall.y -= (brickCollisionResult.newSpeedY / speedMagnitude) * 2 * currentBallSize;
+                        // Use currentSpeedX and currentSpeedY which are now corrected (1x) if ball was homing.
+                        // If the ball was not homing, these are simply brickCollisionResult.newSpeedX/Y.
+                        let newBallBaseSpeedX = -currentSpeedX / gameSpeedFactor;
+                        let newBallBaseSpeedY = -currentSpeedY / gameSpeedFactor;
+
+                        // If the parent ball stopped (e.g. hit a special brick that stops it), give new ball a default speed
+                        if (newBallBaseSpeedX === 0 && newBallBaseSpeedY === 0) {
+                            newBallBaseSpeedX = (Math.random() - 0.5) * 2; // Small random horizontal
+                            newBallBaseSpeedY = -INITIAL_BALL_SPEED_Y; // Default upward speed
+                        }
+                        
+                        const newBall = createNewBall(ball.x, ball.y, newBallBaseSpeedX, newBallBaseSpeedY, BASE_BALL_SPEED_FACTOR);
+                        
+                        // Calculate offset based on the new ball's actual initial direction (after potential default speed)
+                        const newBallActualSpeedX = newBall.speedX; // This is base * speedFactor
+                        const newBallActualSpeedY = newBall.speedY;
+                        const speedMagnitudeForOffset = Math.sqrt(newBallActualSpeedX**2 + newBallActualSpeedY**2);
+
+                        if (speedMagnitudeForOffset > 0) {
+                            newBall.x -= (newBallActualSpeedX / speedMagnitudeForOffset) * 2 * currentBallSize;
+                            newBall.y -= (newBallActualSpeedY / speedMagnitudeForOffset) * 2 * currentBallSize;
                         }
                         ballsToAdd.push(newBall);
+                        
                         const numParticles = 5;
-                        const particleSpeedBase = Math.sqrt(newBallSpeedX**2 + newBallSpeedY**2) * (PARTICLE_SPEED_FACTOR || 0.8);
+                        // Particle speed should also be based on the new ball's (1x) speed
+                        const particleSpeedBase = Math.sqrt(newBallActualSpeedX**2 + newBallActualSpeedY**2) * (PARTICLE_SPEED_FACTOR || 0.8);
                         const finalParticleColor = '#FFFFFF';
                         for (let k = 0; k < numParticles; k++) {
                             const angleOffset = (Math.random() - 0.5) * (Math.PI / 4);
-                            const newAngle = Math.atan2(newBallSpeedY, newBallSpeedX) + angleOffset;
+                            const newAngle = Math.atan2(newBallActualSpeedY, newBallActualSpeedX) + angleOffset;
                             const particleSpeed = particleSpeedBase * (0.8 + Math.random() * 0.4);
                             const particle: Particle = {
                                 id: Date.now() + Math.random(),
@@ -244,19 +258,16 @@ export const updateBalls = (
                                 const dX = targetX - ball.x;
                                 const dY = targetY - ball.y;
                                 if (dY !== 0) {
-                                    // Store the speed *after* normal paddle reflection but *before* homing direction change
-                                    ball.originalSpeedX = incomingSpeedX; // Speed X before homing adjustment
-                                    ball.originalSpeedY = -Math.abs(incomingSpeedY); // Speed Y after normal paddle bounce
+                                    ball.originalSpeedX = incomingSpeedX;
+                                    ball.originalSpeedY = -Math.abs(incomingSpeedY);
                                     ball.isHomingSpeedActive = true;
 
-                                    let newSpeedX = (dX / dY) * currentSpeedY; // currentSpeedY is already reflected and pointing upwards
+                                    let newSpeedX = (dX / dY) * currentSpeedY;
                                     let newSpeedY = currentSpeedY;
 
-                                    // Calculate the magnitude of the original speed (after paddle bounce)
                                     const baseMagnitude = Math.sqrt(ball.originalSpeedX * ball.originalSpeedX + ball.originalSpeedY * ball.originalSpeedY);
                                     const targetMagnitude = baseMagnitude * 3;
 
-                                    // Calculate the magnitude of the new direction vector (towards the brick)
                                     const homingDirectionMagnitude = Math.sqrt(newSpeedX * newSpeedX + newSpeedY * newSpeedY);
                                     
                                     if (homingDirectionMagnitude > 0) {
@@ -264,13 +275,12 @@ export const updateBalls = (
                                         currentSpeedX = newSpeedX * factor;
                                         currentSpeedY = newSpeedY * factor;
                                     } else {
-                                        // Fallback if dY was 0 or something unexpected, maintain original direction with 3x speed
                                         currentSpeedX = ball.originalSpeedX * 3;
                                         currentSpeedY = ball.originalSpeedY * 3; 
                                     }
 
                                     currentSpeedX = Math.max(-currentMaxBallSpeedX * 3, Math.min(currentMaxBallSpeedX * 3, currentSpeedX));
-                                    currentSpeedY = Math.max(-MAX_BALL_SPEED_X * 3, Math.min(MAX_BALL_SPEED_X * 3, currentSpeedY)); // Should also use a constant for max Y speed if different
+                                    currentSpeedY = Math.max(-MAX_BALL_SPEED_X * 3, Math.min(MAX_BALL_SPEED_X * 3, currentSpeedY)); 
                                 } else {
                                     currentSpeedX = incomingSpeedX;
                                 }
