@@ -295,7 +295,8 @@ export const gameUpdate = (
         availablePowerUpsForSpawning,
         gameMode,
         currentTime,
-        gameSpeedFactor
+        gameSpeedFactor,
+        refs.particlesRef // Correctly passing particlesRef now
     );
 
     if (newPowerUps.length > 0) {

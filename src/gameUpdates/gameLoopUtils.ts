@@ -1,11 +1,14 @@
 // src/gameUpdates/gameLoopUtils.ts
-import { Ball, Brick, PowerUp, PowerUpType, GameMode, SpawnMarker, PowerUpSpawnEvent } from '../interfaces'; // Added SpawnMarker, PowerUpSpawnEvent
+import { Ball, Brick, PowerUp, PowerUpType, GameMode, SpawnMarker, PowerUpSpawnEvent, Particle } from '../interfaces'; // Added Particle
 import {
     POWER_UP_SIZE,
     ALL_TOGGLEABLE_POWER_UPS, // Used for test mode
     INITIAL_BALL_SPEED_X, // Added for new ball spawn
     INITIAL_BALL_SPEED_Y, // Added for new ball spawn
-    BALL_SIZE // Added for new ball spawn
+    BALL_SIZE, // Added for new ball spawn
+    PARTICLE_LIFESPAN, // Added for particle effect
+    PARTICLE_SPEED_FACTOR, // Added for particle effect
+    SPLITTING_BALL_PARTICLE_SIZE // Added for particle effect
 } from '../constants';
 
 // Constants for spawn logic
@@ -61,7 +64,8 @@ export const handleSpawnEvents = (
     availablePowerUps: Set<PowerUpType>,
     gameMode: GameMode | null,
     currentTime: number,
-    currentSpeedFactor: number
+    currentSpeedFactor: number,
+    particlesRef: React.MutableRefObject<Particle[]> // Added particlesRef
 ): { newPowerUps: PowerUp[], newBalls: Ball[] } => {
      // Optimization: Initialize only if needed, or return shared empty arrays
     let newlySpawnedPowerUps: PowerUp[] | null = null;
@@ -83,6 +87,29 @@ export const handleSpawnEvents = (
             );
             if (!newlySpawnedBalls) newlySpawnedBalls = []; // Create only when needed
             newlySpawnedBalls.push(newBall);
+
+            // Add particle effect for SPAWN_BALL
+            const numParticles = 5; // Default particle count
+            const particleSpeedBase = Math.sqrt(newBall.speedX**2 + newBall.speedY**2) * (PARTICLE_SPEED_FACTOR || 0.8);
+            const finalParticleColor = '#FFFFFF'; // White particles
+            for (let k = 0; k < numParticles; k++) {
+                const angleOffset = (Math.random() - 0.5) * (Math.PI / 2); // Wider spread for ball spawn
+                const newAngle = Math.atan2(newBall.speedY, newBall.speedX) + angleOffset;
+                const particleSpeed = particleSpeedBase * (0.8 + Math.random() * 0.4);
+                const particle: Particle = {
+                    id: Date.now() + Math.random(),
+                    x: brickCenterX, 
+                    y: brickCenterY,
+                    speedX: Math.cos(newAngle) * particleSpeed,
+                    speedY: Math.sin(newAngle) * particleSpeed,
+                    lifespan: (PARTICLE_LIFESPAN || 300) * (0.8 + Math.random() * 0.4),
+                    color: finalParticleColor,
+                    size: SPLITTING_BALL_PARTICLE_SIZE || 2,
+                    createdAt: currentTime, alpha: 1
+                };
+                particlesRef.current.push(particle);
+            }
+
         } else if (event.marker === 'PENDING') {
              let spawnChance = calculateBaseSpawnChance(availablePowerUps, gameMode);
 
