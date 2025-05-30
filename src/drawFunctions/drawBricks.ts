@@ -99,7 +99,8 @@ export const drawBricks = (ctx: CanvasRenderingContext2D, bricks: Brick[][], col
                     // Draw the dark center circle on top of the glow
                     ctx.fillStyle = '#000000'; 
                     ctx.beginPath(); // Start a new path for the circle
-                    ctx.arc(brick.x + brick.width / 2, brick.y + brick.height / 2, brick.width / 4, 0, Math.PI * 2);
+                    const radius = Math.min(brick.width / 4, brick.height / 4); // Adjusted radius
+                    ctx.arc(brick.x + brick.width / 2, brick.y + brick.height / 2, radius, 0, Math.PI * 2);
                     ctx.fill();
                     ctx.closePath();
 
@@ -136,16 +137,17 @@ export const drawBricks = (ctx: CanvasRenderingContext2D, bricks: Brick[][], col
                 // The glowing bomb (status 3) now handles its own indicator (the dark circle) above.
                 const noVisualEffectActive = !(brick.isRegenVisualEffectActive || brick.isDarkFlashActive || brick.isSpecialFlashActive );
                 if (brick.status === 1 && noVisualEffectActive) { 
+                    const radius = Math.min(brick.width / 4, brick.height / 4); // Adjusted radius
                     if (brick.isBomb) {
                         ctx.fillStyle = '#000000'; 
                         ctx.beginPath();
-                        ctx.arc(brick.x + brick.width / 2, brick.y + brick.height / 2, brick.width / 4, 0, Math.PI * 2);
+                        ctx.arc(brick.x + brick.width / 2, brick.y + brick.height / 2, radius, 0, Math.PI * 2);
                         ctx.fill();
                         ctx.closePath();
                     } else if (brick.holdsBall) {
                         ctx.fillStyle = '#AAAAAA'; 
                         ctx.beginPath();
-                        ctx.arc(brick.x + brick.width / 2, brick.y + brick.height / 2, brick.width / 4, 0, Math.PI * 2);
+                        ctx.arc(brick.x + brick.width / 2, brick.y + brick.height / 2, radius, 0, Math.PI * 2);
                         ctx.fill();
                         ctx.closePath();
                     }
