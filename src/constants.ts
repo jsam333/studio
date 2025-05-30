@@ -142,7 +142,7 @@ export const FIELD_MAX_WIDTH_OFFSET = 70;
 export const FIELD_SHRINK_RATE_H = 0.08;
 export const FIELD_SHRINK_RATE_W = 0.08;
 export const FIELD_SHRINK_INTERVAL = 16;
-export const FIELD_SHRINK_ACCELERATION_FACTOR = 1.0;
+export const FIELD_SHRINK_ACCELERATION_FACTOR = 2.0;
 
 // Points Field
 export const POINTS_FIELD_WIDTH = 50; 
@@ -198,9 +198,9 @@ export const POWER_UP_COSTS: { [key in PowerUpType]?: number } = {
     DOUBLE_BALL: 9,
     DOUBLE_BALL_L2: 11,
     DOUBLE_BALL_L3: 13,
-    PIERCE_BALL: 6,
-    PIERCE_BALL_L2: 8,
-    PIERCE_BALL_L3: 10,
+    PIERCE_BALL: 8,
+    PIERCE_BALL_L2: 10,
+    PIERCE_BALL_L3: 12,
     UPGRADE_BRICK: 10,
     UPGRADE_BRICK_L2: 12,
     UPGRADE_BRICK_L3: 14,
