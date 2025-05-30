@@ -72,6 +72,9 @@ export const BRICK_DARK_FLASH_DURATION_MS = 100;
 export const BRICK_DARK_FLASH_DARKEN_AMOUNT = 0.2; 
 export const BRICK_SPECIAL_FLASH_DURATION_MS = 100;
 export const BRICK_SPECIAL_FLASH_LIGHTEN_AMOUNT = 0.3;
+export const BOMB_GLOW_DURATION = 100; // Duration of the bomb glow in ms
+export const BOMB_GLOW_COLOR = '#FFA500'; // This might be deprecated or used as a fallback
+export const BOMB_GLOW_LIGHTEN_FACTOR = 0.4; // Factor to lighten the bomb brick color during glow (0.0 to 1.0)
 
 
 // Power-ups
@@ -84,7 +87,6 @@ export const POWER_UP_CHANCE_REDUCTION_PER_EXTRA = 0.05;
 export const SAFETY_NET_HEIGHT = 3;
 export const BUILDER_BRICK_MAX_LEVEL = 3;
 export const BUILDER_BALL_SPAWN_CHANCE = 0.15;
-export const MULTI_BALL_COUNT = 3; 
 export const BOMB_BRICK_SPAWN_CHANCE = 0.1;
 export const BOMB_EXPLOSION_RADIUS_FACTOR = 1.5;
 
@@ -341,7 +343,7 @@ export const REINFORCED_BRICK_COLOR = '#A0522D';
 export const UPGRADED_BRICK_COLOR = '#8B4513';   
 export const BUILDER_BRICK_COLOR = '#654321';    
 export const SPECIAL_BRICK_COLOR = '#FFD700'; // Yellow
-export const BOMB_BRICK_COLOR = '#8B0000';
+export const BOMB_BRICK_COLOR = '#8B0000'; // Dark Red
 export const BALL_BRICK_COLOR = '#FFFFFF'; 
 export const RAINBOW_COLORS = ['#FF0000', '#FF7F00', '#FFFF00', '#00FF00', '#0000FF', '#4B0082', '#9400D3'];
 export const RAINBOW_FLASH_INTERVAL = 100;

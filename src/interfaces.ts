@@ -6,7 +6,7 @@ export interface Brick {
   y: number;
   width: number;
   height: number;
-  status: number; // 0: inactive, 1: active, 2: destroying (flashing/fading)
+  status: number; // 0: inactive, 1: active, 2: destroying (flashing/fading), 3: bomb_glowing
   strength: number;
   isSpecial: boolean;
   upgradeLevel?: number;
@@ -21,6 +21,8 @@ export interface Brick {
   darkFlashStartTime?: number; 
   isSpecialFlashActive?: boolean; // For MAKE_SPECIAL light flash effect
   specialFlashStartTime?: number; // For MAKE_SPECIAL light flash effect
+  isBombGlowActive?: boolean;
+  bombGlowStartTime?: number;
 }
 
 export interface Particle {

@@ -4,7 +4,8 @@ import {
     SPECIAL_BRICK_COLOR, BOMB_BRICK_COLOR, BALL_BRICK_COLOR,
     BRICK_REGEN_VISUAL_EFFECT_DURATION_MS, BRICK_REGEN_VISUAL_EFFECT_SCALE_AMOUNT,
     BRICK_DARK_FLASH_DURATION_MS, BRICK_DARK_FLASH_DARKEN_AMOUNT,
-    BRICK_SPECIAL_FLASH_DURATION_MS, BRICK_SPECIAL_FLASH_LIGHTEN_AMOUNT
+    BRICK_SPECIAL_FLASH_DURATION_MS, BRICK_SPECIAL_FLASH_LIGHTEN_AMOUNT,
+    BOMB_GLOW_DURATION, BOMB_GLOW_LIGHTEN_FACTOR
 } from '../constants';
 import { hexToRgb, lightenRgb, darkenRgb } from './drawUtils';
 
@@ -16,7 +17,8 @@ export const drawBricks = (ctx: CanvasRenderingContext2D, bricks: Brick[][], col
         if (!bricks[c]) continue;
         for (let r = 0; r < rows; r++) {
             const brick = bricks[c][r];
-            if (brick && (brick.status === 1 || brick.status === 2)) {
+            // Render active, destroying, or glowing bombs
+            if (brick && (brick.status === 1 || brick.status === 2 || brick.status === 3)) {
                 ctx.save();
                 
                 let currentX = brick.x;
@@ -25,7 +27,7 @@ export const drawBricks = (ctx: CanvasRenderingContext2D, bricks: Brick[][], col
                 let currentHeight = brick.height;
                 let baseFillStyle = NORMAL_BRICK_COLOR; // Default
 
-                // Determine base color first based on current state (ignoring transient visual effects for this step)
+                // Determine base color first based on current state
                 if (brick.holdsBall) {
                     baseFillStyle = BALL_BRICK_COLOR;
                 } else if (brick.isBomb) {
@@ -38,11 +40,11 @@ export const drawBricks = (ctx: CanvasRenderingContext2D, bricks: Brick[][], col
                     baseFillStyle = REINFORCED_BRICK_COLOR;
                 } else if (brick.upgradeLevel === 1) {
                     baseFillStyle = REINFORCED_BRICK_COLOR; 
-                } // else NORMAL_BRICK_COLOR is already set
+                } 
 
                 let finalFillStyle = baseFillStyle;
 
-                // Apply visual effects for status 1 bricks
+                // Apply visual effects for status 1 bricks (active, not glowing bomb)
                 if (brick.status === 1) {
                     if (brick.isDarkFlashActive && typeof brick.darkFlashStartTime === 'number') {
                         const effectElapsedTime = currentTime - brick.darkFlashStartTime;
@@ -57,7 +59,6 @@ export const drawBricks = (ctx: CanvasRenderingContext2D, bricks: Brick[][], col
                     } else if (brick.isSpecialFlashActive && typeof brick.specialFlashStartTime === 'number') {
                         const effectElapsedTime = currentTime - brick.specialFlashStartTime;
                         if (effectElapsedTime < BRICK_SPECIAL_FLASH_DURATION_MS) {
-                            // The baseFillStyle should be SPECIAL_BRICK_COLOR if brick.isSpecial is true
                             const rgbColor = hexToRgb(SPECIAL_BRICK_COLOR); 
                             if (rgbColor) {
                                 const progress = effectElapsedTime / BRICK_SPECIAL_FLASH_DURATION_MS;
@@ -75,7 +76,6 @@ export const drawBricks = (ctx: CanvasRenderingContext2D, bricks: Brick[][], col
                             currentHeight = brick.height * visualScale;
                             currentX = brick.x - (currentWidth - brick.width) / 2;
                             currentY = brick.y - (currentHeight - brick.height) / 2;
-                            // fillStyle remains baseFillStyle for regen pop
                         } 
                     }
                 }
@@ -83,10 +83,29 @@ export const drawBricks = (ctx: CanvasRenderingContext2D, bricks: Brick[][], col
                 ctx.beginPath();
                 ctx.rect(currentX, currentY, currentWidth, currentHeight);
                 
-                // Destruction animations for status 2 bricks (takes precedence over fillStyle from status 1 effects if brick is dying)
-                if (brick.status === 2) {
+                if (brick.status === 3 && brick.isBombGlowActive && brick.bombGlowStartTime) { // Bomb Glowing (status 3)
+                    const glowElapsedTime = currentTime - brick.bombGlowStartTime;
+                    const glowProgress = Math.min(glowElapsedTime / BOMB_GLOW_DURATION, 1);
+                    
+                    const bombRgbColor = hexToRgb(BOMB_BRICK_COLOR);
+                    if (bombRgbColor) {
+                        const currentLightenFactor = BOMB_GLOW_LIGHTEN_FACTOR * glowProgress;
+                        ctx.fillStyle = lightenRgb(bombRgbColor, currentLightenFactor);
+                    } else {
+                        ctx.fillStyle = BOMB_BRICK_COLOR; // Fallback
+                    }
+                    ctx.fill(); // Fill the lightened body
+
+                    // Draw the dark center circle on top of the glow
+                    ctx.fillStyle = '#000000'; 
+                    ctx.beginPath(); // Start a new path for the circle
+                    ctx.arc(brick.x + brick.width / 2, brick.y + brick.height / 2, brick.width / 4, 0, Math.PI * 2);
+                    ctx.fill();
+                    ctx.closePath();
+
+                } else if (brick.status === 2) { // Destroying (status 2)
                     if (brick.isFlashing) {
-                        const rgbColor = hexToRgb(baseFillStyle); // Lighten the base color
+                        const rgbColor = hexToRgb(baseFillStyle); 
                         if (rgbColor) {
                             ctx.fillStyle = lightenRgb(rgbColor, destructionFlashLightenFactor);
                         } else {
@@ -94,20 +113,29 @@ export const drawBricks = (ctx: CanvasRenderingContext2D, bricks: Brick[][], col
                         }
                     } else if (brick.fadeOutAlpha !== undefined && brick.fadeOutAlpha > 0) {
                         ctx.globalAlpha = brick.fadeOutAlpha;
-                        ctx.fillStyle = baseFillStyle; // Fade out the base color
+                        ctx.fillStyle = baseFillStyle; 
                     } else {
-                         ctx.fillStyle = baseFillStyle; // Fallback if somehow status 2 but no animation state
+                         ctx.fillStyle = baseFillStyle; 
                     }
-                } else {
-                    ctx.fillStyle = finalFillStyle; // Apply the determined fill style for status 1 bricks
+                    ctx.fill();
+                    ctx.globalAlpha = 1.0; // Reset alpha if it was changed for fadeOut
+                } else { // Active (status 1) or other non-handled status
+                    ctx.fillStyle = finalFillStyle; 
+                    ctx.fill();
                 }
                 
-                ctx.fill();
-                ctx.closePath();
+                // For status 1 and status 2 (during flash/fade), we might have already closed the path for the main rect.
+                // For status 3, the main rect path was used, then a new one for the circle.
+                // Ensure path is closed if it was for the main rectangle and not handled by circle already.
+                if (brick.status !== 3) {
+                    ctx.closePath();
+                }
                 ctx.restore(); 
 
-                const noVisualEffectActive = !(brick.isRegenVisualEffectActive || brick.isDarkFlashActive || brick.isSpecialFlashActive);
-                if (noVisualEffectActive && (brick.status === 1 || (brick.status === 2 && (brick.isFlashing || (brick.fadeOutAlpha && brick.fadeOutAlpha > 0.5))))) {
+                // Draw bomb/ball indicator for non-glowing (status 1), non-destroying bricks.
+                // The glowing bomb (status 3) now handles its own indicator (the dark circle) above.
+                const noVisualEffectActive = !(brick.isRegenVisualEffectActive || brick.isDarkFlashActive || brick.isSpecialFlashActive );
+                if (brick.status === 1 && noVisualEffectActive) { 
                     if (brick.isBomb) {
                         ctx.fillStyle = '#000000'; 
                         ctx.beginPath();

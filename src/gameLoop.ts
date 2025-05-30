@@ -9,6 +9,7 @@ import { applyPowerUpEffects } from './gameUpdates/powerUpEffects';
 import { checkGameStatus } from './gameUpdates/gameStatus';
 import { handleSpawnEvents } from './gameUpdates/gameLoopUtils';
 import { updateParticles } from './gameUpdates/particleUpdates'; 
+import { updateBombGlowsAndTriggerExplosions } from './gameLogic'; // Corrected import path
 import {
     BOARD_WIDTH, BOARD_HEIGHT, BASE_BALL_SPEED_FACTOR, POWER_UP_COLORS,
     TARGET_FPS, BONUS_GOLD_TARGET, BONUS_GOLD_TIMER_DURATION,
@@ -110,7 +111,8 @@ const updateBrickStateAndAnimations = (bricks: Brick[][], columns: number, rows:
         for (let r = 0; r < rows; r++) {
             const brick = bricks[c][r];
             if (brick) {
-                if (brick.status === 2) { 
+                // Bomb glow is handled by updateBombGlowsAndTriggerExplosions, not here.
+                if (brick.status === 2) { // Destroying (non-bomb, or bomb post-glow)
                     if (brick.isFlashing) {
                         if (brick.flashStartTime === undefined) {
                             brick.flashStartTime = currentTime;
@@ -211,6 +213,20 @@ export const gameUpdate = (
         updateBonusGoldTimer(refs, callbacks, elapsedTime);
     }
 
+    // Update bomb glows and trigger explosions BEFORE ball and laser updates
+    // as explosions might create spawn events or affect game state.
+    const pointsFromBombExplosions = updateBombGlowsAndTriggerExplosions(
+        refs.bricksRef.current, 
+        columns, 
+        rows, 
+        spawnRequestsReusable, 
+        refs, 
+        currentTime
+    );
+    if (pointsFromBombExplosions > 0) {
+        callbacks.updateScoreCallback(pointsFromBombExplosions);
+    }
+
     updateBalls(refs, callbacks, spawnRequestsReusable, currentTime, gameSpeedFactor, scaledDeltaTime, columns, rows); 
     updateLasers(refs, callbacks, spawnRequestsReusable, currentTime, scaledDeltaTime, columns, rows); 
     updatePointsFields(refs.pointsFieldsRef.current, currentTime); 
@@ -218,7 +234,7 @@ export const gameUpdate = (
 
     ctx.save();
     ctx.clearRect(0, 0, BOARD_WIDTH, BOARD_HEIGHT);
-    drawBricks(ctx, refs.bricksRef.current, columns, rows, currentTime);
+    drawBricks(ctx, refs.bricksRef.current, columns, rows, currentTime); // drawBricks will handle drawing glowing bombs
 
     let visualPaddleWidth = refs.paddleWidthRef.current;
     let visualPaddleX = refs.paddleXRef.current;
