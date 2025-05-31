@@ -2,6 +2,7 @@
 import { PowerUp, PowerUpType } from '../interfaces';
 import { GameStateRefs } from '../interfaces';
 import { BASE_POWER_UP_SPEED, BOARD_HEIGHT, PADDLE_HEIGHT, POWER_UP_SIZE, PADDLE_Y } from '../constants';
+import { soundSystem } from '../soundSystem'; // Import the sound system
 
 const POWER_UP_ANIMATION_DURATION_MS = 75; // Changed to 75
 
@@ -33,6 +34,8 @@ export const updatePowerUps = (
         let remove = false;
 
         if (pu.status === 'collected') {
+            // This case handles power-ups already marked as collected in a previous frame (e.g., by animation completion)
+            // The sound should play when it *becomes* collected.
             collectedPowerUpTypes.push(pu.type);
             powerUpsToRemoveIndices.add(i);
             continue; 
@@ -65,11 +68,13 @@ export const updatePowerUps = (
 
             if (collectedByPaddle) {
                 pu.status = 'collected'; 
+                soundSystem.playPowerUpSound(); // Play sound on direct paddle collection
             } else if (collectedByField) {
                 pu.status = 'animatingToPaddle';
                 pu.animationStartTime = currentTime;
                 pu.startX = pu.x;
                 pu.startY = pu.y;
+                // Sound will play when animation finishes and status becomes 'collected'
             } else if (nextY >= BOARD_HEIGHT) { 
                 remove = true; 
             }
@@ -90,6 +95,7 @@ export const updatePowerUps = (
 
             if (animationProgress >= 1) {
                 pu.status = 'collected'; 
+                soundSystem.playPowerUpSound(); // Play sound when collection animation finishes
                 pu.x = targetAnimX; // Ensure final position
                 pu.y = targetAnimY;
             }

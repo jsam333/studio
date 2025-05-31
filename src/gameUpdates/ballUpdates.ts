@@ -16,6 +16,7 @@ import {
     HOMING_TRAIL_DURATION,
     INITIAL_BALL_SPEED_Y // Added for default split speed
 } from '../constants';
+import { soundSystem } from '../soundSystem'; // Import the sound system
 
 export const updateBalls = (
     refs: GameStateRefs,
@@ -234,6 +235,7 @@ export const updateBalls = (
                     const timeToPaddleY = (PADDLE_Y - (ball.y + currentBallSize)) / effectiveSpeedY;
                     const collisionX = ball.x + effectiveSpeedX * timeToPaddleY;
                     if (collisionX + currentBallSize > paddleLeft && collisionX - currentBallSize < paddleRight) {
+                        soundSystem.playPaddleHitSound(); // Play paddle hit sound
                         const paddleImpactX = collisionX;
                         const paddleImpactY = PADDLE_Y - currentBallSize;
                         ball.y = paddleImpactY;
