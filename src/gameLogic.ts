@@ -9,6 +9,7 @@ import {
     POWER_UP_SPAWN_THRESHOLD, // Added for main mode spawn chance
     BOMB_GLOW_DURATION
 } from './constants';
+import { soundSystem } from './soundSystem'; // Import the sound system
 
 export const initializeBricks = (columns: number, rows: number, brickHeight: number, currentLevel: number, gameMode: GameMode | null): Brick[][] => {
     const newBricks: Brick[][] = [];
@@ -221,6 +222,7 @@ export const checkBrickCollision = ( ball: Ball, bricks: Brick[][], columns: num
                  if (nextBallX + checkRadius > brick.x && nextBallX - checkRadius < brick.x + brick.width && nextBallY + checkRadius > brick.y && nextBallY - checkRadius < brick.y + brick.height) {
                     brickWasHit = true;
                     collisionDetected = true;
+                    soundSystem.playBrickHitSound(); // Play brick hit sound
                     let tempSpeedX = ball.speedX;
                     let tempSpeedY = ball.speedY;
                     
