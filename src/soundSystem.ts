@@ -1,9 +1,15 @@
 export class SoundSystem {
-    private audioContext: AudioContext;
+    private audioContext: AudioContext | null = null; // Initialize as null
     private masterVolume: number = 0.2; // Default master volume set to 20%
 
     constructor() {
-        this.audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+        // Check if window is defined (i.e., we are in a browser environment)
+        if (typeof window !== 'undefined') {
+            this.audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+        } else {
+            // Optional: Log a message or handle the server-side case if needed
+            console.log("AudioContext not available in this environment (likely server-side).");
+        }
     }
 
     setMasterVolume(volume: number) {
@@ -19,7 +25,10 @@ export class SoundSystem {
     }
 
     playSound(type: string, volume: number = 1.0, frequency: number = 440, duration: number = 0.1, waveType: OscillatorType = 'sine') {
-        if (!this.audioContext) return; // AudioContext not initialized
+        if (!this.audioContext) {
+            // console.log("AudioContext not initialized, cannot play sound."); // Optional: more verbose logging
+            return; 
+        }
 
         const oscillator = this.audioContext.createOscillator();
         const gainNode = this.audioContext.createGain();
@@ -27,25 +36,17 @@ export class SoundSystem {
         oscillator.connect(gainNode);
         gainNode.connect(this.audioContext.destination);
 
-        // Apply master volume to the individual sound's volume
         const effectiveVolume = volume * this.masterVolume;
         gainNode.gain.setValueAtTime(effectiveVolume, this.audioContext.currentTime);
-        oscillator.frequency.setValueAtTime(frequency, this.audioContext.currentTime); // value in hertz
+        oscillator.frequency.setValueAtTime(frequency, this.audioContext.currentTime);
         oscillator.type = waveType;
 
         oscillator.start();
         oscillator.stop(this.audioContext.currentTime + duration);
     }
 
-    // Example modulated sounds
     playBrickHitSound() {
-        // Original: this.playSound('brickHit', 0.5, 300, 0.05, 'square');
-        // setTimeout(() => this.playSound('brickHitDecay', 0.3, 150, 0.05, 'sawtooth'), 30);
-        
-        // Shorter duration and higher pitch for the main hit sound
-        this.playSound('brickHit', 0.5, 600, 0.03, 'square'); // Frequency 300->600, duration 0.05->0.03
-        // Optional: Adjust decay sound or remove if not needed for a sharper sound
-        // setTimeout(() => this.playSound('brickHitDecay', 0.3, 300, 0.03, 'sawtooth'), 20); // Decay also higher pitch & shorter
+        this.playSound('brickHit', 0.5, 600, 0.03, 'square');
     }
 
     playPaddleHitSound() {
@@ -80,11 +81,15 @@ export class SoundSystem {
     stopAllSounds(): void {
         if (this.audioContext) {
             this.audioContext.close().then(() => {
-                this.audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+                // Re-create AudioContext only if in browser environment
+                if (typeof window !== 'undefined') {
+                    this.audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+                } else {
+                    this.audioContext = null;
+                }
             });
         }
     }
 }
 
-// Global sound system instance
 export const soundSystem = new SoundSystem();
