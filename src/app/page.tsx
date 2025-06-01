@@ -279,7 +279,7 @@ export default function Home() {
                             backgroundColor: '#111927', 
                             display: 'flex',
                             flexDirection: 'row', 
-                            alignItems: 'flex-start', 
+                            alignItems: 'center', 
                             justifyContent: 'space-between', 
                             color: '#FFFFFF',
                             boxSizing: 'border-box',
@@ -306,8 +306,8 @@ export default function Home() {
                             />
                         </div>
                         {/* Brick Grid Height Control Group */}
-                        <div style={{display: 'flex', flexDirection: 'column', alignItems: 'center', flex: 0.5, marginRight: '5px'}}>
-                             <label htmlFor="testBrickGridHeight" style={{ marginBottom: '1px', fontSize: '0.8rem'}}>
+                        <div style={{display: 'flex', flexDirection: 'column', alignItems: 'center', flex: 1.5}}>
+                             <label htmlFor="testBrickGridHeight" style={{ marginBottom: '5px', fontSize: '0.8rem'}}>
                                 Grid H: {testBrickGridHeight}
                             </label>
                             <input 
@@ -323,11 +323,8 @@ export default function Home() {
                                     startGame('test', testBrickColumns, testBrickRows, val);
                                 }}
                                 style={{ 
-                                    width: '20px', // For vertical slider appearance
-                                    height: '50px', // Adjust height as needed
-                                    writingMode: 'bt-lr', /* IE */
-                                    WebkitAppearance: 'slider-vertical', /* WebKit */
-                                    appearance: 'slider-vertical',
+                                    width: '100%', 
+                                    height: 'auto',
                                 }} 
                             />
                         </div>

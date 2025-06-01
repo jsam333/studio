@@ -35,7 +35,7 @@ export const PowerUpSidebar: React.FC<PowerUpSidebarProps> = ({
           <button
             key={type}
             onClick={() => onTogglePowerUp(type)}
-            className={`px-3 py-0.5 rounded text-sm font-medium transition-colors duration-150 w-full text-left focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-gray-800 focus:ring-white hover:opacity-80`}
+            className={`px-1 py-0.5 rounded text-sm font-medium transition-colors duration-150 w-full text-left focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-gray-800 focus:ring-white hover:opacity-80`}
             style={{
               backgroundColor: bgColor,
               color: textColor,
