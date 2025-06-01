@@ -124,16 +124,25 @@ export class SoundSystem {
         this.playSound('ballLostFall', 0.6, 150, 0.3, 'square', 75);
     }
 
-    // Renamed for clarity, assuming the old one was for laser impact or placeholder
-    playLaserImpactSound() { // Was playLaserShootSound
+    playLaserImpactSound() {
         this.playSound('laserImpact', 0.4, 600, 0.08, 'sawtooth', 300);
     }
 
     playLaserFireSound() {
         const startFreq = 800;
         const endFreq = 200;
-        const duration = 0.06; // Short pew sound
+        const duration = 0.06;
         this.playSound('laserFire', 0.4, startFreq, duration, 'sawtooth', endFreq);
+    }
+
+    playExplosionSound() {
+        const duration = 0.2; // Slightly longer for an explosion feel
+        const startFreq = 150; // Low pitch
+        const endFreq = 50;    // Ramp down further
+        // 'Sawtooth' or 'square' can give a harsher, more explosion-like tone than 'sine'
+        this.playSound('explosion', 0.9, startFreq, duration, 'sawtooth', endFreq);
+        // Optional: Add a click or noise burst for more punch
+        // setTimeout(() => this.playSound('explosionClick', 0.7, 100, 0.05, 'square'), 0); // A short, sharp click
     }
 
     stopAllSounds(): void {

@@ -175,6 +175,7 @@ export const updateBombGlowsAndTriggerExplosions = (bricks: Brick[][], columns: 
             const brick = bricks[c][r];
             if (brick && brick.isBombGlowActive && brick.bombGlowStartTime && (currentTime - brick.bombGlowStartTime >= BOMB_GLOW_DURATION)) {
                 brick.isBombGlowActive = false; // End glow
+                soundSystem.playExplosionSound(); // Play explosion sound
                 
                 // Now, actually "destroy" the bomb brick
                 brick.status = 2; // Set to Destroying phase
