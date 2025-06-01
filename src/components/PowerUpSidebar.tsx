@@ -8,20 +8,23 @@ import { PowerUpType, ALL_TOGGLEABLE_POWER_UPS, POWER_UP_COLORS } from '../const
 interface PowerUpSidebarProps {
   enabledPowerUps: Set<PowerUpType>;
   onTogglePowerUp: (type: PowerUpType) => void;
+  style?: React.CSSProperties; // Added style prop
 }
 
 export const PowerUpSidebar: React.FC<PowerUpSidebarProps> = ({
   enabledPowerUps,
   onTogglePowerUp,
+  style // Destructure style prop
 }) => {
   return (
     <div
       data-role="powerup-sidebar"
-      className="h-full p-4 border-l border-gray-700 bg-gray-800 text-white overflow-y-auto flex flex-col space-y-2 flex-shrink-0"
+      className="h-full p-2 border-l border-gray-700 bg-gray-800 text-white overflow-y-auto flex flex-col space-y-px flex-shrink-0"
       // Ensure sidebar has a defined width if needed, e.g., style={{ width: '192px' }} 
       // Or handle width via parent's flex layout as before
+      style={style} // Apply passed style
     >
-      <h3 className="text-lg font-semibold mb-2 text-center sticky top-0 bg-gray-800 py-1">Enabled Power-ups</h3>
+      <h3 className="text-base font-semibold mb-1 text-center sticky top-0 bg-gray-800 py-1">Enabled Power-ups</h3>
       {ALL_TOGGLEABLE_POWER_UPS.map(type => {
         const isEnabled = enabledPowerUps.has(type);
         // Ensure POWER_UP_COLORS is accessible here
@@ -32,7 +35,7 @@ export const PowerUpSidebar: React.FC<PowerUpSidebarProps> = ({
           <button
             key={type}
             onClick={() => onTogglePowerUp(type)}
-            className={`px-3 py-1 rounded text-sm font-medium transition-colors duration-150 w-full text-left focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-gray-800 focus:ring-white hover:opacity-80`}
+            className={`px-3 py-0.5 rounded text-sm font-medium transition-colors duration-150 w-full text-left focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-gray-800 focus:ring-white hover:opacity-80`}
             style={{
               backgroundColor: bgColor,
               color: textColor,

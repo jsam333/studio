@@ -272,7 +272,7 @@ export default function Home() {
                     <div 
                         style={{
                             width: `${(BOARD_WIDTH * testScaleRef.current) + SIDEBAR_WIDTH_PX}px`, // Updated width calculation
-                            padding: '10px',
+                            padding: '5px 10px', // Changed: Reduced vertical padding
                             backgroundColor: '#111927', 
                             display: 'flex',
                             flexDirection: 'row', 
@@ -303,8 +303,8 @@ export default function Home() {
                             />
                         </div>
                         {/* Brick Rows Control Group */}
-                        <div style={{display: 'flex', flexDirection: 'column', alignItems: 'center', flex: 1}}>
-                            <label htmlFor="testBrickRows" style={{ marginBottom: '5px' }}>
+                        <div style={{display: 'flex', flexDirection: 'row', alignItems: 'center', flex: 1, justifyContent: 'center'}}>
+                            <label htmlFor="testBrickRows" style={{ marginRight: '5px' }}>
                                 Rows:
                             </label>
                             <input 
@@ -320,12 +320,12 @@ export default function Home() {
                                         startGame('test', testBrickColumns, val);
                                     }
                                 }}
-                                style={{ width: '80px', padding: '5px', color: '#000000', textAlign: 'center' }} 
+                                style={{ width: '60px', padding: '5px', color: '#000000', textAlign: 'center' }} 
                             />
                         </div>
                         {/* Brick Columns Control Group */}
-                        <div style={{display: 'flex', flexDirection: 'column', alignItems: 'center', flex: 1}}>
-                            <label htmlFor="testBrickColumns" style={{ marginBottom: '5px' }}>
+                        <div style={{display: 'flex', flexDirection: 'row', alignItems: 'center', flex: 1, justifyContent: 'center'}}>
+                            <label htmlFor="testBrickColumns" style={{ marginRight: '5px' }}>
                                 Columns:
                             </label>
                             <input 
@@ -341,7 +341,7 @@ export default function Home() {
                                         startGame('test', val, testBrickRows);
                                     }
                                 }}
-                                style={{ width: '80px', padding: '5px', color: '#000000', textAlign: 'center' }} 
+                                style={{ width: '60px', padding: '5px', color: '#000000', textAlign: 'center' }} 
                             />
                         </div>
                     </div>
