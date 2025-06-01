@@ -15,7 +15,7 @@ export class SoundSystem {
         } else {
             console.log("AudioContext not available in this environment (likely server-side).");
         }
-    }
+    } 
 
     setMasterVolume(volume: number) {
         if (volume >= 0 && volume <= 1) {
@@ -132,7 +132,7 @@ export class SoundSystem {
         const startFreq = 800;
         const endFreq = 200;
         const duration = 0.06;
-        this.playSound('laserFire', 0.7, startFreq, duration, 'sawtooth', endFreq); // Volume changed from 0.4 to 0.7
+        this.playSound('laserFire', 0.6, startFreq, duration, 'sawtooth', endFreq); // Volume changed from 0.4 to 0.7
     }
 
     playExplosionSound() {
