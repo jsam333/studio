@@ -19,22 +19,29 @@ import { initializeBricks } from '../gameLogic';
 const INITIAL_BONUS_GOLD_CONST = INITIAL_BONUS_GOLD;
 const MINIMUM_BONUS_GOLD_CONST = MINIMUM_BONUS_GOLD;
 
-// Updated getBrickConfiguration to accept testBrickColumns and testBrickRows
-export const getBrickConfiguration = (level: number, gameMode: GameMode | null, testBrickColumns?: number, testBrickRows?: number): { brickColumns: number, brickRows: number, brickHeight: number } => {
+// Updated getBrickConfiguration to accept testBrickColumns, testBrickRows, and testBrickGridHeight
+export const getBrickConfiguration = (
+    level: number, 
+    gameMode: GameMode | null, 
+    testBrickColumns?: number, 
+    testBrickRows?: number, 
+    testBrickGridHeight?: number
+): { brickColumns: number, brickRows: number, brickHeight: number, actualGridHeight: number } => {
   let cols = DEFAULT_BRICK_COLUMNS;
   let rows = DEFAULT_BRICK_ROWS;
-  let targetHeight = BRICK_HEIGHT;
+  let targetIndividualBrickHeight = BRICK_HEIGHT;
+  let actualTotalGridHeight = TARGET_TOTAL_BRICK_GRID_HEIGHT;
 
   if (gameMode === 'main') {
-    if (level === 1) { cols = 2; rows = 2; targetHeight = 25; }
-    else if (level === 2) { cols = 3; rows = 2; targetHeight = 25; }
-    else if (level === 3) { cols = 9; rows = 2; targetHeight = 25; }
-    else if (level === 4) { cols = 13; rows = 3; targetHeight = 21; }
-    else if (level === 5) { cols = 26; rows = 4; targetHeight = TALL_BRICK_HEIGHT; }
-    else if (level === 6) { cols = 8; rows = 5; targetHeight = TALL_BRICK_HEIGHT; }
-    else if (level === 7) { cols = 9; rows = 6; targetHeight = TALL_BRICK_HEIGHT; }
-    else if (level === 8) { cols = 10; rows = 7; targetHeight = TALL_BRICK_HEIGHT; }
-    else if (level === 9) { cols = 11; rows = 8; targetHeight = TALL_BRICK_HEIGHT; }
+    if (level === 1) { cols = 2; rows = 2; targetIndividualBrickHeight = 25; }
+    else if (level === 2) { cols = 3; rows = 2; targetIndividualBrickHeight = 25; }
+    else if (level === 3) { cols = 9; rows = 2; targetIndividualBrickHeight = 25; }
+    else if (level === 4) { cols = 13; rows = 3; targetIndividualBrickHeight = 21; }
+    else if (level === 5) { cols = 26; rows = 4; targetIndividualBrickHeight = TALL_BRICK_HEIGHT; }
+    else if (level === 6) { cols = 8; rows = 5; targetIndividualBrickHeight = TALL_BRICK_HEIGHT; }
+    else if (level === 7) { cols = 9; rows = 6; targetIndividualBrickHeight = TALL_BRICK_HEIGHT; }
+    else if (level === 8) { cols = 10; rows = 7; targetIndividualBrickHeight = TALL_BRICK_HEIGHT; }
+    else if (level === 9) { cols = 11; rows = 8; targetIndividualBrickHeight = TALL_BRICK_HEIGHT; }
     else {
       cols = 4; 
       if (level === 10) { cols = 13; rows = 8; }
@@ -51,35 +58,42 @@ export const getBrickConfiguration = (level: number, gameMode: GameMode | null, 
       else { rows = 7; }
 
       if (rows > 0) {
-        targetHeight = (TARGET_TOTAL_BRICK_GRID_HEIGHT - (rows - 1) * BRICK_PADDING) / rows;
-        targetHeight = Math.max(1, targetHeight);
+        targetIndividualBrickHeight = (TARGET_TOTAL_BRICK_GRID_HEIGHT - (rows - 1) * BRICK_PADDING) / rows;
+        targetIndividualBrickHeight = Math.max(1, targetIndividualBrickHeight);
       } else {
-        targetHeight = BRICK_HEIGHT; // Fallback
+        targetIndividualBrickHeight = BRICK_HEIGHT; // Fallback
       }
     }
+    actualTotalGridHeight = (targetIndividualBrickHeight * rows) + (Math.max(0, rows - 1) * BRICK_PADDING);
+
   } else if (gameMode === 'test') {
     cols = testBrickColumns ?? DEFAULT_BRICK_COLUMNS; 
-    rows = testBrickRows ?? DEFAULT_BRICK_ROWS; // Use testBrickRows if provided, else default
-    // Apply dynamic height calculation for test mode as well
+    rows = testBrickRows ?? DEFAULT_BRICK_ROWS; 
+    actualTotalGridHeight = testBrickGridHeight ?? TARGET_TOTAL_BRICK_GRID_HEIGHT;
+
     if (rows > 0) {
-        targetHeight = (TARGET_TOTAL_BRICK_GRID_HEIGHT - (rows - 1) * BRICK_PADDING) / rows;
-        targetHeight = Math.max(1, targetHeight);
+        targetIndividualBrickHeight = (actualTotalGridHeight - (rows - 1) * BRICK_PADDING) / rows;
+        targetIndividualBrickHeight = Math.max(1, targetIndividualBrickHeight);
     } else {
-        targetHeight = BRICK_HEIGHT; // Fallback if rows is 0 or undefined
+        targetIndividualBrickHeight = BRICK_HEIGHT; // Fallback if rows is 0 or undefined
     }
+    // Recalculate actualTotalGridHeight based on integer brick height to avoid floating point issues if necessary
+    actualTotalGridHeight = (targetIndividualBrickHeight * rows) + (Math.max(0, rows - 1) * BRICK_PADDING);
+
   } else {
     // Fallback for null gameMode or other unhandled modes
     cols = DEFAULT_BRICK_COLUMNS;
     rows = DEFAULT_BRICK_ROWS;
-    targetHeight = BRICK_HEIGHT;
+    targetIndividualBrickHeight = BRICK_HEIGHT;
+    actualTotalGridHeight = (targetIndividualBrickHeight * rows) + (Math.max(0, rows - 1) * BRICK_PADDING);
   }
-  return { brickColumns: cols, brickRows: rows, brickHeight: targetHeight };
+  return { brickColumns: cols, brickRows: rows, brickHeight: targetIndividualBrickHeight, actualGridHeight: actualTotalGridHeight };
 };
 
-// Updated getLevelStats to accept testBrickColumns and testBrickRows
-export const getLevelStats = (level: number, gameMode: GameMode | null, testBrickColumns?: number, testBrickRows?: number): { totalBricks: number, targetScore: number } => {
-    const config = getBrickConfiguration(level, gameMode, testBrickColumns, testBrickRows);
-    const bricksForStats = initializeBricks(config.brickColumns, config.brickRows, config.brickHeight, level, gameMode);
+// Updated getLevelStats to accept testBrickColumns, testBrickRows, and testBrickGridHeight
+export const getLevelStats = (level: number, gameMode: GameMode | null, testBrickColumns?: number, testBrickRows?: number, testBrickGridHeight?: number): { totalBricks: number, targetScore: number } => {
+    const config = getBrickConfiguration(level, gameMode, testBrickColumns, testBrickRows, testBrickGridHeight);
+    const bricksForStats = initializeBricks(config.brickColumns, config.brickRows, config.brickHeight, level, gameMode, config.actualGridHeight);
 
     let count = 0;
     for (let c = 0; c < bricksForStats.length; c++) {
@@ -135,6 +149,7 @@ interface UseLevelLogicProps {
     initialBonusGoldDecrementCompleteRef: MutableRefObject<boolean>;
     testBrickColumnsRef?: MutableRefObject<number>; 
     testBrickRowsRef?: MutableRefObject<number>; 
+    testBrickGridHeightRef?: MutableRefObject<number>; // Added new ref
 }
 
 export function useLevelLogic({
@@ -145,7 +160,8 @@ export function useLevelLogic({
     spawnablePowerUpsRef,
     initialBonusGoldDecrementCompleteRef,
     testBrickColumnsRef, 
-    testBrickRowsRef 
+    testBrickRowsRef, 
+    testBrickGridHeightRef // Destructure new ref
 }: UseLevelLogicProps) {
     const bricksRef = useRef<Brick[][]>([]);
     const targetScoreRef = useRef(0);
@@ -207,16 +223,17 @@ export function useLevelLogic({
         
         const testCols = (currentMode === 'test' && testBrickColumnsRef) ? testBrickColumnsRef.current : undefined;
         const testRows = (currentMode === 'test' && testBrickRowsRef) ? testBrickRowsRef.current : undefined; 
+        const testGridHeight = (currentMode === 'test' && testBrickGridHeightRef) ? testBrickGridHeightRef.current : undefined; // Get test grid height
 
-        const stats = getLevelStats(level, currentMode, testCols, testRows);
+        const stats = getLevelStats(level, currentMode, testCols, testRows, testGridHeight);
         totalBricksRef.current = stats.totalBricks;
         targetScoreRef.current = stats.targetScore;
 
-        const config = getBrickConfiguration(level, currentMode, testCols, testRows);
+        const config = getBrickConfiguration(level, currentMode, testCols, testRows, testGridHeight);
         brickColumnsRef.current = config.brickColumns; 
         brickRowsRef.current = config.brickRows; 
         
-        bricksRef.current = initializeBricks(config.brickColumns, config.brickRows, config.brickHeight, level, currentMode);
+        bricksRef.current = initializeBricks(config.brickColumns, config.brickRows, config.brickHeight, level, currentMode, config.actualGridHeight);
 
         if (resetScoreAndGold) {
             scoreRef.current = 0;
@@ -269,7 +286,8 @@ export function useLevelLogic({
         spawnablePowerUpsRef,
         initialBonusGoldDecrementCompleteRef,
         testBrickColumnsRef, 
-        testBrickRowsRef 
+        testBrickRowsRef, 
+        testBrickGridHeightRef // Added dependency
     ]);
 
     return {

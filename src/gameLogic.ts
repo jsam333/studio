@@ -7,15 +7,17 @@ import {
     MAX_BRICK_UPGRADE_LEVEL,
     INITIAL_PADDLE_WIDTH,
     POWER_UP_SPAWN_THRESHOLD, // Added for main mode spawn chance
-    BOMB_GLOW_DURATION
+    BOMB_GLOW_DURATION,
+    TARGET_TOTAL_BRICK_GRID_HEIGHT
 } from './constants';
 import { soundSystem } from './soundSystem'; // Import the sound system
 
-export const initializeBricks = (columns: number, rows: number, brickHeight: number, currentLevel: number, gameMode: GameMode | null): Brick[][] => {
+export const initializeBricks = (columns: number, rows: number, brickHeight: number, currentLevel: number, gameMode: GameMode | null, actualGridHeight?: number): Brick[][] => {
     const newBricks: Brick[][] = [];
 
     let currentBrickOffsetLeft = BRICK_OFFSET_LEFT;
     let actualBoardWidth = BOARD_WIDTH;
+    const totalGridHeight = actualGridHeight ?? TARGET_TOTAL_BRICK_GRID_HEIGHT; // Use provided or default
 
     if (gameMode === 'main' && currentLevel === 1) { 
         actualBoardWidth = BOARD_WIDTH * (4 / 5);
@@ -28,7 +30,8 @@ export const initializeBricks = (columns: number, rows: number, brickHeight: num
     const availableWidth = actualBoardWidth - 2 * BRICK_OFFSET_LEFT;
     const totalPaddingWidth = (columns - 1) * BRICK_PADDING;
     const calculatedBrickWidth = (availableWidth - totalPaddingWidth) / columns;
-    const calculatedBrickHeight = brickHeight;
+    // brickHeight is now the individual height passed in, derived from totalGridHeight and rows in useLevelLogic
+    const calculatedBrickHeight = brickHeight; 
 
     let skipColumns: number[] = [];
     if (gameMode === 'main') {

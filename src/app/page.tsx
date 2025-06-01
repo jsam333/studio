@@ -3,7 +3,7 @@
 
 import React, { useRef, useEffect, useCallback, useState } from 'react';
 import {
-    BOARD_WIDTH, BOARD_HEIGHT,
+    BOARD_WIDTH, BOARD_HEIGHT, TARGET_TOTAL_BRICK_GRID_HEIGHT, BRICK_HEIGHT as MIN_BRICK_GRID_HEIGHT, BRICK_OFFSET_TOP, PADDLE_HEIGHT
 } from '../constants';
 import { GameLoopCallbacks, GameState, GameStateRefs, PowerUpType, GameMode } from '../interfaces';
 import { gameUpdate } from '../gameLoop';
@@ -13,7 +13,8 @@ import { useIsMobile } from '../hooks/use-mobile';
 import { GameMenu } from '../components/GameMenu';
 import { GameView } from '../components/GameView';
 
-const SIDEBAR_WIDTH_PX = 192; // This constant is already defined
+const SIDEBAR_WIDTH_PX = 192; 
+const MAX_BRICK_GRID_HEIGHT = BOARD_HEIGHT - BRICK_OFFSET_TOP - PADDLE_HEIGHT - 30; // 30 for some spacing
 
 export default function Home() {
     const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -52,6 +53,8 @@ export default function Home() {
         setTestBrickColumns, 
         testBrickRows, 
         setTestBrickRows, 
+        testBrickGridHeight, // Added
+        setTestBrickGridHeight, // Added
     } = useGameLogic();
 
     useEffect(() => {
@@ -271,8 +274,8 @@ export default function Home() {
                     />
                     <div 
                         style={{
-                            width: `${(BOARD_WIDTH * testScaleRef.current) + SIDEBAR_WIDTH_PX}px`, // Updated width calculation
-                            padding: '5px 10px', // Changed: Reduced vertical padding
+                            width: `${(BOARD_WIDTH * testScaleRef.current) + SIDEBAR_WIDTH_PX}px`,
+                            padding: '5px 10px',
                             backgroundColor: '#111927', 
                             display: 'flex',
                             flexDirection: 'row', 
@@ -280,16 +283,16 @@ export default function Home() {
                             justifyContent: 'space-between', 
                             color: '#FFFFFF',
                             boxSizing: 'border-box',
-                            gap: '15px',
+                            gap: '10px', // Reduced gap for more space
                             borderLeft: '1px solid white',
                             borderRight: '1px solid white',
                             borderBottom: '1px solid white'
                         }}
                     >
                         {/* Power-up Spawn Chance Control Group */}
-                        <div style={{display: 'flex', flexDirection: 'column', alignItems: 'center', flex: 2}}>
-                            <label htmlFor="powerUpSpawnChance" style={{ marginBottom: '5px' }}>
-                                Powerup Spawn Chance: {Math.round(testPowerUpSpawnChance * 100)}%
+                        <div style={{display: 'flex', flexDirection: 'column', alignItems: 'center', flex: 1.5}}>
+                            <label htmlFor="powerUpSpawnChance" style={{ marginBottom: '5px', fontSize: '0.8rem' }}>
+                                PU Spawn: {Math.round(testPowerUpSpawnChance * 100)}%
                             </label>
                             <input 
                                 type="range" 
@@ -302,9 +305,35 @@ export default function Home() {
                                 style={{ width: '100%' }} 
                             />
                         </div>
+                        {/* Brick Grid Height Control Group */}
+                        <div style={{display: 'flex', flexDirection: 'column', alignItems: 'center', flex: 0.5, marginRight: '5px'}}>
+                             <label htmlFor="testBrickGridHeight" style={{ marginBottom: '1px', fontSize: '0.8rem'}}>
+                                Grid H: {testBrickGridHeight}
+                            </label>
+                            <input 
+                                type="range" 
+                                id="testBrickGridHeight" 
+                                min={MIN_BRICK_GRID_HEIGHT} 
+                                max={MAX_BRICK_GRID_HEIGHT} 
+                                step="1" 
+                                value={testBrickGridHeight}
+                                onChange={(e) => {
+                                    const val = parseInt(e.target.value, 10);
+                                    setTestBrickGridHeight(val);
+                                    startGame('test', testBrickColumns, testBrickRows, val);
+                                }}
+                                style={{ 
+                                    width: '20px', // For vertical slider appearance
+                                    height: '50px', // Adjust height as needed
+                                    writingMode: 'bt-lr', /* IE */
+                                    WebkitAppearance: 'slider-vertical', /* WebKit */
+                                    appearance: 'slider-vertical',
+                                }} 
+                            />
+                        </div>
                         {/* Brick Rows Control Group */}
-                        <div style={{display: 'flex', flexDirection: 'row', alignItems: 'center', flex: 1, justifyContent: 'center'}}>
-                            <label htmlFor="testBrickRows" style={{ marginRight: '5px' }}>
+                        <div style={{display: 'flex', flexDirection: 'row', alignItems: 'center', flex: 0.8, justifyContent: 'center'}}>
+                            <label htmlFor="testBrickRows" style={{ marginRight: '5px', fontSize: '0.8rem' }}>
                                 Rows:
                             </label>
                             <input 
@@ -317,16 +346,16 @@ export default function Home() {
                                     const val = parseInt(e.target.value, 10);
                                     if (!isNaN(val) && val >= 1 && val <= 50) { 
                                         setTestBrickRows(val);
-                                        startGame('test', testBrickColumns, val);
+                                        startGame('test', testBrickColumns, val, testBrickGridHeight);
                                     }
                                 }}
-                                style={{ width: '60px', padding: '5px', color: '#000000', textAlign: 'center' }} 
+                                style={{ width: '50px', padding: '3px', fontSize: '0.8rem', color: '#000000', textAlign: 'center' }} 
                             />
                         </div>
                         {/* Brick Columns Control Group */}
                         <div style={{display: 'flex', flexDirection: 'row', alignItems: 'center', flex: 1, justifyContent: 'center'}}>
-                            <label htmlFor="testBrickColumns" style={{ marginRight: '5px' }}>
-                                Columns:
+                            <label htmlFor="testBrickColumns" style={{ marginRight: '5px', fontSize: '0.8rem' }}>
+                                Cols:
                             </label>
                             <input 
                                 type="number" 
@@ -338,10 +367,10 @@ export default function Home() {
                                     const val = parseInt(e.target.value, 10);
                                     if (!isNaN(val) && val >= 1 && val <= 100) { 
                                         setTestBrickColumns(val);
-                                        startGame('test', val, testBrickRows);
+                                        startGame('test', val, testBrickRows, testBrickGridHeight);
                                     }
                                 }}
-                                style={{ width: '60px', padding: '5px', color: '#000000', textAlign: 'center' }} 
+                                style={{ width: '50px', padding: '3px', fontSize: '0.8rem', color: '#000000', textAlign: 'center' }} 
                             />
                         </div>
                     </div>
