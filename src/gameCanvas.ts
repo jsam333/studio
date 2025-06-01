@@ -6,6 +6,7 @@ import {
     BALL_SIZE, BIG_BALL_SIZE_INCREASE
 } from './constants';
 import { Laser } from './interfaces';
+import { soundSystem } from './soundSystem'; // Corrected import path
 
 interface SetupGameCanvasArgs {
     gameContainerRef: React.RefObject<HTMLDivElement>; 
@@ -144,6 +145,7 @@ export const setupGameCanvas = ({
                 width: LASER_WIDTH, height: LASER_HEIGHT, speed: LASER_SPEED, id: Date.now()
             }; 
             gameStateRefs.lasersRef.current.push(newLaser);
+            soundSystem.playLaserFireSound(); // Play laser fire sound
             return true;
         }
         return false;

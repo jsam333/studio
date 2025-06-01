@@ -2,7 +2,7 @@ export class SoundSystem {
     private audioContext: AudioContext | null = null;
     private masterVolume: number = 0.2;
     private activeSounds: Map<string, { oscillator: OscillatorNode, gainNode: GainNode }[]> = new Map();
-    private readonly MAX_INSTANCES_PER_TYPE = 3; // Changed from 5 to 3
+    private readonly MAX_INSTANCES_PER_TYPE = 3; 
 
     constructor() {
         if (typeof window !== 'undefined') {
@@ -124,8 +124,16 @@ export class SoundSystem {
         this.playSound('ballLostFall', 0.6, 150, 0.3, 'square', 75);
     }
 
-    playLaserShootSound() {
-        this.playSound('laser', 0.4, 600, 0.08, 'sawtooth', 300);
+    // Renamed for clarity, assuming the old one was for laser impact or placeholder
+    playLaserImpactSound() { // Was playLaserShootSound
+        this.playSound('laserImpact', 0.4, 600, 0.08, 'sawtooth', 300);
+    }
+
+    playLaserFireSound() {
+        const startFreq = 800;
+        const endFreq = 200;
+        const duration = 0.06; // Short pew sound
+        this.playSound('laserFire', 0.4, startFreq, duration, 'sawtooth', endFreq);
     }
 
     stopAllSounds(): void {
