@@ -1,5 +1,5 @@
 // src/components/PowerUpSidebar.tsx
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { PowerUpType, ALL_TOGGLEABLE_POWER_UPS, POWER_UP_COLORS } from '../constants'; 
 import { useToast } from '../hooks/use-toast';
 import { Button } from '../components/ui/button';
@@ -10,7 +10,7 @@ interface PowerUpSidebarProps {
   toggleAllTestPowerUps?: () => void; 
   addTestLaserCharges?: (count: number) => void; 
   addTestRecoveryCharges?: (count: number) => void; 
-  addTestSafetyNetCharge?: () => void; // Added this line
+  addTestSafetyNetCharge?: () => void; 
   style?: React.CSSProperties;
   isTestMode?: boolean; 
   testPowerUpLevels?: Record<PowerUpType, number>; 
@@ -34,7 +34,7 @@ export const PowerUpSidebar: React.FC<PowerUpSidebarProps> = ({
   toggleAllTestPowerUps, 
   addTestLaserCharges, 
   addTestRecoveryCharges, 
-  addTestSafetyNetCharge, // Added this line
+  addTestSafetyNetCharge, 
   style,
   isTestMode,
   testPowerUpLevels,
@@ -53,6 +53,50 @@ export const PowerUpSidebar: React.FC<PowerUpSidebarProps> = ({
 }) => {
   const [globalTargetLevel, setGlobalTargetLevel] = useState(1);
   const { toast } = useToast();
+
+  const isDraggingToToggleRef = useRef(false);
+  const dragToggleTargetStateRef = useRef<boolean | null>(null);
+  const initialDragToggleTypeRef = useRef<PowerUpType | null>(null);
+
+  useEffect(() => {
+    const handleGlobalMouseUp = () => {
+      if (isDraggingToToggleRef.current) {
+        isDraggingToToggleRef.current = false;
+        dragToggleTargetStateRef.current = null;
+        initialDragToggleTypeRef.current = null;
+      }
+    };
+
+    window.addEventListener('mouseup', handleGlobalMouseUp);
+    return () => {
+      window.removeEventListener('mouseup', handleGlobalMouseUp);
+    };
+  }, []);
+
+  const handlePowerUpMouseDown = (event: React.MouseEvent, type: PowerUpType) => {
+    if (!isTestMode) return;
+    event.stopPropagation();
+
+    // Determine the target state for this drag operation
+    // This is the state the initially clicked item WILL BECOME.
+    dragToggleTargetStateRef.current = !enabledPowerUps.has(type);
+    
+    // Toggle the initially clicked power-up
+    onTogglePowerUp(type);
+
+    isDraggingToToggleRef.current = true;
+    initialDragToggleTypeRef.current = type;
+  };
+
+  const handlePowerUpMouseEnter = (type: PowerUpType) => {
+    if (!isTestMode || !isDraggingToToggleRef.current || type === initialDragToggleTypeRef.current || dragToggleTargetStateRef.current === null) {
+      return;
+    }
+
+    if (enabledPowerUps.has(type) !== dragToggleTargetStateRef.current) {
+      onTogglePowerUp(type);
+    }
+  };
 
   const handleIndividualLevelChange = (type: PowerUpType, increment: boolean) => {
     if (setTestPowerUpLevel && testPowerUpLevels && testPowerUpLevels[type] !== undefined) {
@@ -162,12 +206,13 @@ export const PowerUpSidebar: React.FC<PowerUpSidebarProps> = ({
           return (
             <div 
               key={type} 
-              className={`${buttonBaseClasses} flex items-center justify-between cursor-pointer px-1`}
+              className={`${buttonBaseClasses} flex items-center justify-between cursor-pointer px-1 select-none`}
               style={{
                 backgroundColor: bgColor,
                 color: textColor,
               }}
-              onClick={() => onTogglePowerUp(type)} 
+              onMouseDown={(e) => handlePowerUpMouseDown(e, type)}
+              onMouseEnter={() => handlePowerUpMouseEnter(type)}
             >
               <div className="flex items-center">
                 <span>{type.replace(/_/g, ' ')}</span>

@@ -724,6 +724,18 @@ export function useGameLogic() {
         }
     }, [resetLevel]);
 
+    const triggerTestLevelReset = useCallback(() => {
+        if (gameModeRef.current === 'test') {
+            resetLevel('test', true, testBrickColumnsRef.current, testBrickRowsRef.current, testBrickGridHeightRef.current);
+            setupInitialBall(); // Ensure ball is reset for the new layout
+            // Optionally, ensure the game state is appropriate for a test reset, e.g., menu
+            setGameOverState('menu'); 
+            // Ensure the game isn't considered "started" in a way that prevents interaction
+            isGameStartedRef.current = false; 
+            testPreviewInitialLaunchDoneRef.current = false; 
+        }
+    }, [resetLevel, setupInitialBall, testBrickColumnsRef, testBrickRowsRef, testBrickGridHeightRef, setGameOverState]);
+
     const gameStateRefs: IGameStateRefs = useMemo(() => ({
         paddleXRef, ballsRef, powerUpsRef, particlesRef, homingTrailsRef, scoreRef, goldRef, spawnablePowerUpsRef, 
         paddleWidthRef, widenLevelRef, laserShotsRef, lasersRef, safetyNetCountRef,
@@ -761,6 +773,7 @@ export function useGameLogic() {
         isReinforcePaintModeActiveRef,
         isBombPaintModeActiveRef,
         isBallBrickPaintModeActiveRef,
+        triggerTestLevelReset,
     }), [
         paddleXRef, ballsRef, powerUpsRef, particlesRef, homingTrailsRef, scoreRef, goldRef, spawnablePowerUpsRef, 
         paddleWidthRef, widenLevelRef, laserShotsRef, lasersRef, safetyNetCountRef,
@@ -798,6 +811,7 @@ export function useGameLogic() {
         isReinforcePaintModeActiveRef,
         isBombPaintModeActiveRef,
         isBallBrickPaintModeActiveRef,
+        triggerTestLevelReset,
     ]);
 
     const drawEndMessageCallback = useCallback((context: CanvasRenderingContext2D, state: GameState, finalScore: number) => {
@@ -876,5 +890,6 @@ export function useGameLogic() {
         toggleBombPaintMode,
         isBallBrickPaintModeActive,
         toggleBallBrickPaintMode,
+        triggerTestLevelReset,
     };
 }

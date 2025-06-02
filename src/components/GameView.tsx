@@ -5,6 +5,7 @@ import { ShopScreen } from './ShopScreen';
 import { PowerUpType, GameOverState, GameStateRefs } from '../interfaces';
 import { BOARD_HEIGHT } from '../constants'; // Import BOARD_HEIGHT
 import { useToast } from '../hooks/use-toast';
+import { Button } from './ui/button'; // Import Button
 
 interface GameViewProps {
   gameContainerRef: LegacyRef<HTMLDivElement> | undefined;
@@ -16,7 +17,7 @@ interface GameViewProps {
   toggleAllTestPowerUps?: () => void; 
   addTestLaserCharges?: (count: number) => void; 
   addTestRecoveryCharges?: (count: number) => void; 
-  addTestSafetyNetCharge?: () => void; // Added this line
+  addTestSafetyNetCharge?: () => void; 
   handleResetGame: () => void;
   gameStateRefs: GameStateRefs;
   currentLevel: number;
@@ -36,6 +37,7 @@ interface GameViewProps {
   toggleBombPaintMode?: () => void;
   isBallBrickPaintModeActive?: boolean;
   toggleBallBrickPaintMode?: () => void;
+  // triggerTestLevelReset?: () => void; // Removed prop
 }
 
 export const GameView: React.FC<GameViewProps> = ({
@@ -48,7 +50,7 @@ export const GameView: React.FC<GameViewProps> = ({
   toggleAllTestPowerUps, 
   addTestLaserCharges, 
   addTestRecoveryCharges, 
-  addTestSafetyNetCharge, // Added this line
+  addTestSafetyNetCharge, 
   handleResetGame,
   gameStateRefs,
   currentLevel,
@@ -68,6 +70,7 @@ export const GameView: React.FC<GameViewProps> = ({
   toggleBombPaintMode,
   isBallBrickPaintModeActive,
   toggleBallBrickPaintMode,
+  // triggerTestLevelReset, // Removed prop from destructuring
 }) => {
   const { toast } = useToast();
   const containerClasses = isTestPreview
@@ -98,7 +101,7 @@ export const GameView: React.FC<GameViewProps> = ({
             toggleAllTestPowerUps={toggleAllTestPowerUps} 
             addTestLaserCharges={addTestLaserCharges} 
             addTestRecoveryCharges={addTestRecoveryCharges} 
-            addTestSafetyNetCharge={addTestSafetyNetCharge} // Added this line
+            addTestSafetyNetCharge={addTestSafetyNetCharge} 
             style={isTestPreview ? { height: `${BOARD_HEIGHT}px` } : {}} 
             isTestMode={isTestPreview} 
             testPowerUpLevels={testPowerUpLevels} 
@@ -116,6 +119,16 @@ export const GameView: React.FC<GameViewProps> = ({
             toggleBallBrickPaintMode={toggleBallBrickPaintMode}
           />
         )}
+
+        {/* {isTestPreview && triggerTestLevelReset && (
+          <Button
+            onClick={triggerTestLevelReset}
+            variant="outline"
+            className="absolute bottom-2 right-2 bg-gray-700 hover:bg-gray-600 text-white text-xs py-1 px-2 rounded shadow-md focus:ring-1 focus:ring-white"
+          >
+            Reset Level
+          </Button>
+        )} Removed button from here */}
 
         {gameOverState === 'shop' && !isTestPreview && (
           <div 

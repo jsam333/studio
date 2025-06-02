@@ -12,6 +12,7 @@ import { useGameLogic } from '../hooks/useGameLogic';
 import { useIsMobile } from '../hooks/use-mobile';
 import { GameMenu } from '../components/GameMenu';
 import { GameView } from '../components/GameView';
+import { Button } from '../components/ui/button';
 
 const SIDEBAR_WIDTH_PX = 192; 
 const MAX_BRICK_GRID_HEIGHT = BOARD_HEIGHT - BRICK_OFFSET_TOP - PADDLE_HEIGHT - 30; // 30 for some spacing
@@ -72,6 +73,7 @@ export default function Home() {
         toggleBombPaintMode,
         isBallBrickPaintModeActive,
         toggleBallBrickPaintMode,
+        triggerTestLevelReset,
     } = useGameLogic();
 
     useEffect(() => {
@@ -272,6 +274,7 @@ export default function Home() {
 
             {gameOverState === 'menu' && activeGameMode === 'test' && (
                 <div style={{ marginTop: '0px', display: 'flex', flexDirection: 'column', alignItems: 'center' }}> 
+                    <h3 style={{ color: 'white', textAlign: 'center', margin: '10px 0', fontSize: '1.25rem' }}>Test Window Controls</h3>
                     <GameView
                         gameContainerRef={testGameContainerRef} 
                         canvasRef={testCanvasRef} 
@@ -302,6 +305,7 @@ export default function Home() {
                         toggleBombPaintMode={toggleBombPaintMode}
                         isBallBrickPaintModeActive={isBallBrickPaintModeActive}
                         toggleBallBrickPaintMode={toggleBallBrickPaintMode}
+                        triggerTestLevelReset={triggerTestLevelReset}
                     />
                     <div 
                         style={{
@@ -311,7 +315,7 @@ export default function Home() {
                             display: 'flex',
                             flexDirection: 'row', 
                             alignItems: 'center', 
-                            justifyContent: 'space-between', 
+                            justifyContent: 'center', 
                             color: '#FFFFFF',
                             boxSizing: 'border-box',
                             gap: '10px', 
@@ -322,7 +326,7 @@ export default function Home() {
                     >
                         {/* Power-up Spawn Chance Control Group */}
                         <div style={{display: 'flex', flexDirection: 'column', alignItems: 'center', flex: 1.5}}>
-                            <label htmlFor="powerUpSpawnChance" style={{ marginBottom: '5px', fontSize: '0.8rem' }}>
+                            <label htmlFor="powerUpSpawnChance" style={{ marginBottom: '5px', fontSize: '0.75rem' }}>
                                 PU Spawn: {Math.round(testPowerUpSpawnChance * 100)}%
                             </label>
                             <input 
@@ -338,7 +342,7 @@ export default function Home() {
                         </div>
                         {/* Brick Grid Height Control Group */}
                         <div style={{display: 'flex', flexDirection: 'column', alignItems: 'center', flex: 1.5}}>
-                             <label htmlFor="testBrickGridHeight" style={{ marginBottom: '5px', fontSize: '0.8rem'}}>
+                             <label htmlFor="testBrickGridHeight" style={{ marginBottom: '5px', fontSize: '0.75rem'}}>
                                 Grid H: {testBrickGridHeight}
                             </label>
                             <input 
@@ -360,8 +364,8 @@ export default function Home() {
                             />
                         </div>
                         {/* Brick Rows Control Group */}
-                        <div style={{display: 'flex', flexDirection: 'row', alignItems: 'center', flex: 0.8, justifyContent: 'center'}}>
-                            <label htmlFor="testBrickRows" style={{ marginRight: '5px', fontSize: '0.8rem' }}>
+                        <div style={{display: 'flex', flexDirection: 'row', alignItems: 'center', flex: 0.6, justifyContent: 'center'}}>
+                            <label htmlFor="testBrickRows" style={{ marginRight: '5px', fontSize: '0.75rem' }}>
                                 Rows:
                             </label>
                             <input 
@@ -377,29 +381,39 @@ export default function Home() {
                                         startGame('test', testBrickColumns, val, testBrickGridHeight);
                                     }
                                 }}
-                                style={{ width: '50px', padding: '3px', fontSize: '0.8rem', color: '#000000', textAlign: 'center' }} 
+                                style={{ width: '60px', padding: '3px', fontSize: '0.75rem', color: '#000000', textAlign: 'center' }}
                             />
                         </div>
                         {/* Brick Columns Control Group */}
-                        <div style={{display: 'flex', flexDirection: 'row', alignItems: 'center', flex: 1, justifyContent: 'center'}}>
-                            <label htmlFor="testBrickColumns" style={{ marginRight: '5px', fontSize: '0.8rem' }}>
+                        <div style={{display: 'flex', flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-start', flex: 0.6, gap: '8px'}}> 
+                            <label htmlFor="testBrickColumns" style={{ fontSize: '0.75rem' }}> 
                                 Cols:
                             </label>
-                            <input 
-                                type="number" 
-                                id="testBrickColumns" 
-                                min="1" 
-                                max="100" 
-                                value={testBrickColumns}
-                                onChange={(e) => {
-                                    const val = parseInt(e.target.value, 10);
-                                    if (!isNaN(val) && val >= 1 && val <= 100) { 
-                                        setTestBrickColumns(val);
-                                        startGame('test', val, testBrickRows, testBrickGridHeight);
-                                    }
-                                }}
-                                style={{ width: '50px', padding: '3px', fontSize: '0.8rem', color: '#000000', textAlign: 'center' }} 
-                            />
+                            {/* New inner div for input and button */}
+                            <div style={{display: 'flex', alignItems: 'center', gap: '8px', flex: 1}}>
+                                <input 
+                                    type="number" 
+                                    id="testBrickColumns" 
+                                    min="1" 
+                                    max="100" 
+                                    value={testBrickColumns}
+                                    onChange={(e) => {
+                                        const val = parseInt(e.target.value, 10);
+                                        if (!isNaN(val) && val >= 1 && val <= 100) { 
+                                            setTestBrickColumns(val);
+                                            startGame('test', val, testBrickRows, testBrickGridHeight);
+                                        }
+                                    }}
+                                    style={{ padding: '3px', fontSize: '0.75rem', color: '#000000', textAlign: 'center', minWidth: '60px' }}
+                                />
+                                <Button
+                                    onClick={triggerTestLevelReset} 
+                                    variant="outline"
+                                    className="bg-gray-700 hover:bg-gray-600 text-white text-[0.8rem] py-[3px] px-2 rounded shadow-md focus:ring-1 focus:ring-white"
+                                >
+                                    Reset
+                                </Button>
+                            </div>
                         </div>
                     </div>
                 </div>
