@@ -33,12 +33,12 @@ export const PowerUpSidebar: React.FC<PowerUpSidebarProps> = ({
     }
   };
 
-  const buttonBaseClasses = "px-1 py-0.5 rounded text-sm font-medium transition-colors duration-150 w-full text-left focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-gray-800 focus:ring-white hover:opacity-80";
+  const buttonBaseClasses = "px-[2px] py-0.5 rounded text-xs font-medium transition-colors duration-150 w-full text-left focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-gray-800 focus:ring-white hover:opacity-80";
 
   return (
     <div
       data-role="powerup-sidebar"
-      className="h-full p-2 border-l border-gray-700 bg-gray-800 text-white overflow-y-auto flex flex-col space-y-px flex-shrink-0"
+      className="h-full px-1 py-2 border-l border-gray-700 bg-gray-800 text-white overflow-y-auto flex flex-col space-y-px flex-shrink-0"
       style={style}
     >
       <h3 className="text-base font-semibold mb-1 text-center sticky top-0 bg-gray-800 py-1">Enabled Power-ups</h3>
@@ -65,14 +65,14 @@ export const PowerUpSidebar: React.FC<PowerUpSidebarProps> = ({
                 onClick={(e) => e.stopPropagation()} // Prevent outer div click when interacting with arrows
                 onMouseDown={(e) => e.stopPropagation()} 
               >
-                <span className="text-sm w-4 text-center select-none mr-1" style={{ color: textColor === '#ffffff' ? '#ffffff' : '#000000' }}>
-                  {currentLevelForType}
+                <span className="text-xs w-4 text-center select-none mr-1" style={{ color: textColor === '#ffffff' ? '#ffffff' : '#000000' }}>
+                  {`L${currentLevelForType}`}
                 </span>
                 <div className="flex flex-col items-center justify-center">
                   <button 
                     onClick={(e) => { e.stopPropagation(); handleLevelChange(type, true); }} 
                     onMouseDown={(e) => e.stopPropagation()} 
-                    className="px-1 py-0 text-xs rounded-t bg-gray-700 hover:bg-gray-600 focus:outline-none focus:ring-1 focus:ring-white w-4 h-3 flex items-center justify-center"
+                    className="px-1 py-0 text-xs rounded-t bg-gray-700 hover:bg-gray-600 focus:outline-none focus:ring-1 focus:ring-white w-4 h-2.5 flex items-center justify-center"
                     style={{ lineHeight: '0.5rem', color: 'white' }} 
                   >
                     &#x25B2; {/* Up arrow */}
@@ -80,7 +80,7 @@ export const PowerUpSidebar: React.FC<PowerUpSidebarProps> = ({
                   <button 
                     onClick={(e) => { e.stopPropagation(); handleLevelChange(type, false); }}
                     onMouseDown={(e) => e.stopPropagation()}  
-                    className="px-1 py-0 text-xs rounded-b bg-gray-700 hover:bg-gray-600 focus:outline-none focus:ring-1 focus:ring-white w-4 h-3 flex items-center justify-center"
+                    className="px-1 py-0 text-xs rounded-b bg-gray-700 hover:bg-gray-600 focus:outline-none focus:ring-1 focus:ring-white w-4 h-2.5 flex items-center justify-center"
                     style={{ lineHeight: '0.5rem', color: 'white' }} 
                   >
                     &#x25BC; {/* Down arrow */}
