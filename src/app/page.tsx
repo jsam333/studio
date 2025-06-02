@@ -274,7 +274,9 @@ export default function Home() {
 
             {gameOverState === 'menu' && activeGameMode === 'test' && (
                 <div style={{ marginTop: '0px', display: 'flex', flexDirection: 'column', alignItems: 'center' }}> 
-                    <h3 style={{ color: 'white', textAlign: 'center', margin: '10px 0', fontSize: '1.25rem' }}>Test Window Controls</h3>
+                    {/* Test Window Controls - Removed */}
+                    {/* <h3 style={{ color: 'white', textAlign: 'center', margin: '10px 0', fontSize: '1.25rem' }}>Test Window Controls</h3> */}
+                    
                     <GameView
                         gameContainerRef={testGameContainerRef} 
                         canvasRef={testCanvasRef} 
