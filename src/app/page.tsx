@@ -42,7 +42,9 @@ export default function Home() {
         handleResetGame,
         launchStuckBalls,
         handlePowerUpToggle,
-        toggleAllTestPowerUps, // Added this line
+        toggleAllTestPowerUps, 
+        addTestLaserCharges, 
+        addTestRecoveryCharges, // Added this line
         startGame, 
         startNextLevel,
         addSpawnablePowerUp,
@@ -266,7 +268,9 @@ export default function Home() {
                         showSidebar={true} 
                         enabledPowerUps={enabledPowerUps} 
                         onTogglePowerUp={handlePowerUpToggle} 
-                        toggleAllTestPowerUps={toggleAllTestPowerUps} // Added this line
+                        toggleAllTestPowerUps={toggleAllTestPowerUps} 
+                        addTestLaserCharges={addTestLaserCharges} 
+                        addTestRecoveryCharges={addTestRecoveryCharges} // Added this line
                         handleResetGame={() => startGame('test')} 
                         gameStateRefs={gameStateRefs} 
                         currentLevel={1} 

@@ -5,7 +5,9 @@ import { PowerUpType, ALL_TOGGLEABLE_POWER_UPS, POWER_UP_COLORS } from '../const
 interface PowerUpSidebarProps {
   enabledPowerUps: Set<PowerUpType>;
   onTogglePowerUp: (type: PowerUpType) => void;
-  toggleAllTestPowerUps?: () => void; // Added this line
+  toggleAllTestPowerUps?: () => void; 
+  addTestLaserCharges?: (count: number) => void; 
+  addTestRecoveryCharges?: (count: number) => void; 
   style?: React.CSSProperties;
   isTestMode?: boolean; 
   testPowerUpLevels?: Record<PowerUpType, number>; 
@@ -16,7 +18,9 @@ interface PowerUpSidebarProps {
 export const PowerUpSidebar: React.FC<PowerUpSidebarProps> = ({
   enabledPowerUps,
   onTogglePowerUp,
-  toggleAllTestPowerUps, // Added this line
+  toggleAllTestPowerUps, 
+  addTestLaserCharges, 
+  addTestRecoveryCharges, 
   style,
   isTestMode,
   testPowerUpLevels,
@@ -50,6 +54,20 @@ export const PowerUpSidebar: React.FC<PowerUpSidebarProps> = ({
     }
   };
 
+  const handleAddLaserCharges = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (addTestLaserCharges) {
+      addTestLaserCharges(2);
+    }
+  };
+
+  const handleAddRecoveryCharges = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (addTestRecoveryCharges) {
+      addTestRecoveryCharges(2);
+    }
+  };
+
   const allPowerUpsEnabled = ALL_TOGGLEABLE_POWER_UPS.length > 0 && enabledPowerUps.size === ALL_TOGGLEABLE_POWER_UPS.length;
   const toggleAllButtonText = allPowerUpsEnabled ? "All Off" : "All On";
 
@@ -61,21 +79,21 @@ export const PowerUpSidebar: React.FC<PowerUpSidebarProps> = ({
       className="h-full py-2 border-l border-gray-700 bg-gray-800 text-white overflow-y-auto flex flex-col space-y-px flex-shrink-0"
       style={style}
     >
-      <div className="flex items-center justify-between sticky top-0 bg-gray-800 px-1">
+      <div className="flex items-center justify-between sticky top-0 bg-gray-800 px-1 py-1">
         <h3 className="text-xs font-semibold text-center">Enabled Power-ups</h3>
         <div className="flex items-center">
           {isTestMode && toggleAllTestPowerUps && (
             <button
               onClick={toggleAllTestPowerUps}
               className="px-1 py-0.5 mr-1 text-xs rounded bg-gray-600 hover:bg-gray-500 focus:outline-none focus:ring-1 focus:ring-white"
-              style={{ lineHeight: '0.9rem', color: 'white'}} // Adjusted line height
+              style={{ lineHeight: '0.9rem', color: 'white'}}
             >
               {toggleAllButtonText}
             </button>
           )}
           {isTestMode && setAllTestPowerUpLevels && (
             <div 
-              className="ml-1 flex items-center justify-center" // Adjusted margin to ml-1 from ml-2
+              className="ml-1 flex items-center justify-center"
               onClick={(e) => e.stopPropagation()} 
               onMouseDown={(e) => e.stopPropagation()} 
             >
@@ -119,12 +137,34 @@ export const PowerUpSidebar: React.FC<PowerUpSidebarProps> = ({
               }}
               onClick={() => onTogglePowerUp(type)} 
             >
-              <span>{type.replace(/_/g, ' ')}</span>
+              <div className="flex items-center">
+                <span>{type.replace(/_/g, ' ')}</span>
+              </div>
               <div 
                 className="ml-2 flex items-center justify-center"
                 onClick={(e) => e.stopPropagation()} 
                 onMouseDown={(e) => e.stopPropagation()} 
               >
+                {type === 'LASER_PADDLE' && addTestLaserCharges && (
+                  <button 
+                    onClick={handleAddLaserCharges}
+                    onMouseDown={(e) => e.stopPropagation()} 
+                    className="mr-1 px-1.5 py-0 text-sm rounded bg-gray-600 hover:bg-gray-500 focus:outline-none focus:ring-1 focus:ring-white self-stretch flex items-center justify-center"
+                    style={{ color: 'white' }} 
+                  >
+                    +
+                  </button>
+                )}
+                {type === 'RECOVERY_PADDLE' && addTestRecoveryCharges && (
+                  <button 
+                    onClick={handleAddRecoveryCharges} 
+                    onMouseDown={(e) => e.stopPropagation()} 
+                    className="mr-1 px-1.5 py-0 text-sm rounded bg-gray-600 hover:bg-gray-500 focus:outline-none focus:ring-1 focus:ring-white self-stretch flex items-center justify-center"
+                    style={{ color: 'white' }} 
+                  >
+                    +
+                  </button>
+                )}
                 <span className="text-xs w-4 text-center select-none mr-1" style={{ color: textColor === '#ffffff' ? '#ffffff' : '#000000' }}>
                   {`L${currentLevelForType}`}
                 </span>

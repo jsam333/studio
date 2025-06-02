@@ -126,6 +126,20 @@ export function useGameLogic() {
         });
     }, []);
 
+    const addTestLaserCharges = useCallback((count: number) => {
+        if (gameModeRef.current === 'test') {
+            laserShotsRef.current += count;
+            console.log(`Added ${count} laser charges. Total: ${laserShotsRef.current}`);
+        }
+    }, []);
+
+    const addTestRecoveryCharges = useCallback((count: number) => {
+        if (gameModeRef.current === 'test') {
+            stickyPaddleChargesRef.current += count;
+            console.log(`Added ${count} recovery charges. Total: ${stickyPaddleChargesRef.current}`);
+        }
+    }, []);
+
     const {
         schedulePaddleShrink,
         executePaddleShrink,
@@ -679,7 +693,9 @@ export function useGameLogic() {
         handleResetGame,
         launchStuckBalls,
         handlePowerUpToggle,
-        toggleAllTestPowerUps, // Expose new function
+        toggleAllTestPowerUps,
+        addTestLaserCharges, 
+        addTestRecoveryCharges, // Expose new function
         startGame,
         startNextLevel,
         addSpawnablePowerUp,
