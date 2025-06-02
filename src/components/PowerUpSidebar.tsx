@@ -8,6 +8,7 @@ interface PowerUpSidebarProps {
   toggleAllTestPowerUps?: () => void; 
   addTestLaserCharges?: (count: number) => void; 
   addTestRecoveryCharges?: (count: number) => void; 
+  addTestSafetyNetCharge?: () => void; // Added this line
   style?: React.CSSProperties;
   isTestMode?: boolean; 
   testPowerUpLevels?: Record<PowerUpType, number>; 
@@ -21,6 +22,7 @@ export const PowerUpSidebar: React.FC<PowerUpSidebarProps> = ({
   toggleAllTestPowerUps, 
   addTestLaserCharges, 
   addTestRecoveryCharges, 
+  addTestSafetyNetCharge, // Added this line
   style,
   isTestMode,
   testPowerUpLevels,
@@ -65,6 +67,13 @@ export const PowerUpSidebar: React.FC<PowerUpSidebarProps> = ({
     e.stopPropagation();
     if (addTestRecoveryCharges) {
       addTestRecoveryCharges(2);
+    }
+  };
+
+  const handleAddSafetyNet = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (addTestSafetyNetCharge) {
+      addTestSafetyNetCharge();
     }
   };
 
@@ -158,6 +167,16 @@ export const PowerUpSidebar: React.FC<PowerUpSidebarProps> = ({
                 {type === 'RECOVERY_PADDLE' && addTestRecoveryCharges && (
                   <button 
                     onClick={handleAddRecoveryCharges} 
+                    onMouseDown={(e) => e.stopPropagation()} 
+                    className="mr-1 px-1.5 py-0 text-sm rounded bg-gray-600 hover:bg-gray-500 focus:outline-none focus:ring-1 focus:ring-white self-stretch flex items-center justify-center"
+                    style={{ color: 'white' }} 
+                  >
+                    +
+                  </button>
+                )}
+                {type === 'SAFETY_NET' && addTestSafetyNetCharge && (
+                  <button 
+                    onClick={handleAddSafetyNet} 
                     onMouseDown={(e) => e.stopPropagation()} 
                     className="mr-1 px-1.5 py-0 text-sm rounded bg-gray-600 hover:bg-gray-500 focus:outline-none focus:ring-1 focus:ring-white self-stretch flex items-center justify-center"
                     style={{ color: 'white' }} 

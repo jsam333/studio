@@ -14,7 +14,8 @@ interface GameViewProps {
   onTogglePowerUp: (powerUp: PowerUpType) => void;
   toggleAllTestPowerUps?: () => void; 
   addTestLaserCharges?: (count: number) => void; 
-  addTestRecoveryCharges?: (count: number) => void; // Added this line
+  addTestRecoveryCharges?: (count: number) => void; 
+  addTestSafetyNetCharge?: () => void; // Added this line
   handleResetGame: () => void;
   gameStateRefs: GameStateRefs;
   currentLevel: number;
@@ -35,7 +36,8 @@ export const GameView: React.FC<GameViewProps> = ({
   onTogglePowerUp,
   toggleAllTestPowerUps, 
   addTestLaserCharges, 
-  addTestRecoveryCharges, // Added this line
+  addTestRecoveryCharges, 
+  addTestSafetyNetCharge, // Added this line
   handleResetGame,
   gameStateRefs,
   currentLevel,
@@ -71,7 +73,8 @@ export const GameView: React.FC<GameViewProps> = ({
             onTogglePowerUp={onTogglePowerUp} 
             toggleAllTestPowerUps={toggleAllTestPowerUps} 
             addTestLaserCharges={addTestLaserCharges} 
-            addTestRecoveryCharges={addTestRecoveryCharges} // Added this line
+            addTestRecoveryCharges={addTestRecoveryCharges} 
+            addTestSafetyNetCharge={addTestSafetyNetCharge} // Added this line
             style={isTestPreview ? { height: `${BOARD_HEIGHT}px` } : {}} 
             isTestMode={isTestPreview} 
             testPowerUpLevels={testPowerUpLevels} 

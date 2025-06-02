@@ -140,6 +140,13 @@ export function useGameLogic() {
         }
     }, []);
 
+    const addTestSafetyNetCharge = useCallback(() => {
+        if (gameModeRef.current === 'test') {
+            safetyNetCountRef.current += 1;
+            console.log(`Added 1 safety net. Total: ${safetyNetCountRef.current}`);
+        }
+    }, []);
+
     const {
         schedulePaddleShrink,
         executePaddleShrink,
@@ -695,7 +702,8 @@ export function useGameLogic() {
         handlePowerUpToggle,
         toggleAllTestPowerUps,
         addTestLaserCharges, 
-        addTestRecoveryCharges, // Expose new function
+        addTestRecoveryCharges,
+        addTestSafetyNetCharge, // Expose new function
         startGame,
         startNextLevel,
         addSpawnablePowerUp,

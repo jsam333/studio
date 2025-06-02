@@ -44,7 +44,8 @@ export default function Home() {
         handlePowerUpToggle,
         toggleAllTestPowerUps, 
         addTestLaserCharges, 
-        addTestRecoveryCharges, // Added this line
+        addTestRecoveryCharges, 
+        addTestSafetyNetCharge,
         startGame, 
         startNextLevel,
         addSpawnablePowerUp,
@@ -270,7 +271,8 @@ export default function Home() {
                         onTogglePowerUp={handlePowerUpToggle} 
                         toggleAllTestPowerUps={toggleAllTestPowerUps} 
                         addTestLaserCharges={addTestLaserCharges} 
-                        addTestRecoveryCharges={addTestRecoveryCharges} // Added this line
+                        addTestRecoveryCharges={addTestRecoveryCharges} 
+                        addTestSafetyNetCharge={addTestSafetyNetCharge} // Ensured this is passed
                         handleResetGame={() => startGame('test')} 
                         gameStateRefs={gameStateRefs} 
                         currentLevel={1} 
