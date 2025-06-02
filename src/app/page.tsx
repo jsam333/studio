@@ -55,8 +55,8 @@ export default function Home() {
         setTestBrickRows, 
         testBrickGridHeight, 
         setTestBrickGridHeight, 
-        testMultiballLevel, // Added for Multiball level
-        setTestMultiballLevel, // Added for Multiball level
+        testPowerUpLevels, // Changed from testMultiballLevel
+        setTestPowerUpLevel, // Changed from setTestMultiballLevel
     } = useGameLogic();
 
     useEffect(() => {
@@ -270,8 +270,8 @@ export default function Home() {
                         addSpawnablePowerUp={addSpawnablePowerUp}
                         startNextLevel={() => {}} 
                         isTestPreview={true} 
-                        testMultiballLevel={testMultiballLevel} // Pass down
-                        setTestMultiballLevel={setTestMultiballLevel} // Pass down
+                        testPowerUpLevels={testPowerUpLevels} // Pass down generalized levels
+                        setTestPowerUpLevel={setTestPowerUpLevel} // Pass down generalized setter
                     />
                     <div 
                         style={{
@@ -388,7 +388,6 @@ export default function Home() {
                     currentLevel={currentLevel}
                     addSpawnablePowerUp={addSpawnablePowerUp}
                     startNextLevel={startNextLevel}
-                    // Props for main game view don't need testMultiballLevel
                 />
             )}
         </div>

@@ -20,18 +20,18 @@ const INITIAL_LIVES = 3;
 
 const getPowerUpTypeForLevel = (baseType: PowerUpType, level: number): PowerUpType | null => {
     if (level < 1 || level > MAX_UPGRADE_LEVEL) return null;
-    if (level === 1) return baseType;
-    return `${baseType}_L${level}` as PowerUpType;
+    if (level === 1) return baseType; // Base type itself is L1
+    // Ensure the baseType does not already have a level suffix
+    const base = baseType.split('_L')[0] as PowerUpType;
+    return `${base}_L${level}` as PowerUpType;
 };
 
-const UPGRADABLE_POWER_UPS: PowerUpType[] = [
-    'MULTI_BALL', 'WIDEN_PADDLE', 'LASER_PADDLE', 'RECOVERY_PADDLE',
-    'REGEN_BRICK', 'SAFETY_NET', 'REINFORCE_BRICK', 'MAKE_SPECIAL', 'DOUBLE_BALL',
-    'PIERCE_BALL', 'UPGRADE_BRICK', 'BUILDER_BALL', 'BIG_BALL', 'SPLITTING_BALL',
-    'COLLECTION_FIELD', 'HOMING_BALL', 'BOMB_BRICK',
-    'BALL_BRICK',
-    'POINTS_FIELD'
-];
+const UPGRADABLE_POWER_UPS: PowerUpType[] = ALL_TOGGLEABLE_POWER_UPS;
+
+const initialTestPowerUpLevels = ALL_TOGGLEABLE_POWER_UPS.reduce((acc, type) => {
+    acc[type] = 1;
+    return acc;
+}, {} as Record<PowerUpType, number>);
 
 export function useGameLogic() {
     const paddleXRef = useRef((BOARD_WIDTH - INITIAL_PADDLE_WIDTH) / 2);
@@ -71,7 +71,7 @@ export function useGameLogic() {
     const levelCompletionProcessedRef = useRef<boolean>(false);
     const paddleVisualEffectActiveRef = useRef<boolean>(false);
     const paddleVisualEffectStartTimeRef = useRef<number | null>(null);
-    const testMultiballLevelRef = useRef<number>(1); // Added for Multiball level
+    const testPowerUpLevelsRef = useRef<Record<PowerUpType, number>>({ ...initialTestPowerUpLevels });
 
     const {
         testPowerUpSpawnChanceRef,
@@ -93,11 +93,18 @@ export function useGameLogic() {
     const [enabledPowerUps, setEnabledPowerUps] = useState<Set<PowerUpType>>(() => new Set(['MULTI_BALL'] as PowerUpType[])); 
     const [showSidebar, setShowSidebar] = useState<boolean>(true); 
     const [activeGameMode, setActiveGameMode] = useState<GameMode | null>('test'); 
-    const [testMultiballLevel, setTestMultiballLevel] = useState<number>(1); // Added for Multiball level
+    const [testPowerUpLevels, setTestPowerUpLevelsState] = useState<Record<PowerUpType, number>>({ ...initialTestPowerUpLevels });
 
     useEffect(() => {
-        testMultiballLevelRef.current = testMultiballLevel;
-    }, [testMultiballLevel]);
+        testPowerUpLevelsRef.current = testPowerUpLevels;
+    }, [testPowerUpLevels]);
+
+    const setTestPowerUpLevel = useCallback((type: PowerUpType, level: number) => {
+        setTestPowerUpLevelsState(prevLevels => ({
+            ...prevLevels,
+            [type]: level
+        }));
+    }, []);
 
     const {
         schedulePaddleShrink,
@@ -198,7 +205,7 @@ export function useGameLogic() {
                     setTestBrickColumns(newTestBrickColumns !== undefined ? newTestBrickColumns : TEST_DEFAULT_BRICK_COLUMNS);
                     setTestBrickRows(newTestBrickRows !== undefined ? newTestBrickRows : TEST_DEFAULT_BRICK_ROWS);
                     setTestBrickGridHeight(newTestBrickGridHeight !== undefined ? newTestBrickGridHeight : TARGET_TOTAL_BRICK_GRID_HEIGHT);
-                    setTestMultiballLevel(1); // Reset Multiball level on first test run
+                    setTestPowerUpLevelsState({ ...initialTestPowerUpLevels }); // Reset all power-up levels
                     firstTestRunCompletedRef.current = true;
                 } else {
                     setTestBrickColumns(newTestBrickColumns !== undefined ? newTestBrickColumns : testBrickColumns); 
@@ -215,7 +222,7 @@ export function useGameLogic() {
         }
     }, [
         resetLevel, setupInitialBall, setActiveGameMode, setEnabledPowerUps, setShowSidebar, setGameOverState, 
-        setTestPowerUpSpawnChance, setTestBrickColumns, setTestBrickRows, setTestBrickGridHeight, setTestMultiballLevel,
+        setTestPowerUpSpawnChance, setTestBrickColumns, setTestBrickRows, setTestBrickGridHeight, 
         testBrickColumns, testBrickRows, testBrickGridHeight
     ]);
 
@@ -354,7 +361,7 @@ export function useGameLogic() {
         setTestBrickRows(TEST_DEFAULT_BRICK_ROWS); 
         setTestBrickGridHeight(TARGET_TOTAL_BRICK_GRID_HEIGHT);
         setEnabledPowerUps(new Set(['MULTI_BALL'] as PowerUpType[]));
-        setTestMultiballLevel(1); // Reset Multiball level
+        setTestPowerUpLevelsState({ ...initialTestPowerUpLevels }); // Reset all power-up levels
         firstTestRunCompletedRef.current = false; 
 
         gameModeRef.current = 'test'; 
@@ -369,7 +376,7 @@ export function useGameLogic() {
 
     }, [
         resetLevel, resetPaddle, clearBonusGoldTimers, setGameOverState, setActiveGameMode, setShowSidebar, setEnabledPowerUps, setupInitialBall,
-        setTestPowerUpSpawnChance, setTestBrickColumns, setTestBrickRows, setTestBrickGridHeight, setTestMultiballLevel
+        setTestPowerUpSpawnChance, setTestBrickColumns, setTestBrickRows, setTestBrickGridHeight
     ]);
 
     const launchStuckBalls = useCallback((isInitialLaunchArgument = false) => { 
@@ -498,7 +505,7 @@ export function useGameLogic() {
             setTestBrickColumns(TEST_DEFAULT_BRICK_COLUMNS); 
             setTestBrickRows(TEST_DEFAULT_BRICK_ROWS); 
             setTestBrickGridHeight(TARGET_TOTAL_BRICK_GRID_HEIGHT);
-            setTestMultiballLevel(1); // Reset Multiball level
+            setTestPowerUpLevelsState({ ...initialTestPowerUpLevels }); // Reset all power-up levels
 
             resetLevel(nextMode, false);
             isGameStartedRef.current = false; 
@@ -508,7 +515,7 @@ export function useGameLogic() {
         }
     }, [
         resetLevel, setActiveGameMode, setShowSidebar, setGameOverState,
-        setTestPowerUpSpawnChance, setTestBrickColumns, setTestBrickRows, setTestBrickGridHeight, setTestMultiballLevel
+        setTestPowerUpSpawnChance, setTestBrickColumns, setTestBrickRows, setTestBrickGridHeight
     ]); 
 
     const addSpawnablePowerUp = useCallback((typeToAdd: PowerUpType) => {
@@ -587,7 +594,7 @@ export function useGameLogic() {
         paddleVisualEffectActiveRef, 
         paddleVisualEffectStartTimeRef,
         laserIntervalRef, 
-        testMultiballLevelRef, // Added for Multiball level
+        testPowerUpLevelsRef, // Changed from testMultiballLevelRef
         // From useTestModeSettings hook
         testPowerUpSpawnChanceRef,
         testBrickColumnsRef,
@@ -620,7 +627,7 @@ export function useGameLogic() {
         paddleVisualEffectActiveRef, 
         paddleVisualEffectStartTimeRef,
         laserIntervalRef,
-        testMultiballLevelRef, // Added for Multiball level
+        testPowerUpLevelsRef, // Changed from testMultiballLevelRef
         // From useTestModeSettings hook
         testPowerUpSpawnChanceRef,
         testBrickColumnsRef,
@@ -662,8 +669,8 @@ export function useGameLogic() {
         lives: livesRef.current,
         score: scoreRef.current,
         gold: goldRef.current,
-        testMultiballLevel, // Added for Multiball level
-        setTestMultiballLevel, // Added for Multiball level
+        testPowerUpLevels, // Expose new state
+        setTestPowerUpLevel, // Expose new setter
         // From useTestModeSettings hook
         testPowerUpSpawnChance, 
         setTestPowerUpSpawnChance, 

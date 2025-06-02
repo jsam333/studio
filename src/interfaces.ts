@@ -211,7 +211,7 @@ export interface GameStateRefsBase {
     testPowerUpSpawnChanceRef: React.MutableRefObject<number>;
     testBrickColumnsRef: React.MutableRefObject<number>; 
     testBrickRowsRef: React.MutableRefObject<number>; 
-    testMultiballLevelRef?: React.MutableRefObject<number>; // Added for test mode Multiball level
+    testPowerUpLevelsRef?: React.MutableRefObject<Record<PowerUpType, number>>; // Replaced testMultiballLevelRef
     paddleVisualEffectActiveRef?: React.MutableRefObject<boolean>; 
     paddleVisualEffectStartTimeRef?: React.MutableRefObject<number | null>; 
     laserIntervalRef: React.MutableRefObject<number | null>; // Added this line

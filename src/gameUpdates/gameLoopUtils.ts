@@ -1,48 +1,44 @@
 // src/gameUpdates/gameLoopUtils.ts
-import { Ball, Brick, PowerUp, PowerUpType, GameMode, SpawnMarker, PowerUpSpawnEvent, Particle, GameStateRefs } from '../interfaces'; // Added Particle, GameStateRefs
+import { Ball, Brick, PowerUp, PowerUpType, GameMode, SpawnMarker, PowerUpSpawnEvent, Particle, GameStateRefs } from '../interfaces';
 import {
     POWER_UP_SIZE,
-    ALL_TOGGLEABLE_POWER_UPS, // Used for test mode
-    INITIAL_BALL_SPEED_X, // Added for new ball spawn
-    INITIAL_BALL_SPEED_Y, // Added for new ball spawn
-    BALL_SIZE, // Added for new ball spawn
-    PARTICLE_LIFESPAN, // Added for particle effect
-    PARTICLE_SPEED_FACTOR, // Added for particle effect
-    SPLITTING_BALL_PARTICLE_SIZE // Added for particle effect
+    ALL_TOGGLEABLE_POWER_UPS, 
+    INITIAL_BALL_SPEED_Y, 
+    BALL_SIZE, 
+    PARTICLE_LIFESPAN, 
+    PARTICLE_SPEED_FACTOR, 
+    SPLITTING_BALL_PARTICLE_SIZE
 } from '../constants';
 
 // Constants for spawn logic
-export const TEST_MODE_BASE_SPAWN_CHANCE = 1.0; // Base chance for test mode
-export const MAIN_GAME_BASE_SPAWN_CHANCE = 0.0; // Base chance for main game mode (0%)
-export const MAIN_GAME_CHANCE_INCREASE_PER_TYPE = 0.1; // +8% chance per available power-up type
-export const POWER_UP_SPAWN_THRESHOLD = 20; // Limit before chance reduction starts
-export const POWER_UP_CHANCE_REDUCTION_PER_EXTRA = 0.02; // Reduction factor per extra power-up
+export const TEST_MODE_BASE_SPAWN_CHANCE = 1.0; 
+export const MAIN_GAME_BASE_SPAWN_CHANCE = 0.0; 
+export const MAIN_GAME_CHANCE_INCREASE_PER_TYPE = 0.1; 
+export const POWER_UP_SPAWN_THRESHOLD = 20; 
+export const POWER_UP_CHANCE_REDUCTION_PER_EXTRA = 0.02; 
 
-// ---- Optimization: Shared empty arrays ----
 const EMPTY_POWERUPS: PowerUp[] = [];
 const EMPTY_BALLS: Ball[] = [];
-Object.freeze(EMPTY_POWERUPS); // Prevent accidental modification
-Object.freeze(EMPTY_BALLS);   // Prevent accidental modification
-// ------------------------------------------
+Object.freeze(EMPTY_POWERUPS);
+Object.freeze(EMPTY_BALLS);
 
 export const createPowerUp = (x: number, y: number, brickWidth: number, type: PowerUpType, timeCreated?: number): PowerUp => ({
     x: x + brickWidth / 2 - POWER_UP_SIZE / 2,
-    y: y + 5, // Spawn slightly below the brick
+    y: y + 5, 
     type,
     status: 'falling',
-    id: Date.now() + Math.random() * 10, // Unique ID
+    id: Date.now() + Math.random() * 10, 
     timeCreated
 });
 
-// Exported function to calculate the initial spawn chance before reductions
 export const calculateBaseSpawnChance = (
     availablePowerUps: Set<PowerUpType>,
     gameMode: GameMode | null,
-    testPowerUpSpawnChance?: number // Added for test mode flexibility
+    testPowerUpSpawnChance?: number 
 ): number => {
     const possibleTypesCount = availablePowerUps.size;
     if (possibleTypesCount === 0 && gameMode === 'main') {
-        return 0; // No chance if no power-ups are spawnable in main mode
+        return 0; 
     }
 
     let baseChance: number;
@@ -50,15 +46,13 @@ export const calculateBaseSpawnChance = (
     if (gameMode === 'main') {
         const chanceIncrease = possibleTypesCount * MAIN_GAME_CHANCE_INCREASE_PER_TYPE;
         baseChance = MAIN_GAME_BASE_SPAWN_CHANCE + chanceIncrease;
-        baseChance = Math.min(1.0, baseChance); // Clamp the initial chance at 100%
+        baseChance = Math.min(1.0, baseChance); 
     } else {
-        // Test mode uses a simple base chance (or if gameMode is null)
         baseChance = testPowerUpSpawnChance !== undefined ? testPowerUpSpawnChance : TEST_MODE_BASE_SPAWN_CHANCE;
     }
     return baseChance;
 };
 
-// --- MODIFIED: handleSpawnEvents function ---
 export const handleSpawnEvents = (
     spawnRequests: PowerUpSpawnEvent[],
     currentFallingPowerUpCount: number,
@@ -67,15 +61,14 @@ export const handleSpawnEvents = (
     currentTime: number,
     currentSpeedFactor: number,
     particlesRef: React.MutableRefObject<Particle[]>, 
-    gameStateRefs?: GameStateRefs // Added gameStateRefs for Multiball level
+    gameStateRefs?: GameStateRefs 
 ): { newPowerUps: PowerUp[], newBalls: Ball[] } => {
-     // Optimization: Initialize only if needed, or return shared empty arrays
     let newlySpawnedPowerUps: PowerUp[] | null = null;
     let newlySpawnedBalls: Ball[] | null = null;
 
     spawnRequests.forEach(event => {
         if (event.marker === 'SPAWN_SPECIAL') {
-            if (!newlySpawnedPowerUps) newlySpawnedPowerUps = []; // Create only when needed
+            if (!newlySpawnedPowerUps) newlySpawnedPowerUps = [];
             newlySpawnedPowerUps.push(createPowerUp(event.brickX, event.brickY, event.brickWidth, 'ALL_IN_ONE', currentTime));
         } else if (event.marker === 'SPAWN_BALL') {
             const brickCenterX = event.brickX + event.brickWidth / 2;
@@ -87,15 +80,14 @@ export const handleSpawnEvents = (
                 -INITIAL_BALL_SPEED_Y, 
                 currentSpeedFactor
             );
-            if (!newlySpawnedBalls) newlySpawnedBalls = []; // Create only when needed
+            if (!newlySpawnedBalls) newlySpawnedBalls = [];
             newlySpawnedBalls.push(newBall);
 
-            // Add particle effect for SPAWN_BALL
-            const numParticles = 5; // Default particle count
+            const numParticles = 5; 
             const particleSpeedBase = Math.sqrt(newBall.speedX**2 + newBall.speedY**2) * (PARTICLE_SPEED_FACTOR || 0.8);
-            const finalParticleColor = '#FFFFFF'; // White particles
+            const finalParticleColor = '#FFFFFF'; 
             for (let k = 0; k < numParticles; k++) {
-                const angleOffset = (Math.random() - 0.5) * (Math.PI / 2); // Wider spread for ball spawn
+                const angleOffset = (Math.random() - 0.5) * (Math.PI / 2); 
                 const newAngle = Math.atan2(newBall.speedY, newBall.speedX) + angleOffset;
                 const particleSpeed = particleSpeedBase * (0.8 + Math.random() * 0.4);
                 const particle: Particle = {
@@ -120,39 +112,37 @@ export const handleSpawnEvents = (
             );
 
             if (spawnChance > 0) {
-                 // Apply reduction based on falling power-ups
-                const totalEffectivePowerUpCount = currentFallingPowerUpCount + (newlySpawnedPowerUps?.length ?? 0); // Adjust count check
+                const totalEffectivePowerUpCount = currentFallingPowerUpCount + (newlySpawnedPowerUps?.length ?? 0);
                 if (totalEffectivePowerUpCount > POWER_UP_SPAWN_THRESHOLD) {
                     const excessPowerUps = totalEffectivePowerUpCount - POWER_UP_SPAWN_THRESHOLD;
                     spawnChance -= excessPowerUps * POWER_UP_CHANCE_REDUCTION_PER_EXTRA;
-                    spawnChance = Math.max(0, spawnChance); // Clamp final chance at 0%
+                    spawnChance = Math.max(0, spawnChance); 
                 }
 
-                // Roll for spawn
                 if (Math.random() < spawnChance) {
                     if (availablePowerUps.size > 0) { 
                         const randomIndex = Math.floor(Math.random() * availablePowerUps.size);
                         let i = 0;
-                        let typeToSpawn: PowerUpType | undefined = undefined; 
+                        let typeToSpawnFromSet: PowerUpType | undefined = undefined; 
                         for (const item of availablePowerUps) { 
                             if (i === randomIndex) {
-                                typeToSpawn = item;
+                                typeToSpawnFromSet = item;
                                 break;
                             }
                             i++;
                         }
 
-                        if (typeToSpawn) { 
-                           if (gameMode === 'test' && typeToSpawn === 'MULTI_BALL' && gameStateRefs && gameStateRefs.testMultiballLevelRef) {
-                                const multiballLevel = gameStateRefs.testMultiballLevelRef.current;
-                                if (multiballLevel === 2) {
-                                    typeToSpawn = 'MULTI_BALL_L2';
-                                } else if (multiballLevel === 3) {
-                                    typeToSpawn = 'MULTI_BALL_L3';
+                        if (typeToSpawnFromSet) { 
+                           let finalTypeToSpawn = typeToSpawnFromSet;
+                           if (gameMode === 'test' && gameStateRefs && gameStateRefs.testPowerUpLevelsRef) {
+                                const level = gameStateRefs.testPowerUpLevelsRef.current[typeToSpawnFromSet]; // typeToSpawnFromSet is base type
+                                if (level && level > 1) {
+                                    const leveledType = `${typeToSpawnFromSet}_L${level}` as PowerUpType;
+                                    finalTypeToSpawn = leveledType;
                                 }
                            }
                            if (!newlySpawnedPowerUps) newlySpawnedPowerUps = [];
-                           newlySpawnedPowerUps.push(createPowerUp(event.brickX, event.brickY, event.brickWidth, typeToSpawn, currentTime));
+                           newlySpawnedPowerUps.push(createPowerUp(event.brickX, event.brickY, event.brickWidth, finalTypeToSpawn, currentTime));
                         }
                     }
                 }
@@ -160,15 +150,11 @@ export const handleSpawnEvents = (
         }
     });
 
-    // Return the created arrays or the shared empty ones
     return {
         newPowerUps: newlySpawnedPowerUps ?? EMPTY_POWERUPS,
         newBalls: newlySpawnedBalls ?? EMPTY_BALLS
     };
 };
-// --- END MODIFICATION ---
-
-// --- Other Utility Functions ---
 
 export const createNewBall = (x: number, y: number, speedX: number, speedY: number, currentSpeedFactor: number): Ball => ({
     x,
@@ -176,13 +162,23 @@ export const createNewBall = (x: number, y: number, speedX: number, speedY: numb
     speedX: speedX * currentSpeedFactor,
     speedY: speedY * currentSpeedFactor,
     id: Date.now() + Math.random() * 100,
-    // @ts-ignore
-    pierceHitsRemaining: 0, 
+    isDouble: false,
+    doubleEndTime: undefined,
+    doublePausedDuration: undefined,
     isBlue: false, 
+    blueEndTime: undefined,
+    bluePausedDuration: undefined,
     isBig: false, 
+    bigEndTime: undefined,
+    bigPausedDuration: undefined,
     isSplitting: false, 
+    splittingEndTime: undefined,
+    splittingPausedDuration: undefined,
     isHoming: false,
-    lastFramePointsFieldIds: new Set() // Added initialization
+    stuckOffset: undefined,
+    stuckSide: null,
+    stuckSideOffset: undefined,
+    lastFramePointsFieldIds: new Set()
 });
 
 export const findClosestBrick = (ball: Ball, bricks: Brick[][], columns: number, rows: number): Brick | null => {
@@ -193,7 +189,6 @@ export const findClosestBrick = (ball: Ball, bricks: Brick[][], columns: number,
     const ballCenterX = ball.x;
     const ballCenterY = ball.y;
 
-    // First, identify all special bricks
     for (let c = 0; c < columns; c++) {
         if (!bricks[c]) continue;
         for (let r = 0; r < rows; r++) {
@@ -206,7 +201,6 @@ export const findClosestBrick = (ball: Ball, bricks: Brick[][], columns: number,
         }
     }
 
-    // If special bricks exist, find the closest among them
     if (specialBricks.length > 0) {
         for (const brick of specialBricks) {
             const brickCenterX = brick.x + brick.width / 2;
@@ -218,7 +212,6 @@ export const findClosestBrick = (ball: Ball, bricks: Brick[][], columns: number,
             }
         }
     } else {
-        // Fallback: if no special bricks, find the closest of any brick
         for (let c = 0; c < columns; c++) {
             if (!bricks[c]) continue;
             for (let r = 0; r < rows; r++) {

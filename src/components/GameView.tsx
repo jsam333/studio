@@ -17,8 +17,8 @@ interface GameViewProps {
   addSpawnablePowerUp: (type: PowerUpType, x: number, y: number) => void;
   startNextLevel: () => void;
   isTestPreview?: boolean; 
-  testMultiballLevel?: number; // Added for Multiball level
-  setTestMultiballLevel?: (level: number) => void; // Added for Multiball level
+  testPowerUpLevels?: Record<PowerUpType, number>; // Changed from testMultiballLevel
+  setTestPowerUpLevel?: (type: PowerUpType, level: number) => void; // Changed from setTestMultiballLevel
 }
 
 export const GameView: React.FC<GameViewProps> = ({
@@ -34,8 +34,8 @@ export const GameView: React.FC<GameViewProps> = ({
   addSpawnablePowerUp,
   startNextLevel,
   isTestPreview,
-  testMultiballLevel, // Destructure
-  setTestMultiballLevel // Destructure
+  testPowerUpLevels, // Changed
+  setTestPowerUpLevel // Changed
 }) => {
   const containerClasses = isTestPreview
     ? "flex items-center justify-center p-0" 
@@ -61,9 +61,9 @@ export const GameView: React.FC<GameViewProps> = ({
             enabledPowerUps={enabledPowerUps} 
             onTogglePowerUp={onTogglePowerUp} 
             style={isTestPreview ? { height: `${BOARD_HEIGHT}px` } : {}} 
-            isTestMode={isTestPreview} // Pass isTestPreview as isTestMode
-            testMultiballLevel={testMultiballLevel} // Pass down
-            setTestMultiballLevel={setTestMultiballLevel} // Pass down
+            isTestMode={isTestPreview} 
+            testPowerUpLevels={testPowerUpLevels} // Pass down generalized levels
+            setTestPowerUpLevel={setTestPowerUpLevel} // Pass down generalized setter
           />
         )}
 
