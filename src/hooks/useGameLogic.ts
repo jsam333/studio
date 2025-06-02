@@ -256,7 +256,7 @@ export function useGameLogic() {
              }
 
             currentLevelRef.current = 1; 
-            resetLevel(mode, true); 
+            resetLevel(mode, true, newTestBrickColumns, newTestBrickRows, newTestBrickGridHeight); 
             if (mode === 'test') {
                 setupInitialBall(); 
             }

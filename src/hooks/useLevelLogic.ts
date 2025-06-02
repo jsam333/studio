@@ -216,20 +216,32 @@ export function useLevelLogic({
     }, [clearBonusGoldTimers, gameModeRef, currentLevelRef, gameOverStateRef, initialBonusGoldDecrementCompleteRef]);
 
 
-    const resetLevel = useCallback((mode: GameMode | null, resetScoreAndGold: boolean = true) => {
+    const resetLevel = useCallback((
+        mode: GameMode | null, 
+        resetScoreAndGold: boolean = true,
+        overrideTestCols?: number,
+        overrideTestRows?: number,
+        overrideTestGridHeight?: number
+    ) => {
         const currentMode = mode ?? gameModeRef.current;
         if (!currentMode) return;
         const level = currentLevelRef.current;
         
-        const testCols = (currentMode === 'test' && testBrickColumnsRef) ? testBrickColumnsRef.current : undefined;
-        const testRows = (currentMode === 'test' && testBrickRowsRef) ? testBrickRowsRef.current : undefined; 
-        const testGridHeight = (currentMode === 'test' && testBrickGridHeightRef) ? testBrickGridHeightRef.current : undefined; // Get test grid height
+        let testColsToUse: number | undefined = undefined;
+        let testRowsToUse: number | undefined = undefined;
+        let testGridHeightToUse: number | undefined = undefined;
 
-        const stats = getLevelStats(level, currentMode, testCols, testRows, testGridHeight);
+        if (currentMode === 'test') {
+            testColsToUse = overrideTestCols !== undefined ? overrideTestCols : (testBrickColumnsRef ? testBrickColumnsRef.current : undefined);
+            testRowsToUse = overrideTestRows !== undefined ? overrideTestRows : (testBrickRowsRef ? testBrickRowsRef.current : undefined);
+            testGridHeightToUse = overrideTestGridHeight !== undefined ? overrideTestGridHeight : (testBrickGridHeightRef ? testBrickGridHeightRef.current : undefined);
+        }
+
+        const stats = getLevelStats(level, currentMode, testColsToUse, testRowsToUse, testGridHeightToUse);
         totalBricksRef.current = stats.totalBricks;
         targetScoreRef.current = stats.targetScore;
 
-        const config = getBrickConfiguration(level, currentMode, testCols, testRows, testGridHeight);
+        const config = getBrickConfiguration(level, currentMode, testColsToUse, testRowsToUse, testGridHeightToUse);
         brickColumnsRef.current = config.brickColumns; 
         brickRowsRef.current = config.brickRows; 
         
