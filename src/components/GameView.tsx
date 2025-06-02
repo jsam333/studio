@@ -12,6 +12,7 @@ interface GameViewProps {
   showSidebar: boolean;
   enabledPowerUps: Set<PowerUpType>;
   onTogglePowerUp: (powerUp: PowerUpType) => void;
+  toggleAllTestPowerUps?: () => void; // Added this line
   handleResetGame: () => void;
   gameStateRefs: GameStateRefs;
   currentLevel: number;
@@ -20,7 +21,7 @@ interface GameViewProps {
   isTestPreview?: boolean; 
   testPowerUpLevels?: Record<PowerUpType, number>; 
   setTestPowerUpLevel?: (type: PowerUpType, level: number) => void; 
-  setAllTestPowerUpLevels?: (level: number) => void; // Added this line
+  setAllTestPowerUpLevels?: (level: number) => void; 
 }
 
 export const GameView: React.FC<GameViewProps> = ({
@@ -30,6 +31,7 @@ export const GameView: React.FC<GameViewProps> = ({
   showSidebar,
   enabledPowerUps,
   onTogglePowerUp,
+  toggleAllTestPowerUps, // Added this line
   handleResetGame,
   gameStateRefs,
   currentLevel,
@@ -38,7 +40,7 @@ export const GameView: React.FC<GameViewProps> = ({
   isTestPreview,
   testPowerUpLevels, 
   setTestPowerUpLevel, 
-  setAllTestPowerUpLevels, // Added this line
+  setAllTestPowerUpLevels,
 }) => {
   const containerClasses = isTestPreview
     ? "flex items-center justify-center p-0" 
@@ -63,11 +65,12 @@ export const GameView: React.FC<GameViewProps> = ({
           <PowerUpSidebar 
             enabledPowerUps={enabledPowerUps} 
             onTogglePowerUp={onTogglePowerUp} 
+            toggleAllTestPowerUps={toggleAllTestPowerUps} // Added this line
             style={isTestPreview ? { height: `${BOARD_HEIGHT}px` } : {}} 
             isTestMode={isTestPreview} 
             testPowerUpLevels={testPowerUpLevels} 
             setTestPowerUpLevel={setTestPowerUpLevel} 
-            setAllTestPowerUpLevels={setAllTestPowerUpLevels} // Added this line
+            setAllTestPowerUpLevels={setAllTestPowerUpLevels} 
           />
         )}
 

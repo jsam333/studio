@@ -34,7 +34,9 @@ export const createPowerUp = (x: number, y: number, brickWidth: number, type: Po
 export const calculateBaseSpawnChance = (
     availablePowerUps: Set<PowerUpType>,
     gameMode: GameMode | null,
-    testPowerUpSpawnChance?: number 
+    // testModeChanceOverride is no longer used here directly for test mode's base chance
+    // as the initial spawn decision is already made in damageBrick.
+    // It could be repurposed if needed for other nuanced calculations.
 ): number => {
     const possibleTypesCount = availablePowerUps.size;
     if (possibleTypesCount === 0 && gameMode === 'main') {
@@ -47,8 +49,8 @@ export const calculateBaseSpawnChance = (
         const chanceIncrease = possibleTypesCount * MAIN_GAME_CHANCE_INCREASE_PER_TYPE;
         baseChance = MAIN_GAME_BASE_SPAWN_CHANCE + chanceIncrease;
         baseChance = Math.min(1.0, baseChance); 
-    } else {
-        baseChance = testPowerUpSpawnChance !== undefined ? testPowerUpSpawnChance : TEST_MODE_BASE_SPAWN_CHANCE;
+    } else { // For 'test' mode, if we reach here due to a 'PENDING' marker, the initial chance was met.
+        baseChance = TEST_MODE_BASE_SPAWN_CHANCE; // Effectively 1.0, allowing other checks to proceed.
     }
     return baseChance;
 };
@@ -107,11 +109,11 @@ export const handleSpawnEvents = (
         } else if (event.marker === 'PENDING') {
              let spawnChance = calculateBaseSpawnChance(
                 availablePowerUps, 
-                gameMode,
-                gameMode === 'test' && gameStateRefs ? gameStateRefs.testPowerUpSpawnChanceRef.current : undefined
+                gameMode
+                // No longer passing gameStateRefs.testPowerUpSpawnChanceRef.current here
             );
 
-            if (spawnChance > 0) {
+            if (spawnChance > 0) { // This will be true in test mode if calculateBaseSpawnChance returns 1.0
                 const totalEffectivePowerUpCount = currentFallingPowerUpCount + (newlySpawnedPowerUps?.length ?? 0);
                 if (totalEffectivePowerUpCount > POWER_UP_SPAWN_THRESHOLD) {
                     const excessPowerUps = totalEffectivePowerUpCount - POWER_UP_SPAWN_THRESHOLD;
@@ -119,6 +121,8 @@ export const handleSpawnEvents = (
                     spawnChance = Math.max(0, spawnChance); 
                 }
 
+                // The Math.random() < spawnChance check now correctly uses the 1.0 spawnChance for test mode (if PENDING)
+                // or the calculated chance for main mode.
                 if (Math.random() < spawnChance) {
                     if (availablePowerUps.size > 0) { 
                         const randomIndex = Math.floor(Math.random() * availablePowerUps.size);

@@ -115,6 +115,17 @@ export function useGameLogic() {
         }
     }, []);
 
+    const toggleAllTestPowerUps = useCallback(() => {
+        setEnabledPowerUps(prevEnabled => {
+            const allCurrentlyEnabled = ALL_TOGGLEABLE_POWER_UPS.every(type => prevEnabled.has(type)) && prevEnabled.size === ALL_TOGGLEABLE_POWER_UPS.length;
+            if (allCurrentlyEnabled) {
+                return new Set<PowerUpType>(); // Disable all
+            } else {
+                return new Set<PowerUpType>(ALL_TOGGLEABLE_POWER_UPS); // Enable all
+            }
+        });
+    }, []);
+
     const {
         schedulePaddleShrink,
         executePaddleShrink,
@@ -668,6 +679,7 @@ export function useGameLogic() {
         handleResetGame,
         launchStuckBalls,
         handlePowerUpToggle,
+        toggleAllTestPowerUps, // Expose new function
         startGame,
         startNextLevel,
         addSpawnablePowerUp,
@@ -678,7 +690,7 @@ export function useGameLogic() {
         gold: goldRef.current,
         testPowerUpLevels, 
         setTestPowerUpLevel, 
-        setAllTestPowerUpLevels, // Expose new function
+        setAllTestPowerUpLevels,
         testPowerUpSpawnChance, 
         setTestPowerUpSpawnChance, 
         testBrickColumns, 

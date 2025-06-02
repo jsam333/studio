@@ -155,8 +155,14 @@ export const damageBrick = (brick: Brick, spawnEvents: PowerUpSpawnEvent[], game
         } else { // Regular bricks can spawn PENDING powerups
             const gameMode = gameStateRefs.gameModeRef.current;
             if (gameMode === 'test') {
-                if (Math.random() < gameStateRefs.testPowerUpSpawnChanceRef.current) {
+                const chance = gameStateRefs.testPowerUpSpawnChanceRef.current;
+                const randomVal = Math.random();
+                console.log(`Test Mode Spawn Check: Chance=${chance}, Random=${randomVal.toFixed(3)}`);
+                if (randomVal < chance) {
                     marker = 'PENDING';
+                    console.log('>>> Test Mode Power-up Will Spawn');
+                } else {
+                    console.log('>>> Test Mode Power-up Will NOT Spawn');
                 }
             } else { 
                 marker = 'PENDING'; 
