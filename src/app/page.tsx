@@ -55,8 +55,9 @@ export default function Home() {
         setTestBrickRows, 
         testBrickGridHeight, 
         setTestBrickGridHeight, 
-        testPowerUpLevels, // Changed from testMultiballLevel
-        setTestPowerUpLevel, // Changed from setTestMultiballLevel
+        testPowerUpLevels, 
+        setTestPowerUpLevel, 
+        setAllTestPowerUpLevels, // Added this line
     } = useGameLogic();
 
     useEffect(() => {
@@ -270,8 +271,9 @@ export default function Home() {
                         addSpawnablePowerUp={addSpawnablePowerUp}
                         startNextLevel={() => {}} 
                         isTestPreview={true} 
-                        testPowerUpLevels={testPowerUpLevels} // Pass down generalized levels
-                        setTestPowerUpLevel={setTestPowerUpLevel} // Pass down generalized setter
+                        testPowerUpLevels={testPowerUpLevels} 
+                        setTestPowerUpLevel={setTestPowerUpLevel} 
+                        setAllTestPowerUpLevels={setAllTestPowerUpLevels} // Added this line
                     />
                     <div 
                         style={{

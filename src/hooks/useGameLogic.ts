@@ -21,7 +21,6 @@ const INITIAL_LIVES = 3;
 const getPowerUpTypeForLevel = (baseType: PowerUpType, level: number): PowerUpType | null => {
     if (level < 1 || level > MAX_UPGRADE_LEVEL) return null;
     if (level === 1) return baseType; // Base type itself is L1
-    // Ensure the baseType does not already have a level suffix
     const base = baseType.split('_L')[0] as PowerUpType;
     return `${base}_L${level}` as PowerUpType;
 };
@@ -104,6 +103,16 @@ export function useGameLogic() {
             ...prevLevels,
             [type]: level
         }));
+    }, []);
+
+    const setAllTestPowerUpLevels = useCallback((level: number) => {
+        if (level >= 1 && level <= MAX_UPGRADE_LEVEL) {
+            const newLevels = { ...initialTestPowerUpLevels };
+            for (const type in newLevels) {
+                newLevels[type as PowerUpType] = level;
+            }
+            setTestPowerUpLevelsState(newLevels);
+        }
     }, []);
 
     const {
@@ -205,7 +214,7 @@ export function useGameLogic() {
                     setTestBrickColumns(newTestBrickColumns !== undefined ? newTestBrickColumns : TEST_DEFAULT_BRICK_COLUMNS);
                     setTestBrickRows(newTestBrickRows !== undefined ? newTestBrickRows : TEST_DEFAULT_BRICK_ROWS);
                     setTestBrickGridHeight(newTestBrickGridHeight !== undefined ? newTestBrickGridHeight : TARGET_TOTAL_BRICK_GRID_HEIGHT);
-                    setTestPowerUpLevelsState({ ...initialTestPowerUpLevels }); // Reset all power-up levels
+                    setTestPowerUpLevelsState({ ...initialTestPowerUpLevels }); 
                     firstTestRunCompletedRef.current = true;
                 } else {
                     setTestBrickColumns(newTestBrickColumns !== undefined ? newTestBrickColumns : testBrickColumns); 
@@ -361,7 +370,7 @@ export function useGameLogic() {
         setTestBrickRows(TEST_DEFAULT_BRICK_ROWS); 
         setTestBrickGridHeight(TARGET_TOTAL_BRICK_GRID_HEIGHT);
         setEnabledPowerUps(new Set(['MULTI_BALL'] as PowerUpType[]));
-        setTestPowerUpLevelsState({ ...initialTestPowerUpLevels }); // Reset all power-up levels
+        setTestPowerUpLevelsState({ ...initialTestPowerUpLevels }); 
         firstTestRunCompletedRef.current = false; 
 
         gameModeRef.current = 'test'; 
@@ -505,7 +514,7 @@ export function useGameLogic() {
             setTestBrickColumns(TEST_DEFAULT_BRICK_COLUMNS); 
             setTestBrickRows(TEST_DEFAULT_BRICK_ROWS); 
             setTestBrickGridHeight(TARGET_TOTAL_BRICK_GRID_HEIGHT);
-            setTestPowerUpLevelsState({ ...initialTestPowerUpLevels }); // Reset all power-up levels
+            setTestPowerUpLevelsState({ ...initialTestPowerUpLevels }); 
 
             resetLevel(nextMode, false);
             isGameStartedRef.current = false; 
@@ -594,8 +603,7 @@ export function useGameLogic() {
         paddleVisualEffectActiveRef, 
         paddleVisualEffectStartTimeRef,
         laserIntervalRef, 
-        testPowerUpLevelsRef, // Changed from testMultiballLevelRef
-        // From useTestModeSettings hook
+        testPowerUpLevelsRef, 
         testPowerUpSpawnChanceRef,
         testBrickColumnsRef,
         testBrickRowsRef,
@@ -627,8 +635,7 @@ export function useGameLogic() {
         paddleVisualEffectActiveRef, 
         paddleVisualEffectStartTimeRef,
         laserIntervalRef,
-        testPowerUpLevelsRef, // Changed from testMultiballLevelRef
-        // From useTestModeSettings hook
+        testPowerUpLevelsRef, 
         testPowerUpSpawnChanceRef,
         testBrickColumnsRef,
         testBrickRowsRef,
@@ -669,9 +676,9 @@ export function useGameLogic() {
         lives: livesRef.current,
         score: scoreRef.current,
         gold: goldRef.current,
-        testPowerUpLevels, // Expose new state
-        setTestPowerUpLevel, // Expose new setter
-        // From useTestModeSettings hook
+        testPowerUpLevels, 
+        setTestPowerUpLevel, 
+        setAllTestPowerUpLevels, // Expose new function
         testPowerUpSpawnChance, 
         setTestPowerUpSpawnChance, 
         testBrickColumns, 

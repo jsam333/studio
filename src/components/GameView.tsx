@@ -1,3 +1,4 @@
+// src/components/GameView.tsx
 import React, { LegacyRef } from 'react';
 import { PowerUpSidebar } from './PowerUpSidebar';
 import { ShopScreen } from './ShopScreen';
@@ -17,8 +18,9 @@ interface GameViewProps {
   addSpawnablePowerUp: (type: PowerUpType, x: number, y: number) => void;
   startNextLevel: () => void;
   isTestPreview?: boolean; 
-  testPowerUpLevels?: Record<PowerUpType, number>; // Changed from testMultiballLevel
-  setTestPowerUpLevel?: (type: PowerUpType, level: number) => void; // Changed from setTestMultiballLevel
+  testPowerUpLevels?: Record<PowerUpType, number>; 
+  setTestPowerUpLevel?: (type: PowerUpType, level: number) => void; 
+  setAllTestPowerUpLevels?: (level: number) => void; // Added this line
 }
 
 export const GameView: React.FC<GameViewProps> = ({
@@ -34,8 +36,9 @@ export const GameView: React.FC<GameViewProps> = ({
   addSpawnablePowerUp,
   startNextLevel,
   isTestPreview,
-  testPowerUpLevels, // Changed
-  setTestPowerUpLevel // Changed
+  testPowerUpLevels, 
+  setTestPowerUpLevel, 
+  setAllTestPowerUpLevels, // Added this line
 }) => {
   const containerClasses = isTestPreview
     ? "flex items-center justify-center p-0" 
@@ -62,8 +65,9 @@ export const GameView: React.FC<GameViewProps> = ({
             onTogglePowerUp={onTogglePowerUp} 
             style={isTestPreview ? { height: `${BOARD_HEIGHT}px` } : {}} 
             isTestMode={isTestPreview} 
-            testPowerUpLevels={testPowerUpLevels} // Pass down generalized levels
-            setTestPowerUpLevel={setTestPowerUpLevel} // Pass down generalized setter
+            testPowerUpLevels={testPowerUpLevels} 
+            setTestPowerUpLevel={setTestPowerUpLevel} 
+            setAllTestPowerUpLevels={setAllTestPowerUpLevels} // Added this line
           />
         )}
 
