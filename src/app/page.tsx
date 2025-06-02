@@ -53,8 +53,10 @@ export default function Home() {
         setTestBrickColumns, 
         testBrickRows, 
         setTestBrickRows, 
-        testBrickGridHeight, // Added
-        setTestBrickGridHeight, // Added
+        testBrickGridHeight, 
+        setTestBrickGridHeight, 
+        testMultiballLevel, // Added for Multiball level
+        setTestMultiballLevel, // Added for Multiball level
     } = useGameLogic();
 
     useEffect(() => {
@@ -267,10 +269,9 @@ export default function Home() {
                         currentLevel={1} 
                         addSpawnablePowerUp={addSpawnablePowerUp}
                         startNextLevel={() => {}} 
-                        scaleRef={testScaleRef} 
-                        gameWidth={BOARD_WIDTH} 
-                        gameHeight={BOARD_HEIGHT}
                         isTestPreview={true} 
+                        testMultiballLevel={testMultiballLevel} // Pass down
+                        setTestMultiballLevel={setTestMultiballLevel} // Pass down
                     />
                     <div 
                         style={{
@@ -283,7 +284,7 @@ export default function Home() {
                             justifyContent: 'space-between', 
                             color: '#FFFFFF',
                             boxSizing: 'border-box',
-                            gap: '10px', // Reduced gap for more space
+                            gap: '10px', 
                             borderLeft: '1px solid white',
                             borderRight: '1px solid white',
                             borderBottom: '1px solid white'
@@ -387,9 +388,7 @@ export default function Home() {
                     currentLevel={currentLevel}
                     addSpawnablePowerUp={addSpawnablePowerUp}
                     startNextLevel={startNextLevel}
-                    scaleRef={scaleRef}
-                    gameWidth={BOARD_WIDTH}
-                    gameHeight={BOARD_HEIGHT}
+                    // Props for main game view don't need testMultiballLevel
                 />
             )}
         </div>

@@ -296,7 +296,8 @@ export const gameUpdate = (
         gameMode,
         currentTime,
         gameSpeedFactor,
-        refs.particlesRef // Correctly passing particlesRef now
+        refs.particlesRef,
+        refs // Pass gameStateRefs here
     );
 
     if (newPowerUps.length > 0) {

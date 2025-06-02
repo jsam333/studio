@@ -1,5 +1,5 @@
 // src/gameUpdates/gameLoopUtils.ts
-import { Ball, Brick, PowerUp, PowerUpType, GameMode, SpawnMarker, PowerUpSpawnEvent, Particle } from '../interfaces'; // Added Particle
+import { Ball, Brick, PowerUp, PowerUpType, GameMode, SpawnMarker, PowerUpSpawnEvent, Particle, GameStateRefs } from '../interfaces'; // Added Particle, GameStateRefs
 import {
     POWER_UP_SIZE,
     ALL_TOGGLEABLE_POWER_UPS, // Used for test mode
@@ -37,7 +37,8 @@ export const createPowerUp = (x: number, y: number, brickWidth: number, type: Po
 // Exported function to calculate the initial spawn chance before reductions
 export const calculateBaseSpawnChance = (
     availablePowerUps: Set<PowerUpType>,
-    gameMode: GameMode | null
+    gameMode: GameMode | null,
+    testPowerUpSpawnChance?: number // Added for test mode flexibility
 ): number => {
     const possibleTypesCount = availablePowerUps.size;
     if (possibleTypesCount === 0 && gameMode === 'main') {
@@ -52,7 +53,7 @@ export const calculateBaseSpawnChance = (
         baseChance = Math.min(1.0, baseChance); // Clamp the initial chance at 100%
     } else {
         // Test mode uses a simple base chance (or if gameMode is null)
-        baseChance = TEST_MODE_BASE_SPAWN_CHANCE;
+        baseChance = testPowerUpSpawnChance !== undefined ? testPowerUpSpawnChance : TEST_MODE_BASE_SPAWN_CHANCE;
     }
     return baseChance;
 };
@@ -65,7 +66,8 @@ export const handleSpawnEvents = (
     gameMode: GameMode | null,
     currentTime: number,
     currentSpeedFactor: number,
-    particlesRef: React.MutableRefObject<Particle[]> // Added particlesRef
+    particlesRef: React.MutableRefObject<Particle[]>, 
+    gameStateRefs?: GameStateRefs // Added gameStateRefs for Multiball level
 ): { newPowerUps: PowerUp[], newBalls: Ball[] } => {
      // Optimization: Initialize only if needed, or return shared empty arrays
     let newlySpawnedPowerUps: PowerUp[] | null = null;
@@ -111,7 +113,11 @@ export const handleSpawnEvents = (
             }
 
         } else if (event.marker === 'PENDING') {
-             let spawnChance = calculateBaseSpawnChance(availablePowerUps, gameMode);
+             let spawnChance = calculateBaseSpawnChance(
+                availablePowerUps, 
+                gameMode,
+                gameMode === 'test' && gameStateRefs ? gameStateRefs.testPowerUpSpawnChanceRef.current : undefined
+            );
 
             if (spawnChance > 0) {
                  // Apply reduction based on falling power-ups
@@ -124,12 +130,11 @@ export const handleSpawnEvents = (
 
                 // Roll for spawn
                 if (Math.random() < spawnChance) {
-                    if (availablePowerUps.size > 0) { // NEW: Check Set size directly
-                        // NEW: Efficiently pick a random item from Set without Array.from
+                    if (availablePowerUps.size > 0) { 
                         const randomIndex = Math.floor(Math.random() * availablePowerUps.size);
                         let i = 0;
                         let typeToSpawn: PowerUpType | undefined = undefined; 
-                        for (const item of availablePowerUps) { // Iterate the Set
+                        for (const item of availablePowerUps) { 
                             if (i === randomIndex) {
                                 typeToSpawn = item;
                                 break;
@@ -137,7 +142,15 @@ export const handleSpawnEvents = (
                             i++;
                         }
 
-                        if (typeToSpawn) { // Check if a type was actually selected
+                        if (typeToSpawn) { 
+                           if (gameMode === 'test' && typeToSpawn === 'MULTI_BALL' && gameStateRefs && gameStateRefs.testMultiballLevelRef) {
+                                const multiballLevel = gameStateRefs.testMultiballLevelRef.current;
+                                if (multiballLevel === 2) {
+                                    typeToSpawn = 'MULTI_BALL_L2';
+                                } else if (multiballLevel === 3) {
+                                    typeToSpawn = 'MULTI_BALL_L3';
+                                }
+                           }
                            if (!newlySpawnedPowerUps) newlySpawnedPowerUps = [];
                            newlySpawnedPowerUps.push(createPowerUp(event.brickX, event.brickY, event.brickWidth, typeToSpawn, currentTime));
                         }
@@ -163,7 +176,6 @@ export const createNewBall = (x: number, y: number, speedX: number, speedY: numb
     speedX: speedX * currentSpeedFactor,
     speedY: speedY * currentSpeedFactor,
     id: Date.now() + Math.random() * 100,
-    isBlack: false, 
     // @ts-ignore
     pierceHitsRemaining: 0, 
     isBlue: false, 
