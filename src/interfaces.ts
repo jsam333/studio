@@ -211,12 +211,15 @@ export interface GameStateRefsBase {
     testPowerUpSpawnChanceRef: React.MutableRefObject<number>;
     testBrickColumnsRef: React.MutableRefObject<number>; 
     testBrickRowsRef: React.MutableRefObject<number>; 
-    testPowerUpLevelsRef?: React.MutableRefObject<Record<PowerUpType, number>>; // Replaced testMultiballLevelRef
+    testBrickGridHeightRef?: React.MutableRefObject<number>;
+    testPowerUpLevelsRef?: React.MutableRefObject<Record<PowerUpType, number>>;
+    isPaintModeActiveRef?: React.MutableRefObject<boolean>;
+    isUpgradePaintModeActiveRef?: React.MutableRefObject<boolean>;
+    isReinforcePaintModeActiveRef?: React.MutableRefObject<boolean>;
     paddleVisualEffectActiveRef?: React.MutableRefObject<boolean>; 
     paddleVisualEffectStartTimeRef?: React.MutableRefObject<number | null>; 
-    laserIntervalRef: React.MutableRefObject<number | null>; // Added this line
-    homingTrailsRef: React.MutableRefObject<HomingTrail[]>; // NEW REF
-    // doubleBallEffectActiveRef and doubleBallEffectStartTimeRef are removed from here
+    laserIntervalRef: React.MutableRefObject<number | null>;
+    homingTrailsRef: React.MutableRefObject<HomingTrail[]>;
 }
 
 export interface GameStateRefs extends GameStateRefsBase {

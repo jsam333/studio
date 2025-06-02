@@ -49,6 +49,10 @@ export const setupGameCanvas = ({
     if (!ctx) {
         return () => {};
     }
+
+    let isDraggingToPaint = false;
+    let lastPaintedBrickKey: string | null = null;
+
     const sidebarElement = gameContainer.querySelector<HTMLDivElement>('[data-role="powerup-sidebar"]');
 
     const handleResize = () => {
@@ -133,6 +137,91 @@ export const setupGameCanvas = ({
     };
 
     const handleMouseMove = (event: MouseEvent) => {
+        const { 
+            isPaintModeActiveRef, 
+            isUpgradePaintModeActiveRef,
+            isReinforcePaintModeActiveRef,
+            bricksRef, 
+            brickColumnsRef, 
+            brickRowsRef,
+            gameModeRef
+        } = gameStateRefs;
+
+        if (gameModeRef.current === 'test' && 
+            (isPaintModeActiveRef?.current || isUpgradePaintModeActiveRef?.current || isReinforcePaintModeActiveRef?.current) && 
+            isDraggingToPaint) {
+            if (!canvas) return;
+            const rect = canvas.getBoundingClientRect();
+            const scale = scaleRef.current;
+            const moveX = (event.clientX - rect.left) / scale;
+            const moveY = (event.clientY - rect.top) / scale;
+
+            const bricks = bricksRef.current;
+            for (let c = 0; c < (brickColumnsRef?.current ?? 0); c++) {
+                for (let r = 0; r < (brickRowsRef?.current ?? 0); r++) {
+                    const brick = bricks[c]?.[r];
+                    const currentBrickKey = `${c}-${r}`;
+                    if (brick && brick.status === 1 && lastPaintedBrickKey !== currentBrickKey &&
+                        moveX > brick.x && moveX < brick.x + brick.width &&
+                        moveY > brick.y && moveY < brick.y + brick.height) {
+                        
+                        console.log(`Paint Action (MouseMove) on brick [${c},${r}]: Initial Strength: ${brick.strength}, IsSpecial: ${brick.isSpecial}`);
+                        console.log(`Paint Mode Refs (MouseMove): MakeSpecial: ${isPaintModeActiveRef?.current}, Upgrade: ${isUpgradePaintModeActiveRef?.current}, Reinforce: ${isReinforcePaintModeActiveRef?.current}`);
+                        
+                        let paintedThisBrick = false;
+                        if (!brick.isBomb) {
+                            if (isPaintModeActiveRef?.current && !brick.isSpecial) {
+                                brick.isSpecial = true;
+                                brick.strength = 1;
+                                brick.upgradeLevel = 0;
+                                brick.isSpecialFlashActive = true;
+                                brick.specialFlashStartTime = Date.now();
+                                console.log(`Brick at [${c},${r}] made SPECIAL by paint mode (mousemove).`);
+                                paintedThisBrick = true;
+                            } else if (isUpgradePaintModeActiveRef?.current) {
+                                console.log(`MouseMove: Checking Upgrade. Brick strength: ${brick.strength}`);
+                                if (brick.strength < 4) {
+                                    brick.strength = 4;
+                                    brick.isSpecial = false;
+                                    brick.upgradeLevel = 3;
+                                    brick.isDarkFlashActive = true;
+                                    brick.darkFlashStartTime = Date.now();
+                                    console.log(`Brick at [${c},${r}] UPGRADED to L4 (UL3 Visual) by paint mode (mousemove).`);
+                                    paintedThisBrick = true;
+                                } else {
+                                    console.log(`MouseMove: Brick [${c},${r}] not upgraded, strength already ${brick.strength} (>=4).`);
+                                }
+                            } else if (isReinforcePaintModeActiveRef?.current) {
+                                console.log(`MouseMove: Checking Reinforce. Brick strength: ${brick.strength}`);
+                                if (brick.strength < 3) {
+                                    brick.strength = 3;
+                                    brick.isSpecial = false;
+                                    brick.upgradeLevel = 2;
+                                    brick.isDarkFlashActive = true;
+                                    brick.darkFlashStartTime = Date.now();
+                                    console.log(`Brick at [${c},${r}] REINFORCED to L3 (UL2 Visual) by paint mode (mousemove).`);
+                                    paintedThisBrick = true;
+                                } else {
+                                    console.log(`MouseMove: Brick [${c},${r}] not reinforced, strength already ${brick.strength} (>=3).`);
+                                }
+                            } else {
+                                console.log(`MouseMove: Brick [${c},${r}] - No paint condition met or brick already in target state for active mode.`);
+                                // No break here, allow checking other bricks in the same column if this one wasn't a target or no mode was active
+                            }
+
+                            if (paintedThisBrick) {
+                                lastPaintedBrickKey = currentBrickKey;
+                            }
+                        }
+                        // This break ensures that after a brick in a column is processed (painted or not if it was a bomb),
+                        // we move to the next column for this specific mouse/touch move event.
+                        // This prevents multiple bricks in the same column from being affected by a single mouse event.
+                        break; 
+                    }
+                }
+            } 
+        }
+        // Always update paddle position regardless of paint mode
         updatePaddlePosition(event.clientX);
     };
 
@@ -189,8 +278,95 @@ export const setupGameCanvas = ({
 
     const handleMouseDown = (event: MouseEvent) => {
         if (event.button !== 0) return; // Only left click
-        const currentState = gameStateRefs.gameOverStateRef.current;
-        const isTestModePreview = gameStateRefs.gameModeRef.current === 'test' && currentState === 'menu';
+
+        const { 
+            isPaintModeActiveRef, 
+            isUpgradePaintModeActiveRef,
+            isReinforcePaintModeActiveRef,
+            bricksRef, 
+            brickColumnsRef, 
+            brickRowsRef,
+            gameModeRef,
+            gameOverStateRef,
+            stuckBallsRef,
+            isGameStartedRef,
+            laserIntervalRef,
+            paddleXRef,
+            paddleWidthRef,
+            lasersRef,
+            laserShotsRef
+        } = gameStateRefs;
+
+        if (gameModeRef.current === 'test' && 
+            (isPaintModeActiveRef?.current || isUpgradePaintModeActiveRef?.current || isReinforcePaintModeActiveRef?.current)) {
+            if (!canvas) return;
+            const rect = canvas.getBoundingClientRect();
+            const scale = scaleRef.current;
+            const clickX = (event.clientX - rect.left) / scale;
+            const clickY = (event.clientY - rect.top) / scale;
+
+            const bricks = bricksRef.current;
+            for (let c = 0; c < (brickColumnsRef?.current ?? 0); c++) {
+                for (let r = 0; r < (brickRowsRef?.current ?? 0); r++) {
+                    const brick = bricks[c]?.[r];
+                    if (brick && brick.status === 1 && 
+                        clickX > brick.x && clickX < brick.x + brick.width &&
+                        clickY > brick.y && clickY < brick.y + brick.height) {
+                        
+                        console.log(`Paint Action (Mousedown) on brick [${c},${r}]: Initial Strength: ${brick.strength}, IsSpecial: ${brick.isSpecial}`);
+                        console.log(`Paint Mode Refs (Mousedown): MakeSpecial: ${isPaintModeActiveRef?.current}, Upgrade: ${isUpgradePaintModeActiveRef?.current}, Reinforce: ${isReinforcePaintModeActiveRef?.current}`);
+
+                        if (!brick.isBomb) {
+                            if (isPaintModeActiveRef?.current && !brick.isSpecial) {
+                                brick.isSpecial = true;
+                                brick.strength = 1;
+                                brick.upgradeLevel = 0;
+                                brick.isSpecialFlashActive = true;
+                                brick.specialFlashStartTime = Date.now();
+                                console.log(`Brick at [${c},${r}] made SPECIAL by paint mode (mousedown).`);
+                            } else if (isUpgradePaintModeActiveRef?.current) {
+                                console.log(`Mousedown: Checking Upgrade. Brick strength: ${brick.strength}`);
+                                if (brick.strength < 4) {
+                                    brick.strength = 4;
+                                    brick.isSpecial = false;
+                                    brick.upgradeLevel = 3;
+                                    brick.isDarkFlashActive = true;
+                                    brick.darkFlashStartTime = Date.now();
+                                    console.log(`Brick at [${c},${r}] UPGRADED to L4 (UL3 Visual) by paint mode (mousedown).`);
+                                } else {
+                                    console.log(`Mousedown: Brick [${c},${r}] not upgraded, strength already ${brick.strength} (>=4) or other condition.`);
+                                }
+                            } else if (isReinforcePaintModeActiveRef?.current) {
+                                console.log(`Mousedown: Checking Reinforce. Brick strength: ${brick.strength}`);
+                                if (brick.strength < 3) {
+                                    brick.strength = 3;
+                                    brick.isSpecial = false;
+                                    brick.upgradeLevel = 2;
+                                    brick.isDarkFlashActive = true;
+                                    brick.darkFlashStartTime = Date.now();
+                                    console.log(`Brick at [${c},${r}] REINFORCED to L3 (UL2 Visual) by paint mode (mousedown).`);
+                                } else {
+                                    console.log(`Mousedown: Brick [${c},${r}] not reinforced, strength already ${brick.strength} (>=3) or other condition.`);
+                                }
+                            } else {
+                                console.log(`Mousedown: Brick [${c},${r}] - No paint condition met.`);
+                                isDraggingToPaint = false;
+                                return;
+                            }
+                            lastPaintedBrickKey = `${c}-${r}`;
+                            isDraggingToPaint = true; 
+                        } else {
+                            isDraggingToPaint = false;
+                        }
+                        return; 
+                    }
+                }
+            }
+            return; 
+        }
+
+        const currentState = gameOverStateRef.current;
+        const isTestModePreview = gameModeRef.current === 'test' && currentState === 'menu';
         let launchedStuckBallsThisPress = false;
 
         if (currentState === 'won' || currentState === 'lost') {
@@ -199,17 +375,17 @@ export const setupGameCanvas = ({
             if (!canvas) return;
 
             if (isTestModePreview) {
-                if (gameStateRefs.stuckBallsRef.current.length > 0) {
+                if (stuckBallsRef.current.length > 0) {
                     launchStuckBalls(true);
                     launchedStuckBallsThisPress = true;
                 }
                 // Always start continuous fire in test mode preview if not launching initial game balls
                 startContinuousFire(launchedStuckBallsThisPress);
             } else { // Main game logic (currentState === 'playing' && !isTestModePreview)
-                if (!gameStateRefs.isGameStartedRef.current) {
+                if (!isGameStartedRef.current) {
                     launchStuckBalls(true); // Initial launch for main game, don't start continuous fire yet
                 } else {
-                    if (gameStateRefs.stuckBallsRef.current.length > 0) {
+                    if (stuckBallsRef.current.length > 0) {
                         launchStuckBalls(false); // Subsequent stuck ball launches
                         launchedStuckBallsThisPress = true;
                     }
@@ -222,12 +398,103 @@ export const setupGameCanvas = ({
     const handleMouseUp = (event: MouseEvent) => {
         if (event.button !== 0) return; // Only left click
         stopContinuousFire();
+        isDraggingToPaint = false;
+        lastPaintedBrickKey = null;
     };
 
     const handleTouchStart = (event: TouchEvent) => {
         event.preventDefault();
-        const currentState = gameStateRefs.gameOverStateRef.current;
-        const isTestModePreview = gameStateRefs.gameModeRef.current === 'test' && currentState === 'menu';
+
+        const { 
+            isPaintModeActiveRef, 
+            isUpgradePaintModeActiveRef,
+            isReinforcePaintModeActiveRef,
+            bricksRef, 
+            brickColumnsRef, 
+            brickRowsRef,
+            gameModeRef,
+            gameOverStateRef,
+            stuckBallsRef,
+            isGameStartedRef,
+            laserIntervalRef,
+            paddleXRef,
+            paddleWidthRef,
+            lasersRef,
+            laserShotsRef
+        } = gameStateRefs;
+
+        if (gameModeRef.current === 'test' && 
+            (isPaintModeActiveRef?.current || isUpgradePaintModeActiveRef?.current || isReinforcePaintModeActiveRef?.current) && 
+            event.touches.length > 0) {
+            if (!canvas) return;
+            const touch = event.touches[0];
+            const rect = canvas.getBoundingClientRect();
+            const scale = scaleRef.current;
+            const clickX = (touch.clientX - rect.left) / scale;
+            const clickY = (touch.clientY - rect.top) / scale;
+
+            const bricks = bricksRef.current;
+            for (let c = 0; c < (brickColumnsRef?.current ?? 0); c++) {
+                for (let r = 0; r < (brickRowsRef?.current ?? 0); r++) {
+                    const brick = bricks[c]?.[r];
+                    if (brick && brick.status === 1 && 
+                        clickX > brick.x && clickX < brick.x + brick.width &&
+                        clickY > brick.y && clickY < brick.y + brick.height) {
+                        
+                        console.log(`Paint Action (TouchStart) on brick [${c},${r}]: Initial Strength: ${brick.strength}, IsSpecial: ${brick.isSpecial}`);
+                        console.log(`Paint Mode Refs (TouchStart): MakeSpecial: ${isPaintModeActiveRef?.current}, Upgrade: ${isUpgradePaintModeActiveRef?.current}, Reinforce: ${isReinforcePaintModeActiveRef?.current}`);
+
+                        if (!brick.isBomb) {
+                            if (isPaintModeActiveRef?.current && !brick.isSpecial) {
+                                brick.isSpecial = true;
+                                brick.strength = 1;
+                                brick.upgradeLevel = 0;
+                                brick.isSpecialFlashActive = true;
+                                brick.specialFlashStartTime = Date.now();
+                                console.log(`Brick at [${c},${r}] made SPECIAL by paint mode (touchstart).`);
+                            } else if (isUpgradePaintModeActiveRef?.current) {
+                                console.log(`TouchStart: Checking Upgrade. Brick strength: ${brick.strength}`);
+                                if (brick.strength < 4) {
+                                    brick.strength = 4;
+                                    brick.isSpecial = false;
+                                    brick.upgradeLevel = 3;
+                                    brick.isDarkFlashActive = true;
+                                    brick.darkFlashStartTime = Date.now();
+                                    console.log(`Brick at [${c},${r}] UPGRADED to L4 (UL3 Visual) by paint mode (touchstart).`);
+                                } else {
+                                    console.log(`TouchStart: Brick [${c},${r}] not upgraded, strength already ${brick.strength} (>=4).`);
+                                }
+                            } else if (isReinforcePaintModeActiveRef?.current) {
+                                console.log(`TouchStart: Checking Reinforce. Brick strength: ${brick.strength}`);
+                                if (brick.strength < 3) {
+                                    brick.strength = 3;
+                                    brick.isSpecial = false;
+                                    brick.upgradeLevel = 2;
+                                    brick.isDarkFlashActive = true;
+                                    brick.darkFlashStartTime = Date.now();
+                                    console.log(`Brick at [${c},${r}] REINFORCED to L3 (UL2 Visual) by paint mode (touchstart).`);
+                                } else {
+                                    console.log(`TouchStart: Brick [${c},${r}] not reinforced, strength already ${brick.strength} (>=3).`);
+                                }
+                            } else {
+                                console.log(`TouchStart: Brick [${c},${r}] - No paint condition met.`);
+                                isDraggingToPaint = false;
+                                return;
+                            }
+                            lastPaintedBrickKey = `${c}-${r}`;
+                            isDraggingToPaint = true; 
+                        } else {
+                            isDraggingToPaint = false;
+                        }
+                        return;
+                    }
+                }
+            }
+            return; 
+        }
+
+        const currentState = gameOverStateRef.current;
+        const isTestModePreview = gameModeRef.current === 'test' && currentState === 'menu';
         let launchedStuckBallsThisPress = false;
 
         if (currentState === 'won' || currentState === 'lost') {
@@ -237,19 +504,19 @@ export const setupGameCanvas = ({
             updatePaddlePosition(touchX);
 
             if (isTestModePreview) {
-                if (gameStateRefs.stuckBallsRef.current.length > 0) {
+                if (stuckBallsRef.current.length > 0) {
                     launchStuckBalls(true);
                     launchedStuckBallsThisPress = true;
                 }
                 startContinuousFire(launchedStuckBallsThisPress);
             } else { // Main game logic
-                if (!gameStateRefs.isGameStartedRef.current) {
+                if (!isGameStartedRef.current) {
                     launchStuckBalls(true); // Initial launch, don't start continuous fire
                 } else {
-                    if (isMobile && gameStateRefs.stuckBallsRef.current.length > 0) {
+                    if (isMobile && stuckBallsRef.current.length > 0) {
                         launchStuckBalls(false); 
                         launchedStuckBallsThisPress = true;
-                    } else if (gameStateRefs.stuckBallsRef.current.length > 0) {
+                    } else if (stuckBallsRef.current.length > 0) {
                         launchStuckBalls(false);
                         launchedStuckBallsThisPress = true;
                     }
@@ -262,12 +529,99 @@ export const setupGameCanvas = ({
     const handleTouchEnd = (event: TouchEvent) => {
         event.preventDefault();
         stopContinuousFire();
+        isDraggingToPaint = false;
+        lastPaintedBrickKey = null;
     };
 
     const handleTouchMove = (event: TouchEvent) => {
         event.preventDefault(); 
-        const isTestModePreview = gameStateRefs.gameModeRef.current === 'test' && gameStateRefs.gameOverStateRef.current === 'menu';
-        if ((gameStateRefs.gameOverStateRef.current === 'playing' || isTestModePreview) && event.touches.length > 0) {
+        const { 
+            isPaintModeActiveRef, 
+            isUpgradePaintModeActiveRef,
+            isReinforcePaintModeActiveRef,
+            bricksRef, 
+            brickColumnsRef, 
+            brickRowsRef,
+            gameModeRef,
+            gameOverStateRef
+        } = gameStateRefs;
+
+        if (gameModeRef.current === 'test' && 
+            (isPaintModeActiveRef?.current || isUpgradePaintModeActiveRef?.current || isReinforcePaintModeActiveRef?.current) && 
+            isDraggingToPaint && event.touches.length > 0) {
+            if (!canvas) return;
+            const touch = event.touches[0];
+            const rect = canvas.getBoundingClientRect();
+            const scale = scaleRef.current;
+            const moveX = (touch.clientX - rect.left) / scale;
+            const moveY = (touch.clientY - rect.top) / scale;
+
+            const bricks = bricksRef.current;
+            for (let c = 0; c < (brickColumnsRef?.current ?? 0); c++) {
+                for (let r = 0; r < (brickRowsRef?.current ?? 0); r++) {
+                    const brick = bricks[c]?.[r];
+                    const currentBrickKey = `${c}-${r}`;
+                    if (brick && brick.status === 1 && lastPaintedBrickKey !== currentBrickKey &&
+                        moveX > brick.x && moveX < brick.x + brick.width &&
+                        moveY > brick.y && moveY < brick.y + brick.height) {
+                        
+                        console.log(`Paint Action (TouchMove) on brick [${c},${r}]: Initial Strength: ${brick.strength}, IsSpecial: ${brick.isSpecial}`);
+                        console.log(`Paint Mode Refs (TouchMove): MakeSpecial: ${isPaintModeActiveRef?.current}, Upgrade: ${isUpgradePaintModeActiveRef?.current}, Reinforce: ${isReinforcePaintModeActiveRef?.current}`);
+                        
+                        let paintedThisBrick = false;
+                        if (!brick.isBomb) {
+                            if (isPaintModeActiveRef?.current && !brick.isSpecial) {
+                                brick.isSpecial = true;
+                                brick.strength = 1;
+                                brick.upgradeLevel = 0;
+                                brick.isSpecialFlashActive = true;
+                                brick.specialFlashStartTime = Date.now();
+                                console.log(`Brick at [${c},${r}] made SPECIAL by paint mode (touchmove).`);
+                                paintedThisBrick = true;
+                            } else if (isUpgradePaintModeActiveRef?.current) {
+                                console.log(`TouchMove: Checking Upgrade. Brick strength: ${brick.strength}`);
+                                if (brick.strength < 4) {
+                                    brick.strength = 4;
+                                    brick.isSpecial = false;
+                                    brick.upgradeLevel = 3;
+                                    brick.isDarkFlashActive = true;
+                                    brick.darkFlashStartTime = Date.now();
+                                    console.log(`Brick at [${c},${r}] UPGRADED to L4 (UL3 Visual) by paint mode (touchmove).`);
+                                    paintedThisBrick = true;
+                                } else {
+                                    console.log(`TouchMove: Brick [${c},${r}] not upgraded, strength already ${brick.strength} (>=4).`);
+                                }
+                            } else if (isReinforcePaintModeActiveRef?.current) {
+                                console.log(`TouchMove: Checking Reinforce. Brick strength: ${brick.strength}`);
+                                if (brick.strength < 3) {
+                                    brick.strength = 3;
+                                    brick.isSpecial = false;
+                                    brick.upgradeLevel = 2;
+                                    brick.isDarkFlashActive = true;
+                                    brick.darkFlashStartTime = Date.now();
+                                    console.log(`Brick at [${c},${r}] REINFORCED to L3 (UL2 Visual) by paint mode (touchmove).`);
+                                    paintedThisBrick = true;
+                                } else {
+                                    console.log(`TouchMove: Brick [${c},${r}] not reinforced, strength already ${brick.strength} (>=3).`);
+                                }
+                            } else {
+                                console.log(`TouchMove: Brick [${c},${r}] - No paint condition met or brick already in target state.`);
+                                // No break here
+                            }
+
+                            if (paintedThisBrick) {
+                                lastPaintedBrickKey = currentBrickKey;
+                            }
+                        }
+                        // This break ensures that after a brick in a column is processed (painted or not if it was a bomb),
+                        // we move to the next column for this specific mouse/touch move event.
+                        break; 
+                    }
+                }
+            }
+        }
+
+        if ((gameOverStateRef.current === 'playing' || (gameModeRef.current === 'test' && gameOverStateRef.current === 'menu')) && event.touches.length > 0) {
             updatePaddlePosition(event.touches[0].clientX);
         }
     };

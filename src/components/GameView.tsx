@@ -25,6 +25,12 @@ interface GameViewProps {
   testPowerUpLevels?: Record<PowerUpType, number>; 
   setTestPowerUpLevel?: (type: PowerUpType, level: number) => void; 
   setAllTestPowerUpLevels?: (level: number) => void; 
+  isPaintModeActive?: boolean;
+  togglePaintMode?: () => void;
+  isUpgradePaintModeActive?: boolean;
+  toggleUpgradePaintMode?: () => void;
+  isReinforcePaintModeActive?: boolean;
+  toggleReinforcePaintMode?: () => void;
 }
 
 export const GameView: React.FC<GameViewProps> = ({
@@ -47,10 +53,18 @@ export const GameView: React.FC<GameViewProps> = ({
   testPowerUpLevels, 
   setTestPowerUpLevel, 
   setAllTestPowerUpLevels,
+  isPaintModeActive,
+  togglePaintMode,
+  isUpgradePaintModeActive,
+  toggleUpgradePaintMode,
+  isReinforcePaintModeActive,
+  toggleReinforcePaintMode,
 }) => {
   const containerClasses = isTestPreview
     ? "flex items-center justify-center p-0" 
     : "flex items-center justify-center h-screen p-4"; 
+
+  const paddleX = gameStateRefs.paddleXRef.current;
 
   return (
     <div className={containerClasses}>
@@ -80,6 +94,12 @@ export const GameView: React.FC<GameViewProps> = ({
             testPowerUpLevels={testPowerUpLevels} 
             setTestPowerUpLevel={setTestPowerUpLevel} 
             setAllTestPowerUpLevels={setAllTestPowerUpLevels} 
+            isPaintModeActive={isPaintModeActive}
+            togglePaintMode={togglePaintMode}
+            isUpgradePaintModeActive={isUpgradePaintModeActive}
+            toggleUpgradePaintMode={toggleUpgradePaintMode}
+            isReinforcePaintModeActive={isReinforcePaintModeActive}
+            toggleReinforcePaintMode={toggleReinforcePaintMode}
           />
         )}
 

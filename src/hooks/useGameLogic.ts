@@ -71,6 +71,9 @@ export function useGameLogic() {
     const paddleVisualEffectActiveRef = useRef<boolean>(false);
     const paddleVisualEffectStartTimeRef = useRef<number | null>(null);
     const testPowerUpLevelsRef = useRef<Record<PowerUpType, number>>({ ...initialTestPowerUpLevels });
+    const [isPaintModeActive, setIsPaintModeActive] = useState<boolean>(false);
+    const [isUpgradePaintModeActive, setIsUpgradePaintModeActive] = useState<boolean>(false);
+    const [isReinforcePaintModeActive, setIsReinforcePaintModeActive] = useState<boolean>(false);
 
     const {
         testPowerUpSpawnChanceRef,
@@ -97,6 +100,60 @@ export function useGameLogic() {
     useEffect(() => {
         testPowerUpLevelsRef.current = testPowerUpLevels;
     }, [testPowerUpLevels]);
+
+    const isPaintModeActiveRef = useRef(isPaintModeActive);
+    useEffect(() => {
+        isPaintModeActiveRef.current = isPaintModeActive;
+    }, [isPaintModeActive]);
+
+    const isUpgradePaintModeActiveRef = useRef(isUpgradePaintModeActive);
+    useEffect(() => {
+        isUpgradePaintModeActiveRef.current = isUpgradePaintModeActive;
+    }, [isUpgradePaintModeActive]);
+
+    const isReinforcePaintModeActiveRef = useRef(isReinforcePaintModeActive);
+    useEffect(() => {
+        isReinforcePaintModeActiveRef.current = isReinforcePaintModeActive;
+    }, [isReinforcePaintModeActive]);
+
+    const togglePaintMode = useCallback(() => {
+        if (gameModeRef.current === 'test') {
+            setIsPaintModeActive(prev => {
+                const newState = !prev;
+                if (newState) {
+                    setIsUpgradePaintModeActive(false);
+                    setIsReinforcePaintModeActive(false);
+                }
+                return newState;
+            });
+        }
+    }, []);
+
+    const toggleUpgradePaintMode = useCallback(() => {
+        if (gameModeRef.current === 'test') {
+            setIsUpgradePaintModeActive(prev => {
+                const newState = !prev;
+                if (newState) {
+                    setIsPaintModeActive(false);
+                    setIsReinforcePaintModeActive(false);
+                }
+                return newState;
+            });
+        }
+    }, []);
+
+    const toggleReinforcePaintMode = useCallback(() => {
+        if (gameModeRef.current === 'test') {
+            setIsReinforcePaintModeActive(prev => {
+                const newState = !prev;
+                if (newState) {
+                    setIsPaintModeActive(false);
+                    setIsUpgradePaintModeActive(false);
+                }
+                return newState;
+            });
+        }
+    }, []);
 
     const setTestPowerUpLevel = useCallback((type: PowerUpType, level: number) => {
         setTestPowerUpLevelsState(prevLevels => ({
@@ -201,6 +258,7 @@ export function useGameLogic() {
         testBrickColumnsRef,
         testBrickRowsRef,
         testBrickGridHeightRef,
+        isPaintModeActiveRef,
     });
 
     useEffect(() => {
@@ -264,7 +322,8 @@ export function useGameLogic() {
     }, [
         resetLevel, setupInitialBall, setActiveGameMode, setEnabledPowerUps, setShowSidebar, setGameOverState, 
         setTestPowerUpSpawnChance, setTestBrickColumns, setTestBrickRows, setTestBrickGridHeight, 
-        testBrickColumns, testBrickRows, testBrickGridHeight
+        testBrickColumns, testBrickRows, testBrickGridHeight,
+        isPaintModeActiveRef,
     ]);
 
     useEffect(() => {
@@ -397,6 +456,11 @@ export function useGameLogic() {
         paddleVisualEffectActiveRef.current = false;
         paddleVisualEffectStartTimeRef.current = null;
         
+        // Reset paint mode states
+        setIsPaintModeActive(false);
+        setIsUpgradePaintModeActive(false);
+        setIsReinforcePaintModeActive(false);
+
         setTestPowerUpSpawnChance(INITIAL_TEST_POWER_UP_SPAWN_CHANCE); 
         setTestBrickColumns(TEST_DEFAULT_BRICK_COLUMNS); 
         setTestBrickRows(TEST_DEFAULT_BRICK_ROWS); 
@@ -417,7 +481,8 @@ export function useGameLogic() {
 
     }, [
         resetLevel, resetPaddle, clearBonusGoldTimers, setGameOverState, setActiveGameMode, setShowSidebar, setEnabledPowerUps, setupInitialBall,
-        setTestPowerUpSpawnChance, setTestBrickColumns, setTestBrickRows, setTestBrickGridHeight
+        setTestPowerUpSpawnChance, setTestBrickColumns, setTestBrickRows, setTestBrickGridHeight,
+        setIsPaintModeActive, setIsUpgradePaintModeActive, setIsReinforcePaintModeActive
     ]);
 
     const launchStuckBalls = useCallback((isInitialLaunchArgument = false) => { 
@@ -640,6 +705,9 @@ export function useGameLogic() {
         testBrickColumnsRef,
         testBrickRowsRef,
         testBrickGridHeightRef,
+        isPaintModeActiveRef,
+        isUpgradePaintModeActiveRef,
+        isReinforcePaintModeActiveRef,
     }), [
         paddleXRef, ballsRef, powerUpsRef, particlesRef, homingTrailsRef, scoreRef, goldRef, spawnablePowerUpsRef, 
         paddleWidthRef, widenLevelRef, laserShotsRef, lasersRef, safetyNetCountRef,
@@ -672,10 +740,26 @@ export function useGameLogic() {
         testBrickColumnsRef,
         testBrickRowsRef,
         testBrickGridHeightRef,
+        isPaintModeActiveRef,
+        isUpgradePaintModeActiveRef,
+        isReinforcePaintModeActiveRef,
     ]);
 
     const drawEndMessageCallback = useCallback((context: CanvasRenderingContext2D, state: GameState, finalScore: number) => {
-    }, []);
+    }, [
+        testBrickColumns, 
+        setTestBrickColumns, 
+        testBrickRows, 
+        setTestBrickRows, 
+        testBrickGridHeight,      
+        setTestBrickGridHeight,   
+        isPaintModeActive,
+        togglePaintMode,
+        isUpgradePaintModeActive,
+        toggleUpgradePaintMode,
+        isReinforcePaintModeActive,
+        toggleReinforcePaintMode,
+    ]);
 
     const gameLoopCallbacks: GameLoopCallbacks = useMemo(() => ({
         updateScoreCallback,
@@ -723,5 +807,11 @@ export function useGameLogic() {
         setTestBrickRows, 
         testBrickGridHeight,      
         setTestBrickGridHeight,   
+        isPaintModeActive,
+        togglePaintMode,
+        isUpgradePaintModeActive,
+        toggleUpgradePaintMode,
+        isReinforcePaintModeActive,
+        toggleReinforcePaintMode,
     };
 }

@@ -1,6 +1,7 @@
 // src/components/PowerUpSidebar.tsx
 import React, { useState } from 'react';
 import { PowerUpType, ALL_TOGGLEABLE_POWER_UPS, POWER_UP_COLORS } from '../constants'; 
+import { useToast } from '../hooks/use-toast';
 
 interface PowerUpSidebarProps {
   enabledPowerUps: Set<PowerUpType>;
@@ -14,6 +15,12 @@ interface PowerUpSidebarProps {
   testPowerUpLevels?: Record<PowerUpType, number>; 
   setTestPowerUpLevel?: (type: PowerUpType, level: number) => void; 
   setAllTestPowerUpLevels?: (level: number) => void; 
+  isPaintModeActive?: boolean;
+  togglePaintMode?: () => void;
+  isUpgradePaintModeActive?: boolean;
+  toggleUpgradePaintMode?: () => void;
+  isReinforcePaintModeActive?: boolean;
+  toggleReinforcePaintMode?: () => void;
 }
 
 export const PowerUpSidebar: React.FC<PowerUpSidebarProps> = ({
@@ -27,9 +34,16 @@ export const PowerUpSidebar: React.FC<PowerUpSidebarProps> = ({
   isTestMode,
   testPowerUpLevels,
   setTestPowerUpLevel,
-  setAllTestPowerUpLevels
+  setAllTestPowerUpLevels,
+  isPaintModeActive,
+  togglePaintMode,
+  isUpgradePaintModeActive,
+  toggleUpgradePaintMode,
+  isReinforcePaintModeActive,
+  toggleReinforcePaintMode
 }) => {
   const [globalTargetLevel, setGlobalTargetLevel] = useState(1);
+  const { toast } = useToast();
 
   const handleIndividualLevelChange = (type: PowerUpType, increment: boolean) => {
     if (setTestPowerUpLevel && testPowerUpLevels && testPowerUpLevels[type] !== undefined) {
@@ -154,6 +168,42 @@ export const PowerUpSidebar: React.FC<PowerUpSidebarProps> = ({
                 onClick={(e) => e.stopPropagation()} 
                 onMouseDown={(e) => e.stopPropagation()} 
               >
+                {isTestMode && type === 'MAKE_SPECIAL' && togglePaintMode && (
+                  <button
+                    onClick={(e) => { e.stopPropagation(); if(togglePaintMode) togglePaintMode(); }}
+                    onMouseDown={(e) => e.stopPropagation()}
+                    className={`mr-1 px-1.5 py-0.5 text-xs rounded ${
+                      isPaintModeActive ? 'bg-green-600 hover:bg-green-700' : 'bg-gray-600 hover:bg-gray-500'
+                    } text-white focus:outline-none focus:ring-1 focus:ring-white`}
+                    style={{ lineHeight: '0.9rem' }}
+                  >
+                    {isPaintModeActive ? 'Paint ON' : 'Paint'}
+                  </button>
+                )}
+                {isTestMode && type === 'UPGRADE_BRICK' && toggleUpgradePaintMode && (
+                  <button
+                    onClick={(e) => { e.stopPropagation(); if(toggleUpgradePaintMode) toggleUpgradePaintMode(); }}
+                    onMouseDown={(e) => e.stopPropagation()}
+                    className={`mr-1 px-1.5 py-0.5 text-xs rounded ${
+                      isUpgradePaintModeActive ? 'bg-green-600 hover:bg-green-700' : 'bg-gray-600 hover:bg-gray-500'
+                    } text-white focus:outline-none focus:ring-1 focus:ring-white`}
+                    style={{ lineHeight: '0.9rem' }}
+                  >
+                    {isUpgradePaintModeActive ? 'Paint ON' : 'Paint'}
+                  </button>
+                )}
+                {isTestMode && type === 'REINFORCE_BRICK' && toggleReinforcePaintMode && (
+                  <button
+                    onClick={(e) => { e.stopPropagation(); if(toggleReinforcePaintMode) toggleReinforcePaintMode(); }}
+                    onMouseDown={(e) => e.stopPropagation()}
+                    className={`mr-1 px-1.5 py-0.5 text-xs rounded ${
+                      isReinforcePaintModeActive ? 'bg-green-600 hover:bg-green-700' : 'bg-gray-600 hover:bg-gray-500'
+                    } text-white focus:outline-none focus:ring-1 focus:ring-white`}
+                    style={{ lineHeight: '0.9rem' }}
+                  >
+                    {isReinforcePaintModeActive ? 'Paint ON' : 'Paint'}
+                  </button>
+                )}
                 {type === 'LASER_PADDLE' && addTestLaserCharges && (
                   <button 
                     onClick={handleAddLaserCharges}

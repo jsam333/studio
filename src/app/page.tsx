@@ -62,6 +62,12 @@ export default function Home() {
         testPowerUpLevels, 
         setTestPowerUpLevel, 
         setAllTestPowerUpLevels,
+        isPaintModeActive,
+        togglePaintMode,
+        isUpgradePaintModeActive,
+        toggleUpgradePaintMode,
+        isReinforcePaintModeActive,
+        toggleReinforcePaintMode,
     } = useGameLogic();
 
     useEffect(() => {
@@ -282,6 +288,12 @@ export default function Home() {
                         testPowerUpLevels={testPowerUpLevels} 
                         setTestPowerUpLevel={setTestPowerUpLevel} 
                         setAllTestPowerUpLevels={setAllTestPowerUpLevels}
+                        isPaintModeActive={isPaintModeActive}
+                        togglePaintMode={togglePaintMode}
+                        isUpgradePaintModeActive={isUpgradePaintModeActive}
+                        toggleUpgradePaintMode={toggleUpgradePaintMode}
+                        isReinforcePaintModeActive={isReinforcePaintModeActive}
+                        toggleReinforcePaintMode={toggleReinforcePaintMode}
                     />
                     <div 
                         style={{
