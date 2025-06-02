@@ -4,6 +4,7 @@ import { PowerUpSidebar } from './PowerUpSidebar';
 import { ShopScreen } from './ShopScreen';
 import { PowerUpType, GameOverState, GameStateRefs } from '../interfaces';
 import { BOARD_HEIGHT } from '../constants'; // Import BOARD_HEIGHT
+import { useToast } from '../hooks/use-toast';
 
 interface GameViewProps {
   gameContainerRef: LegacyRef<HTMLDivElement> | undefined;
@@ -31,6 +32,10 @@ interface GameViewProps {
   toggleUpgradePaintMode?: () => void;
   isReinforcePaintModeActive?: boolean;
   toggleReinforcePaintMode?: () => void;
+  isBombPaintModeActive?: boolean;
+  toggleBombPaintMode?: () => void;
+  isBallBrickPaintModeActive?: boolean;
+  toggleBallBrickPaintMode?: () => void;
 }
 
 export const GameView: React.FC<GameViewProps> = ({
@@ -59,7 +64,12 @@ export const GameView: React.FC<GameViewProps> = ({
   toggleUpgradePaintMode,
   isReinforcePaintModeActive,
   toggleReinforcePaintMode,
+  isBombPaintModeActive,
+  toggleBombPaintMode,
+  isBallBrickPaintModeActive,
+  toggleBallBrickPaintMode,
 }) => {
+  const { toast } = useToast();
   const containerClasses = isTestPreview
     ? "flex items-center justify-center p-0" 
     : "flex items-center justify-center h-screen p-4"; 
@@ -100,6 +110,10 @@ export const GameView: React.FC<GameViewProps> = ({
             toggleUpgradePaintMode={toggleUpgradePaintMode}
             isReinforcePaintModeActive={isReinforcePaintModeActive}
             toggleReinforcePaintMode={toggleReinforcePaintMode}
+            isBombPaintModeActive={isBombPaintModeActive}
+            toggleBombPaintMode={toggleBombPaintMode}
+            isBallBrickPaintModeActive={isBallBrickPaintModeActive}
+            toggleBallBrickPaintMode={toggleBallBrickPaintMode}
           />
         )}
 

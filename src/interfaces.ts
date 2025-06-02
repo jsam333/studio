@@ -216,6 +216,8 @@ export interface GameStateRefsBase {
     isPaintModeActiveRef?: React.MutableRefObject<boolean>;
     isUpgradePaintModeActiveRef?: React.MutableRefObject<boolean>;
     isReinforcePaintModeActiveRef?: React.MutableRefObject<boolean>;
+    isBombPaintModeActiveRef?: React.MutableRefObject<boolean>;
+    isBallBrickPaintModeActiveRef?: React.MutableRefObject<boolean>;
     paddleVisualEffectActiveRef?: React.MutableRefObject<boolean>; 
     paddleVisualEffectStartTimeRef?: React.MutableRefObject<number | null>; 
     laserIntervalRef: React.MutableRefObject<number | null>;

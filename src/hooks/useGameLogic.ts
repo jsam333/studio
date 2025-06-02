@@ -74,6 +74,8 @@ export function useGameLogic() {
     const [isPaintModeActive, setIsPaintModeActive] = useState<boolean>(false);
     const [isUpgradePaintModeActive, setIsUpgradePaintModeActive] = useState<boolean>(false);
     const [isReinforcePaintModeActive, setIsReinforcePaintModeActive] = useState<boolean>(false);
+    const [isBombPaintModeActive, setIsBombPaintModeActive] = useState<boolean>(false);
+    const [isBallBrickPaintModeActive, setIsBallBrickPaintModeActive] = useState<boolean>(false);
 
     const {
         testPowerUpSpawnChanceRef,
@@ -116,6 +118,16 @@ export function useGameLogic() {
         isReinforcePaintModeActiveRef.current = isReinforcePaintModeActive;
     }, [isReinforcePaintModeActive]);
 
+    const isBombPaintModeActiveRef = useRef(isBombPaintModeActive);
+    useEffect(() => {
+        isBombPaintModeActiveRef.current = isBombPaintModeActive;
+    }, [isBombPaintModeActive]);
+
+    const isBallBrickPaintModeActiveRef = useRef(isBallBrickPaintModeActive);
+    useEffect(() => {
+        isBallBrickPaintModeActiveRef.current = isBallBrickPaintModeActive;
+    }, [isBallBrickPaintModeActive]);
+
     const togglePaintMode = useCallback(() => {
         if (gameModeRef.current === 'test') {
             setIsPaintModeActive(prev => {
@@ -123,6 +135,8 @@ export function useGameLogic() {
                 if (newState) {
                     setIsUpgradePaintModeActive(false);
                     setIsReinforcePaintModeActive(false);
+                    setIsBombPaintModeActive(false);
+                    setIsBallBrickPaintModeActive(false);
                 }
                 return newState;
             });
@@ -136,6 +150,8 @@ export function useGameLogic() {
                 if (newState) {
                     setIsPaintModeActive(false);
                     setIsReinforcePaintModeActive(false);
+                    setIsBombPaintModeActive(false);
+                    setIsBallBrickPaintModeActive(false);
                 }
                 return newState;
             });
@@ -149,6 +165,38 @@ export function useGameLogic() {
                 if (newState) {
                     setIsPaintModeActive(false);
                     setIsUpgradePaintModeActive(false);
+                    setIsBombPaintModeActive(false);
+                    setIsBallBrickPaintModeActive(false);
+                }
+                return newState;
+            });
+        }
+    }, []);
+
+    const toggleBombPaintMode = useCallback(() => {
+        if (gameModeRef.current === 'test') {
+            setIsBombPaintModeActive(prev => {
+                const newState = !prev;
+                if (newState) {
+                    setIsPaintModeActive(false);
+                    setIsUpgradePaintModeActive(false);
+                    setIsReinforcePaintModeActive(false);
+                    setIsBallBrickPaintModeActive(false);
+                }
+                return newState;
+            });
+        }
+    }, []);
+
+    const toggleBallBrickPaintMode = useCallback(() => {
+        if (gameModeRef.current === 'test') {
+            setIsBallBrickPaintModeActive(prev => {
+                const newState = !prev;
+                if (newState) {
+                    setIsPaintModeActive(false);
+                    setIsUpgradePaintModeActive(false);
+                    setIsReinforcePaintModeActive(false);
+                    setIsBombPaintModeActive(false);
                 }
                 return newState;
             });
@@ -460,6 +508,8 @@ export function useGameLogic() {
         setIsPaintModeActive(false);
         setIsUpgradePaintModeActive(false);
         setIsReinforcePaintModeActive(false);
+        setIsBombPaintModeActive(false);
+        setIsBallBrickPaintModeActive(false);
 
         setTestPowerUpSpawnChance(INITIAL_TEST_POWER_UP_SPAWN_CHANCE); 
         setTestBrickColumns(TEST_DEFAULT_BRICK_COLUMNS); 
@@ -482,7 +532,8 @@ export function useGameLogic() {
     }, [
         resetLevel, resetPaddle, clearBonusGoldTimers, setGameOverState, setActiveGameMode, setShowSidebar, setEnabledPowerUps, setupInitialBall,
         setTestPowerUpSpawnChance, setTestBrickColumns, setTestBrickRows, setTestBrickGridHeight,
-        setIsPaintModeActive, setIsUpgradePaintModeActive, setIsReinforcePaintModeActive
+        setIsPaintModeActive, setIsUpgradePaintModeActive, setIsReinforcePaintModeActive,
+        setIsBombPaintModeActive, setIsBallBrickPaintModeActive
     ]);
 
     const launchStuckBalls = useCallback((isInitialLaunchArgument = false) => { 
@@ -708,6 +759,8 @@ export function useGameLogic() {
         isPaintModeActiveRef,
         isUpgradePaintModeActiveRef,
         isReinforcePaintModeActiveRef,
+        isBombPaintModeActiveRef,
+        isBallBrickPaintModeActiveRef,
     }), [
         paddleXRef, ballsRef, powerUpsRef, particlesRef, homingTrailsRef, scoreRef, goldRef, spawnablePowerUpsRef, 
         paddleWidthRef, widenLevelRef, laserShotsRef, lasersRef, safetyNetCountRef,
@@ -743,6 +796,8 @@ export function useGameLogic() {
         isPaintModeActiveRef,
         isUpgradePaintModeActiveRef,
         isReinforcePaintModeActiveRef,
+        isBombPaintModeActiveRef,
+        isBallBrickPaintModeActiveRef,
     ]);
 
     const drawEndMessageCallback = useCallback((context: CanvasRenderingContext2D, state: GameState, finalScore: number) => {
@@ -759,6 +814,10 @@ export function useGameLogic() {
         toggleUpgradePaintMode,
         isReinforcePaintModeActive,
         toggleReinforcePaintMode,
+        isBombPaintModeActive,
+        toggleBombPaintMode,
+        isBallBrickPaintModeActive,
+        toggleBallBrickPaintMode,
     ]);
 
     const gameLoopCallbacks: GameLoopCallbacks = useMemo(() => ({
@@ -813,5 +872,9 @@ export function useGameLogic() {
         toggleUpgradePaintMode,
         isReinforcePaintModeActive,
         toggleReinforcePaintMode,
+        isBombPaintModeActive,
+        toggleBombPaintMode,
+        isBallBrickPaintModeActive,
+        toggleBallBrickPaintMode,
     };
 }

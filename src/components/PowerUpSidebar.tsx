@@ -2,6 +2,7 @@
 import React, { useState } from 'react';
 import { PowerUpType, ALL_TOGGLEABLE_POWER_UPS, POWER_UP_COLORS } from '../constants'; 
 import { useToast } from '../hooks/use-toast';
+import { Button } from '../components/ui/button';
 
 interface PowerUpSidebarProps {
   enabledPowerUps: Set<PowerUpType>;
@@ -21,6 +22,10 @@ interface PowerUpSidebarProps {
   toggleUpgradePaintMode?: () => void;
   isReinforcePaintModeActive?: boolean;
   toggleReinforcePaintMode?: () => void;
+  isBombPaintModeActive?: boolean;
+  toggleBombPaintMode?: () => void;
+  isBallBrickPaintModeActive?: boolean;
+  toggleBallBrickPaintMode?: () => void;
 }
 
 export const PowerUpSidebar: React.FC<PowerUpSidebarProps> = ({
@@ -40,7 +45,11 @@ export const PowerUpSidebar: React.FC<PowerUpSidebarProps> = ({
   isUpgradePaintModeActive,
   toggleUpgradePaintMode,
   isReinforcePaintModeActive,
-  toggleReinforcePaintMode
+  toggleReinforcePaintMode,
+  isBombPaintModeActive,
+  toggleBombPaintMode,
+  isBallBrickPaintModeActive,
+  toggleBallBrickPaintMode
 }) => {
   const [globalTargetLevel, setGlobalTargetLevel] = useState(1);
   const { toast } = useToast();
@@ -146,7 +155,7 @@ export const PowerUpSidebar: React.FC<PowerUpSidebarProps> = ({
       {ALL_TOGGLEABLE_POWER_UPS.map(type => {
         const isEnabled = enabledPowerUps.has(type);
         const bgColor = isEnabled ? (POWER_UP_COLORS[type] || '#cccccc') : '#4a5568'; 
-        const textColor = isEnabled && (type === 'BLACK_BALL' || type === 'ALL_IN_ONE' || type ==='DOUBLE_BALL') ? '#ffffff' : '#000000';
+        const textColor = isTestMode ? '#ffffff' : (isEnabled && (type === 'BLACK_BALL' || type === 'ALL_IN_ONE' || type ==='DOUBLE_BALL') ? '#ffffff' : '#000000');
         const currentLevelForType = testPowerUpLevels ? testPowerUpLevels[type] : 1;
 
         if (isTestMode && setTestPowerUpLevel && testPowerUpLevels) {
@@ -169,72 +178,81 @@ export const PowerUpSidebar: React.FC<PowerUpSidebarProps> = ({
                 onMouseDown={(e) => e.stopPropagation()} 
               >
                 {isTestMode && type === 'MAKE_SPECIAL' && togglePaintMode && (
-                  <button
-                    onClick={(e) => { e.stopPropagation(); if(togglePaintMode) togglePaintMode(); }}
-                    onMouseDown={(e) => e.stopPropagation()}
-                    className={`mr-1 px-1.5 py-0.5 text-xs rounded ${
-                      isPaintModeActive ? 'bg-green-600 hover:bg-green-700' : 'bg-gray-600 hover:bg-gray-500'
-                    } text-white focus:outline-none focus:ring-1 focus:ring-white`}
-                    style={{ lineHeight: '0.9rem' }}
+                  <Button
+                    onClick={togglePaintMode}
+                    variant="outline"
+                    className={`h-3 p-0 px-1.5 mr-1 ${isPaintModeActive ? 'bg-green-600 hover:bg-green-700' : 'bg-gray-700 hover:bg-gray-600'} text-white text-xs leading-3`}
                   >
-                    {isPaintModeActive ? 'Paint ON' : 'Paint'}
-                  </button>
+                    Paint
+                  </Button>
                 )}
                 {isTestMode && type === 'UPGRADE_BRICK' && toggleUpgradePaintMode && (
-                  <button
-                    onClick={(e) => { e.stopPropagation(); if(toggleUpgradePaintMode) toggleUpgradePaintMode(); }}
-                    onMouseDown={(e) => e.stopPropagation()}
-                    className={`mr-1 px-1.5 py-0.5 text-xs rounded ${
-                      isUpgradePaintModeActive ? 'bg-green-600 hover:bg-green-700' : 'bg-gray-600 hover:bg-gray-500'
-                    } text-white focus:outline-none focus:ring-1 focus:ring-white`}
-                    style={{ lineHeight: '0.9rem' }}
+                  <Button
+                    onClick={toggleUpgradePaintMode}
+                    variant="outline"
+                    className={`h-3 p-0 px-1.5 mr-1 ${isUpgradePaintModeActive ? 'bg-green-600 hover:bg-green-700' : 'bg-gray-700 hover:bg-gray-600'} text-white text-xs leading-3`}
                   >
-                    {isUpgradePaintModeActive ? 'Paint ON' : 'Paint'}
-                  </button>
+                    Paint
+                  </Button>
                 )}
                 {isTestMode && type === 'REINFORCE_BRICK' && toggleReinforcePaintMode && (
-                  <button
-                    onClick={(e) => { e.stopPropagation(); if(toggleReinforcePaintMode) toggleReinforcePaintMode(); }}
-                    onMouseDown={(e) => e.stopPropagation()}
-                    className={`mr-1 px-1.5 py-0.5 text-xs rounded ${
-                      isReinforcePaintModeActive ? 'bg-green-600 hover:bg-green-700' : 'bg-gray-600 hover:bg-gray-500'
-                    } text-white focus:outline-none focus:ring-1 focus:ring-white`}
-                    style={{ lineHeight: '0.9rem' }}
+                  <Button 
+                    onClick={toggleReinforcePaintMode}
+                    variant="outline"
+                    className={`h-3 p-0 px-1.5 mr-1 ${isReinforcePaintModeActive ? 'bg-green-600 hover:bg-green-700' : 'bg-gray-700 hover:bg-gray-600'} text-white text-xs leading-3`}
                   >
-                    {isReinforcePaintModeActive ? 'Paint ON' : 'Paint'}
-                  </button>
+                    Paint
+                  </Button>
+                )}
+                {isTestMode && type === 'BOMB_BRICK' && toggleBombPaintMode && (
+                  <Button 
+                    onClick={toggleBombPaintMode}
+                    variant="outline"
+                    className={`h-3 p-0 px-1.5 mr-1 ${isBombPaintModeActive ? 'bg-green-600 hover:bg-green-700' : 'bg-gray-700 hover:bg-gray-600'} text-white text-xs leading-3`}
+                  >
+                    Paint
+                  </Button>
+                )}
+                {isTestMode && type === 'BALL_BRICK' && toggleBallBrickPaintMode && (
+                  <Button 
+                    onClick={toggleBallBrickPaintMode}
+                    variant="outline"
+                    className={`h-3 p-0 px-1.5 mr-1 ${isBallBrickPaintModeActive ? 'bg-green-600 hover:bg-green-700' : 'bg-gray-700 hover:bg-gray-600'} text-white text-xs leading-3`}
+                  >
+                    Paint
+                  </Button>
                 )}
                 {type === 'LASER_PADDLE' && addTestLaserCharges && (
-                  <button 
+                  <Button 
                     onClick={handleAddLaserCharges}
                     onMouseDown={(e) => e.stopPropagation()} 
-                    className="mr-1 px-1.5 py-0 text-sm rounded bg-gray-600 hover:bg-gray-500 focus:outline-none focus:ring-1 focus:ring-white self-stretch flex items-center justify-center"
-                    style={{ color: 'white' }} 
+                    variant="outline"
+                    className="h-5 w-5 p-0 mr-1 bg-gray-600 hover:bg-gray-500 text-white text-xs flex items-center justify-center focus:ring-1 focus:ring-white"
                   >
                     +
-                  </button>
+                  </Button>
                 )}
                 {type === 'RECOVERY_PADDLE' && addTestRecoveryCharges && (
-                  <button 
+                  <Button 
                     onClick={handleAddRecoveryCharges} 
                     onMouseDown={(e) => e.stopPropagation()} 
-                    className="mr-1 px-1.5 py-0 text-sm rounded bg-gray-600 hover:bg-gray-500 focus:outline-none focus:ring-1 focus:ring-white self-stretch flex items-center justify-center"
-                    style={{ color: 'white' }} 
+                    variant="outline"
+                    className="h-5 w-5 p-0 mr-1 bg-gray-600 hover:bg-gray-500 text-white text-xs flex items-center justify-center focus:ring-1 focus:ring-white"
                   >
                     +
-                  </button>
+                  </Button>
                 )}
                 {type === 'SAFETY_NET' && addTestSafetyNetCharge && (
-                  <button 
+                  <Button 
                     onClick={handleAddSafetyNet} 
                     onMouseDown={(e) => e.stopPropagation()} 
-                    className="mr-1 px-1.5 py-0 text-sm rounded bg-gray-600 hover:bg-gray-500 focus:outline-none focus:ring-1 focus:ring-white self-stretch flex items-center justify-center"
-                    style={{ color: 'white' }} 
+                    variant="outline"
+                    className="h-5 w-5 p-0 mr-1 bg-gray-600 hover:bg-gray-500 text-white text-xs flex items-center justify-center focus:ring-1 focus:ring-white"
                   >
                     +
-                  </button>
+                  </Button>
                 )}
-                <span className="text-xs w-4 text-center select-none mr-1" style={{ color: textColor === '#ffffff' ? '#ffffff' : '#000000' }}>
+                <span className="text-xs w-4 text-center select-none mr-1 text-white">
                   {`L${currentLevelForType}`}
                 </span>
                 <div className="flex flex-col items-center justify-center">

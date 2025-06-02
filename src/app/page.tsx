@@ -68,6 +68,10 @@ export default function Home() {
         toggleUpgradePaintMode,
         isReinforcePaintModeActive,
         toggleReinforcePaintMode,
+        isBombPaintModeActive,
+        toggleBombPaintMode,
+        isBallBrickPaintModeActive,
+        toggleBallBrickPaintMode,
     } = useGameLogic();
 
     useEffect(() => {
@@ -294,6 +298,10 @@ export default function Home() {
                         toggleUpgradePaintMode={toggleUpgradePaintMode}
                         isReinforcePaintModeActive={isReinforcePaintModeActive}
                         toggleReinforcePaintMode={toggleReinforcePaintMode}
+                        isBombPaintModeActive={isBombPaintModeActive}
+                        toggleBombPaintMode={toggleBombPaintMode}
+                        isBallBrickPaintModeActive={isBallBrickPaintModeActive}
+                        toggleBallBrickPaintMode={toggleBallBrickPaintMode}
                     />
                     <div 
                         style={{
@@ -410,6 +418,16 @@ export default function Home() {
                     currentLevel={currentLevel}
                     addSpawnablePowerUp={addSpawnablePowerUp}
                     startNextLevel={startNextLevel}
+                    isPaintModeActive={isPaintModeActive}
+                    togglePaintMode={togglePaintMode}
+                    isUpgradePaintModeActive={isUpgradePaintModeActive}
+                    toggleUpgradePaintMode={toggleUpgradePaintMode}
+                    isReinforcePaintModeActive={isReinforcePaintModeActive}
+                    toggleReinforcePaintMode={toggleReinforcePaintMode}
+                    isBombPaintModeActive={isBombPaintModeActive}
+                    toggleBombPaintMode={toggleBombPaintMode}
+                    isBallBrickPaintModeActive={isBallBrickPaintModeActive}
+                    toggleBallBrickPaintMode={toggleBallBrickPaintMode}
                 />
             )}
         </div>
