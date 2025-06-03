@@ -152,11 +152,11 @@ export const PowerUpSidebar: React.FC<PowerUpSidebarProps> = ({
   return (
     <div
       data-role="powerup-sidebar"
-      className="h-full py-2 border-l border-gray-700 bg-gray-800 text-white overflow-y-auto flex flex-col space-y-px flex-shrink-0"
+      className="h-full pb-2 border-l border-gray-700 bg-gray-800 text-white overflow-y-auto flex flex-col space-y-px flex-shrink-0"
       style={style}
     >
-      <div className="flex items-center justify-between sticky top-0 bg-gray-800 px-1 py-1">
-        <h3 className="text-xs font-semibold text-center">Enabled Power-ups</h3>
+      <div className="flex items-center justify-between sticky top-0 bg-gray-800 pl-0 pr-1 py-1">
+        <h3 className="text-xs font-semibold text-center ml-0 pl-0">Enabled:</h3>
         <div className="flex items-center">
           {isTestMode && toggleAllTestPowerUps && (
             <button
