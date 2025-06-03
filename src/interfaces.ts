@@ -223,6 +223,8 @@ export interface GameStateRefsBase {
     laserIntervalRef: React.MutableRefObject<number | null>;
     homingTrailsRef: React.MutableRefObject<HomingTrail[]>;
     soundSystemRef: React.MutableRefObject<SoundSystem | null>;
+    isRemoveBrickPaintModeActiveRef?: React.MutableRefObject<boolean>;
+    isAddBrickPaintModeActiveRef?: React.MutableRefObject<boolean>;
 }
 
 export interface GameStateRefs extends GameStateRefsBase {

@@ -76,6 +76,10 @@ export default function Home() {
         isBallBrickPaintModeActive,
         toggleBallBrickPaintMode,
         triggerTestLevelReset,
+        isRemoveBrickPaintModeActive,
+        toggleRemoveBrickPaintMode,
+        isAddBrickPaintModeActive,
+        toggleAddBrickPaintMode,
     } = useGameLogic();
 
     useEffect(() => {
@@ -322,6 +326,10 @@ export default function Home() {
                         isBallBrickPaintModeActive={isBallBrickPaintModeActive}
                         toggleBallBrickPaintMode={toggleBallBrickPaintMode}
                         triggerTestLevelReset={triggerTestLevelReset}
+                        isRemoveBrickPaintModeActive={isRemoveBrickPaintModeActive}
+                        toggleRemoveBrickPaintMode={toggleRemoveBrickPaintMode}
+                        isAddBrickPaintModeActive={isAddBrickPaintModeActive}
+                        toggleAddBrickPaintMode={toggleAddBrickPaintMode}
                     />
                     <div 
                         style={{
@@ -422,6 +430,20 @@ export default function Home() {
                                     }}
                                     style={{ padding: '3px', fontSize: '0.75rem', color: '#000000', textAlign: 'center', minWidth: '60px' }}
                                 />
+                                <Button
+                                    onClick={toggleRemoveBrickPaintMode} 
+                                    variant="outline"
+                                    className={`text-white text-[0.8rem] py-[3px] px-2 rounded shadow-md focus:ring-1 focus:ring-white ${isRemoveBrickPaintModeActive ? 'bg-red-500 hover:bg-red-400' : 'bg-gray-700 hover:bg-gray-600'}`}
+                                >
+                                    Remove
+                                </Button>
+                                <Button
+                                    onClick={toggleAddBrickPaintMode} 
+                                    variant="outline"
+                                    className={`text-white text-[0.8rem] py-[3px] px-2 rounded shadow-md focus:ring-1 focus:ring-white ${isAddBrickPaintModeActive ? 'bg-green-500 hover:bg-green-400' : 'bg-gray-700 hover:bg-gray-600'}`}
+                                >
+                                    Add
+                                </Button>
                                 <Button
                                     onClick={triggerTestLevelReset} 
                                     variant="outline"
