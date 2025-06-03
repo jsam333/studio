@@ -433,16 +433,16 @@ export default function Home() {
                                 <Button
                                     onClick={toggleRemoveBrickPaintMode} 
                                     variant="outline"
-                                    className={`text-white text-[0.8rem] py-[3px] px-2 rounded shadow-md focus:ring-1 focus:ring-white ${isRemoveBrickPaintModeActive ? 'bg-red-500 hover:bg-red-400' : 'bg-gray-700 hover:bg-gray-600'}`}
+                                    className={`text-white text-[0.8rem] py-[3px] px-2 rounded shadow-md focus:ring-1 focus:ring-white ${isRemoveBrickPaintModeActive ? 'bg-green-500 hover:bg-green-400' : 'bg-gray-700 hover:bg-gray-600'}`}
                                 >
-                                    Remove
+                                    Remove Bricks
                                 </Button>
                                 <Button
                                     onClick={toggleAddBrickPaintMode} 
                                     variant="outline"
                                     className={`text-white text-[0.8rem] py-[3px] px-2 rounded shadow-md focus:ring-1 focus:ring-white ${isAddBrickPaintModeActive ? 'bg-green-500 hover:bg-green-400' : 'bg-gray-700 hover:bg-gray-600'}`}
                                 >
-                                    Add
+                                    Add Bricks
                                 </Button>
                                 <Button
                                     onClick={triggerTestLevelReset} 
