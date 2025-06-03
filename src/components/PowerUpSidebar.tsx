@@ -226,7 +226,7 @@ export const PowerUpSidebar: React.FC<PowerUpSidebarProps> = ({
                   <Button
                     onClick={togglePaintMode}
                     variant="outline"
-                    className={`h-4 py-0.5 px-1.5 mr-1 ${isPaintModeActive ? 'bg-green-500 hover:bg-green-400' : 'bg-gray-700 hover:bg-gray-600'} text-white text-xs leading-3`}
+                    className={`h-5 py-0.5 px-1.5 mr-1 ${isPaintModeActive ? 'bg-green-500 hover:bg-green-400' : 'bg-gray-700 hover:bg-gray-600'} text-white text-xs leading-3`}
                   >
                     Paint
                   </Button>
@@ -235,7 +235,7 @@ export const PowerUpSidebar: React.FC<PowerUpSidebarProps> = ({
                   <Button
                     onClick={toggleUpgradePaintMode}
                     variant="outline"
-                    className={`h-4 py-0.5 px-1.5 mr-1 ${isUpgradePaintModeActive ? 'bg-green-500 hover:bg-green-400' : 'bg-gray-700 hover:bg-gray-600'} text-white text-xs leading-3`}
+                    className={`h-5 py-0.5 px-1.5 mr-1 ${isUpgradePaintModeActive ? 'bg-green-500 hover:bg-green-400' : 'bg-gray-700 hover:bg-gray-600'} text-white text-xs leading-3`}
                   >
                     Paint
                   </Button>
@@ -244,7 +244,7 @@ export const PowerUpSidebar: React.FC<PowerUpSidebarProps> = ({
                   <Button 
                     onClick={toggleReinforcePaintMode}
                     variant="outline"
-                    className={`h-4 py-0.5 px-1.5 mr-1 ${isReinforcePaintModeActive ? 'bg-green-500 hover:bg-green-400' : 'bg-gray-700 hover:bg-gray-600'} text-white text-xs leading-3`}
+                    className={`h-5 py-0.5 px-1.5 mr-1 ${isReinforcePaintModeActive ? 'bg-green-500 hover:bg-green-400' : 'bg-gray-700 hover:bg-gray-600'} text-white text-xs leading-3`}
                   >
                     Paint
                   </Button>
@@ -253,7 +253,7 @@ export const PowerUpSidebar: React.FC<PowerUpSidebarProps> = ({
                   <Button 
                     onClick={toggleBombPaintMode}
                     variant="outline"
-                    className={`h-4 py-0.5 px-1.5 mr-1 ${isBombPaintModeActive ? 'bg-green-500 hover:bg-green-400' : 'bg-gray-700 hover:bg-gray-600'} text-white text-xs leading-3`}
+                    className={`h-5 py-0.5 px-1.5 mr-1 ${isBombPaintModeActive ? 'bg-green-500 hover:bg-green-400' : 'bg-gray-700 hover:bg-gray-600'} text-white text-xs leading-3`}
                   >
                     Paint
                   </Button>
@@ -262,7 +262,7 @@ export const PowerUpSidebar: React.FC<PowerUpSidebarProps> = ({
                   <Button 
                     onClick={toggleBallBrickPaintMode}
                     variant="outline"
-                    className={`h-4 py-0.5 px-1.5 mr-1 ${isBallBrickPaintModeActive ? 'bg-green-500 hover:bg-green-400' : 'bg-gray-700 hover:bg-gray-600'} text-white text-xs leading-3`}
+                    className={`h-5 py-0.5 px-1.5 mr-1 ${isBallBrickPaintModeActive ? 'bg-green-500 hover:bg-green-400' : 'bg-gray-700 hover:bg-gray-600'} text-white text-xs leading-3`}
                   >
                     Paint
                   </Button>
