@@ -171,5 +171,3 @@ export class SoundSystem {
         }
     }
 }
-
-export const soundSystem = new SoundSystem();

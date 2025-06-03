@@ -222,6 +222,7 @@ export interface GameStateRefsBase {
     paddleVisualEffectStartTimeRef?: React.MutableRefObject<number | null>; 
     laserIntervalRef: React.MutableRefObject<number | null>;
     homingTrailsRef: React.MutableRefObject<HomingTrail[]>;
+    soundSystemRef: React.MutableRefObject<SoundSystem | null>;
 }
 
 export interface GameStateRefs extends GameStateRefsBase {

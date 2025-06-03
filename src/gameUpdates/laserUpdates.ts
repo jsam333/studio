@@ -59,19 +59,32 @@ export const updateLasers = (
                     laser.y > brick.y) { 
 
                     laserHitBrick = true; 
-                    const originalBrickStatus = brick.status; 
-                    let pointsFromHit = 0;
 
-                    pointsFromHit += damageBrick(brick, spawnRequests, refs);
+                    if (brick.isBomb) {
+                        // Bomb hit by laser: Explode it instantly
+                        // Mark the bomb brick itself as destroyed
+                        brick.status = 2; // Set to Destroying phase
+                        brick.isFlashing = true; // Start flashing animation
+                        brick.flashStartTime = currentTime;
+                        
+                        let pointsFromExplosion = BOMB_BRICK_POINTS; // Points for the bomb itself
+                        
+                        // Play explosion sound
+                        refs.soundSystemRef.current?.playExplosionSound();
 
-                    if (pointsFromHit > 0) {
-                        callbacks.updateScoreCallback(pointsFromHit);
-                    }
-
-                    if (brick.isBomb && originalBrickStatus === 1 && brick.status === 2) {
-                        const bombExplosionPoints = handleBombExplosion(brick, c, r, refs.bricksRef.current, columns, rows, spawnRequests, refs);
-                        if (bombExplosionPoints > 0) {
-                            callbacks.updateScoreCallback(bombExplosionPoints);
+                        // Handle explosion for neighbors
+                        pointsFromExplosion += handleBombExplosion(brick, c, r, refs.bricksRef.current, columns, rows, spawnRequests, refs, currentTime);
+                        
+                        if (pointsFromExplosion > 0) {
+                            callbacks.updateScoreCallback(pointsFromExplosion);
+                        }
+                        // No need to push to nextLasersArray as it's destroyed
+                    } else {
+                        // Non-bomb brick hit by laser
+                        let pointsFromHit = 0;
+                        pointsFromHit += damageBrick(brick, spawnRequests, refs, currentTime);
+                        if (pointsFromHit > 0) {
+                            callbacks.updateScoreCallback(pointsFromHit);
                         }
                     }
                 }

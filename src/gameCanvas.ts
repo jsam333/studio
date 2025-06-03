@@ -6,7 +6,6 @@ import {
     BALL_SIZE, BIG_BALL_SIZE_INCREASE
 } from './constants';
 import { Laser } from './interfaces';
-import { soundSystem } from './soundSystem'; // Corrected import path
 
 interface SetupGameCanvasArgs {
     gameContainerRef: React.RefObject<HTMLDivElement>; 
@@ -255,13 +254,16 @@ export const setupGameCanvas = ({
     const fireLaser = () => {
         if (gameStateRefs.laserShotsRef.current > 0) {
             gameStateRefs.laserShotsRef.current--;
-            const newLaser: Laser = { 
+            const newLaser: Laser = {
                 x: gameStateRefs.paddleXRef.current + gameStateRefs.paddleWidthRef.current / 2 - LASER_WIDTH / 2,
-                y: PADDLE_Y - LASER_HEIGHT, 
-                width: LASER_WIDTH, height: LASER_HEIGHT, speed: LASER_SPEED, id: Date.now()
+                y: PADDLE_Y - LASER_HEIGHT,
+                width: LASER_WIDTH,
+                height: LASER_HEIGHT,
+                speed: LASER_SPEED,
+                id: Date.now() + Math.random(), // Ensure unique ID
             }; 
             gameStateRefs.lasersRef.current.push(newLaser);
-            soundSystem.playLaserFireSound(); // Play laser fire sound
+            gameStateRefs.soundSystemRef.current?.playLaserFireSound(); // Play laser fire sound
             return true;
         }
         return false;

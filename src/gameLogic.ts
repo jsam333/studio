@@ -10,7 +10,6 @@ import {
     BOMB_GLOW_DURATION,
     TARGET_TOTAL_BRICK_GRID_HEIGHT
 } from './constants';
-import { soundSystem } from './soundSystem'; // Import the sound system
 
 export const initializeBricks = (columns: number, rows: number, brickHeight: number, currentLevel: number, gameMode: GameMode | null, actualGridHeight?: number): Brick[][] => {
     const newBricks: Brick[][] = [];
@@ -184,7 +183,7 @@ export const updateBombGlowsAndTriggerExplosions = (bricks: Brick[][], columns: 
             const brick = bricks[c][r];
             if (brick && brick.isBombGlowActive && brick.bombGlowStartTime && (currentTime - brick.bombGlowStartTime >= BOMB_GLOW_DURATION)) {
                 brick.isBombGlowActive = false; // End glow
-                soundSystem.playExplosionSound(); // Play explosion sound
+                gameStateRefs.soundSystemRef.current?.playExplosionSound(); // Play explosion sound
                 
                 // Now, actually "destroy" the bomb brick
                 brick.status = 2; // Set to Destroying phase
@@ -232,7 +231,7 @@ export const checkBrickCollision = ( ball: Ball, bricks: Brick[][], columns: num
                  if (nextBallX + checkRadius > brick.x && nextBallX - checkRadius < brick.x + brick.width && nextBallY + checkRadius > brick.y && nextBallY - checkRadius < brick.y + brick.height) {
                     brickWasHit = true;
                     collisionDetected = true;
-                    soundSystem.playBrickHitSound(); // Play brick hit sound
+                    gameStateRefs.soundSystemRef.current?.playBrickHitSound(); // Play brick hit sound
                     let tempSpeedX = ball.speedX;
                     let tempSpeedY = ball.speedY;
                     
