@@ -28,11 +28,15 @@ export const applyBrickEffects = (
 
     const baseType = type.replace('_L2', '').replace('_L3', '');
 
+    const isTestMode = refs.gameModeRef.current === 'test';
+    const columnsToIterate = isTestMode ? 100 : BRICK_COLUMNS;
+    const rowsToIterate = isTestMode ? 50 : BRICK_ROWS;
+
     switch (baseType) {
         case 'REINFORCE_BRICK': {
             const candidates: { c: number; r: number }[] = [];
-            for (let c = 0; c < BRICK_COLUMNS; c++) {
-                for (let r = 0; r < BRICK_ROWS; r++) {
+            for (let c = 0; c < columnsToIterate; c++) {
+                for (let r = 0; r < rowsToIterate; r++) {
                     const brick = refs.bricksRef.current[c]?.[r];
                     if (brick && brick.status === 1 && !brick.isSpecial && !brick.isBomb && !brick.holdsBall && (!brick.upgradeLevel || brick.upgradeLevel < 2)) {
                         candidates.push({ c, r });
@@ -63,8 +67,8 @@ export const applyBrickEffects = (
         }
         case 'BOMB_BRICK': {
              const candidates: { c: number; r: number }[] = [];
-            for (let c = 0; c < BRICK_COLUMNS; c++) {
-                for (let r = 0; r < BRICK_ROWS; r++) {
+            for (let c = 0; c < columnsToIterate; c++) {
+                for (let r = 0; r < rowsToIterate; r++) {
                     const brick = refs.bricksRef.current[c]?.[r];
                     if (brick && brick.status === 1 && !brick.isBomb && !brick.isSpecial && !brick.holdsBall) {
                         candidates.push({ c, r });
@@ -95,8 +99,8 @@ export const applyBrickEffects = (
         }
         case 'MAKE_SPECIAL': {
              const candidates: { c: number; r: number }[] = [];
-            for (let c = 0; c < BRICK_COLUMNS; c++) {
-                for (let r = 0; r < BRICK_ROWS; r++) {
+            for (let c = 0; c < columnsToIterate; c++) {
+                for (let r = 0; r < rowsToIterate; r++) {
                     const brick = refs.bricksRef.current[c]?.[r];
                     if (brick && brick.status === 1 && !brick.isSpecial && !brick.isBomb && !brick.holdsBall) {
                         candidates.push({ c, r });
@@ -127,8 +131,8 @@ export const applyBrickEffects = (
         }
         case 'UPGRADE_BRICK': {
             const candidates: { c: number; r: number }[] = [];
-            for (let c = 0; c < BRICK_COLUMNS; c++) {
-                for (let r = 0; r < BRICK_ROWS; r++) {
+            for (let c = 0; c < columnsToIterate; c++) {
+                for (let r = 0; r < rowsToIterate; r++) {
                     const brick = refs.bricksRef.current[c]?.[r];
                     if (brick && brick.status === 1 && !brick.isSpecial && !brick.isBomb && !brick.holdsBall && (!brick.upgradeLevel || brick.upgradeLevel === 0) ) {
                         candidates.push({ c, r });
@@ -159,8 +163,8 @@ export const applyBrickEffects = (
         }
         case 'REGEN_BRICK': {
             const candidates: { c: number; r: number }[] = [];
-            for (let c = 0; c < BRICK_COLUMNS; c++) {
-                for (let r = 0; r < BRICK_ROWS; r++) {
+            for (let c = 0; c < columnsToIterate; c++) {
+                for (let r = 0; r < rowsToIterate; r++) {
                     const brick = refs.bricksRef.current[c]?.[r];
                     if (brick && brick.status === 0) { 
                         candidates.push({ c, r });
@@ -192,8 +196,8 @@ export const applyBrickEffects = (
         }
         case 'BALL_BRICK': {
             const candidates: { c: number; r: number }[] = [];
-            for (let c = 0; c < BRICK_COLUMNS; c++) {
-                for (let r = 0; r < BRICK_ROWS; r++) {
+            for (let c = 0; c < columnsToIterate; c++) {
+                for (let r = 0; r < rowsToIterate; r++) {
                     const brick = refs.bricksRef.current[c]?.[r];
                     if (brick && brick.status === 1 && !brick.isSpecial && !brick.isBomb && !brick.holdsBall && (!brick.upgradeLevel || brick.upgradeLevel === 0)) {
                         candidates.push({ c, r });
