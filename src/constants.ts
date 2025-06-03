@@ -154,24 +154,28 @@ export const POINTS_FIELD_DURATION = 5000;
 export const POINTS_FIELD_MAX_BALLS = 4; 
 
 export const ALL_TOGGLEABLE_POWER_UPS: PowerUpType[] = [
+    // Ball Modifiers
     'MULTI_BALL', 
-    'WIDEN_PADDLE', 
-    'LASER_PADDLE', 
-    'REGEN_BRICK', 
-    'SAFETY_NET', 
-    'REINFORCE_BRICK', 
-    'MAKE_SPECIAL', 
     'DOUBLE_BALL', 
     'PIERCE_BALL',                                                                                               
-    'UPGRADE_BRICK', 
     'BUILDER_BALL', 
     'BIG_BALL', 
     'SPLITTING_BALL', 
-    'COLLECTION_FIELD', 
     'HOMING_BALL', 
+    // Brick Modifiers
+    'REGEN_BRICK', 
+    'REINFORCE_BRICK', 
+    'UPGRADE_BRICK', 
     'BOMB_BRICK', 
-    'RECOVERY_PADDLE', 
     'BALL_BRICK', 
+    'MAKE_SPECIAL', 
+    // Paddle Modifiers
+    'WIDEN_PADDLE', 
+    'LASER_PADDLE', 
+    'RECOVERY_PADDLE', 
+    // Game/Field Modifiers
+    'SAFETY_NET', 
+    'COLLECTION_FIELD', 
     'POINTS_FIELD', 
 ];
 
