@@ -342,191 +342,218 @@ export default function Home() {
                     <div 
                         style={{
                             width: `${(BOARD_WIDTH * testScaleRef.current) + SIDEBAR_WIDTH_PX}px`,
-                            padding: '5px 10px',
+                            padding: '2px 10px 0px 10px',
                             backgroundColor: '#111927', 
                             display: 'flex',
                             flexDirection: 'row', 
-                            alignItems: 'center', 
-                            justifyContent: 'center', 
+                            alignItems: 'stretch',
+                            justifyContent: 'space-between',
                             color: '#FFFFFF',
                             boxSizing: 'border-box',
-                            gap: '10px', 
+                            gap: '5px',
                             borderLeft: '1px solid white',
                             borderRight: '1px solid white',
                             borderBottom: '1px solid white'
                         }}
                     >
-                        {/* Power-up Spawn Chance Control Group */}
-                        <div style={{display: 'flex', flexDirection: 'column', alignItems: 'center', flex: 1.5}}>
-                            <label htmlFor="powerUpSpawnChance" style={{ marginBottom: '5px', fontSize: '0.75rem' }}>
-                                Pwrup Spawnrate: {Math.round(testPowerUpSpawnChance * 100)}%
-                            </label>
-                            <input 
-                                type="range" 
-                                id="powerUpSpawnChance" 
-                                min="0" 
-                                max="1" 
-                                step="0.01" 
-                                value={testPowerUpSpawnChance}
-                                onChange={(e) => setTestPowerUpSpawnChance(parseFloat(e.target.value))}
-                                style={{ width: '100%' }} 
-                            />
-                        </div>
-                        {/* Brick Grid Height Control Group */}
-                        <div style={{display: 'flex', flexDirection: 'column', alignItems: 'center', flex: 1.5}}>
-                             <label htmlFor="testBrickGridHeight" style={{ marginBottom: '5px', fontSize: '0.75rem'}}>
-                                Grid Height: {testBrickGridHeight}
-                            </label>
-                            <input 
-                                type="range" 
-                                id="testBrickGridHeight" 
-                                min={MIN_BRICK_GRID_HEIGHT} 
-                                max={MAX_BRICK_GRID_HEIGHT} 
-                                step="1" 
-                                value={testBrickGridHeight}
-                                onChange={(e) => {
-                                    const val = parseInt(e.target.value, 10);
-                                    setTestBrickGridHeight(val);
-                                    startGame('test', testBrickColumns, testBrickRows, val);
-                                }}
-                                style={{ 
-                                    width: '100%', 
-                                    height: 'auto',
-                                }} 
-                            />
-                        </div>
-                        {/* Brick Rows Control Group */}
-                        <div style={{display: 'flex', flexDirection: 'row', alignItems: 'center', flex: 0.6, justifyContent: 'center'}}>
-                            <label htmlFor="testBrickRows" style={{ marginRight: '5px', fontSize: '0.75rem' }}>
-                                Rows:
-                            </label>
-                            <input 
-                                type="number" 
-                                id="testBrickRows" 
-                                min="1" 
-                                max="50" 
-                                value={testBrickRows}
-                                onChange={(e) => {
-                                    const val = parseInt(e.target.value, 10);
-                                    if (!isNaN(val) && val >= 1 && val <= 50) { 
-                                        setTestBrickRows(val);
-                                        startGame('test', testBrickColumns, val, testBrickGridHeight);
-                                    }
-                                }}
-                                style={{ width: '60px', padding: '3px', fontSize: '0.75rem', color: '#000000', textAlign: 'center' }}
-                            />
-                        </div>
-                        {/* Brick Columns Control Group */}
-                        <div style={{display: 'flex', flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-start', flex: 0.6, gap: '8px'}}> 
-                            <label htmlFor="testBrickColumns" style={{ fontSize: '0.75rem' }}> 
-                                Cols:
-                            </label>
-                            {/* New inner div for input and button */}
-                            <div style={{display: 'flex', alignItems: 'center', gap: '8px', flex: 1}}>
+                        {/* Parent Div for Sliders - gap is already 0px */}
+                        <div style={{display: 'flex', flexDirection: 'column', flex: 0.882, gap: '0px' }}>
+                            {/* Power-up Spawn Chance Control Group */}
+                            <div style={{display: 'flex', flexDirection: 'column', alignItems: 'center', margin: '0px', padding: '0px', paddingTop: '1px'}}>
+                                <label htmlFor="powerUpSpawnChance" style={{ marginBottom: '0px', fontSize: '0.75rem', lineHeight: '1' }}>
+                                    Pwrup Spawnrate: {Math.round(testPowerUpSpawnChance * 100)}%
+                                </label>
                                 <input 
-                                    type="number" 
-                                    id="testBrickColumns" 
-                                    min="1" 
-                                    max="100" 
+                                    type="range" 
+                                    id="powerUpSpawnChance" 
+                                    min="0" 
+                                    max="1" 
+                                    step="0.01" 
+                                    value={testPowerUpSpawnChance}
+                                    onChange={(e) => setTestPowerUpSpawnChance(parseFloat(e.target.value))}
+                                    style={{ width: '100%', margin: '0px', padding: '0px', border: '0px', display: 'block' }}
+                                />
+                            </div>
+                            {/* Brick Grid Height Control Group */}
+                            <div style={{display: 'flex', flexDirection: 'column', alignItems: 'center', margin: '0px', padding: '0px'}}>
+                                <label htmlFor="testBrickGridHeight" style={{ marginBottom: '0px', fontSize: '0.75rem', lineHeight: '1'}}>
+                                    Grid Height: {testBrickGridHeight}
+                                </label>
+                                <input 
+                                    type="range" 
+                                    id="testBrickGridHeight" 
+                                    min={MIN_BRICK_GRID_HEIGHT} 
+                                    max={MAX_BRICK_GRID_HEIGHT} 
+                                    step="1" 
+                                    value={testBrickGridHeight}
+                                    onChange={(e) => {
+                                        const val = parseInt(e.target.value, 10);
+                                        setTestBrickGridHeight(val);
+                                        startGame('test', testBrickColumns, testBrickRows, val);
+                                    }}
+                                    style={{ 
+                                        width: '100%', 
+                                        height: 'auto', 
+                                        margin: '0px', 
+                                        padding: '0px', 
+                                        border: '0px', 
+                                        display: 'block' 
+                                    }} 
+                                />
+                            </div>
+                        </div>
+
+                        {/* Parent Div for Rows/Cols inputs and their buttons - Modified for new layout */}
+                        <div style={{display: 'flex', flexDirection: 'column', flex: 1.8, gap: '2px', alignItems: 'stretch', height: '100%' }}>
+                            {/* Brick Rows Control Group - Modified */}
+                            <div style={{display: 'flex', flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-start', gap: '8px' }}>
+                                <label
+                                    htmlFor="testBrickRows"
+                                    style={{
+                                        marginRight: '5px',
+                                        fontSize: '0.75rem',
+                                        whiteSpace: 'nowrap',
+                                        minWidth: '35px',
+                                        display: 'inline-block',
+                                        textAlign: 'left',
+                                        alignSelf: 'center'
+                                    }}
+                                >
+                                    Rows:
+                                </label>
+                                <input
+                                    type="number"
+                                    id="testBrickRows"
+                                    min="1"
+                                    max="50"
+                                    value={testBrickRows}
+                                    onChange={(e) => {
+                                        const val = parseInt(e.target.value, 10);
+                                        if (!isNaN(val) && val >= 1 && val <= 50) {
+                                            setTestBrickRows(val);
+                                            startGame('test', testBrickColumns, val, testBrickGridHeight);
+                                        }
+                                    }}
+                                    style={{ width: '60px', padding: '3px', fontSize: '0.75rem', color: '#000000', textAlign: 'center', alignSelf: 'center' }}
+                                />
+                                <Button
+                                    onClick={toggleRemoveBrickPaintMode}
+                                    variant="outline"
+                                    className={`text-white text-[0.75rem] leading-none px-[18px] py-0 h-[26px] rounded shadow-md focus:ring-1 focus:ring-white ${isRemoveBrickPaintModeActive ? 'bg-green-500 hover:bg-green-400' : 'bg-gray-700 hover:bg-gray-600'}`}
+                                >
+                                    Remove Bricks
+                                </Button>
+                            </div>
+
+                            {/* Brick Columns Control Group - Modified */}
+                            <div style={{display: 'flex', flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-start', gap: '8px' }}>
+                                <label
+                                    htmlFor="testBrickColumns"
+                                    style={{
+                                        marginRight: '5px',
+                                        fontSize: '0.75rem',
+                                        whiteSpace: 'nowrap',
+                                        minWidth: '35px',
+                                        display: 'inline-block',
+                                        textAlign: 'left',
+                                        alignSelf: 'center'
+                                    }}
+                                >
+                                    Cols:
+                                </label>
+                                <input
+                                    type="number"
+                                    id="testBrickColumns"
+                                    min="1"
+                                    max="100"
                                     value={testBrickColumns}
                                     onChange={(e) => {
                                         const val = parseInt(e.target.value, 10);
-                                        if (!isNaN(val) && val >= 1 && val <= 100) { 
+                                        if (!isNaN(val) && val >= 1 && val <= 100) {
                                             setTestBrickColumns(val);
                                             startGame('test', val, testBrickRows, testBrickGridHeight);
                                         }
                                     }}
-                                    style={{ padding: '3px', fontSize: '0.75rem', color: '#000000', textAlign: 'center', minWidth: '60px' }}
+                                    style={{ width: '60px', padding: '3px', fontSize: '0.75rem', color: '#000000', textAlign: 'center', alignSelf: 'center' }}
                                 />
                                 <Button
-                                    onClick={toggleRemoveBrickPaintMode} 
+                                    onClick={toggleAddBrickPaintMode}
                                     variant="outline"
-                                    className={`text-white text-[0.8rem] py-[3px] px-2 rounded shadow-md focus:ring-1 focus:ring-white ${isRemoveBrickPaintModeActive ? 'bg-green-500 hover:bg-green-400' : 'bg-gray-700 hover:bg-gray-600'}`}
-                                >
-                                    Remove Bricks
-                                </Button>
-                                <Button
-                                    onClick={toggleAddBrickPaintMode} 
-                                    variant="outline"
-                                    className={`text-white text-[0.8rem] py-[3px] px-2 rounded shadow-md focus:ring-1 focus:ring-white ${isAddBrickPaintModeActive ? 'bg-green-500 hover:bg-green-400' : 'bg-gray-700 hover:bg-gray-600'}`}
+                                    className={`text-white text-[0.75rem] leading-none px-1 py-0 h-[26px] rounded shadow-md focus:ring-1 focus:ring-white ${isAddBrickPaintModeActive ? 'bg-green-500 hover:bg-green-400' : 'bg-gray-700 hover:bg-gray-600'}`}
                                 >
                                     Add Bricks
                                 </Button>
                                 <Button
-                                    onClick={triggerTestLevelReset} 
+                                    onClick={triggerTestLevelReset}
                                     variant="outline"
-                                    className="bg-gray-700 hover:bg-gray-600 text-white text-[0.8rem] py-[3px] px-2 rounded shadow-md focus:ring-1 focus:ring-white"
+                                    className="bg-gray-700 hover:bg-gray-600 text-white text-[0.75rem] px-1 py-0 h-[26px] rounded shadow-md focus:ring-1 focus:ring-white"
                                 >
                                     Reset
                                 </Button>
                             </div>
                         </div>
-                    </div>
-                    {/* Save/Load Controls */}
-                    <div 
-                        style={{
-                            width: `${(BOARD_WIDTH * testScaleRef.current) + SIDEBAR_WIDTH_PX}px`,
-                            padding: '5px 10px',
-                            backgroundColor: '#1a2433', // Slightly darker than controls bar for distinction
-                            display: 'flex',
-                            flexDirection: 'row',
-                            alignItems: 'center',
-                            justifyContent: 'space-between', 
-                            color: '#FFFFFF',
-                            boxSizing: 'border-box',
-                            gap: '10px',
-                            borderLeft: '1px solid white',
-                            borderRight: '1px solid white',
-                            borderBottom: '1px solid white'
-                        }}
-                    >
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                            <label htmlFor="levelName" style={{ fontSize: '0.75rem' }}>Name:</label>
-                            <input 
-                                type="text" 
-                                id="levelName" 
-                                value={levelNameInput}
-                                onChange={(e) => setLevelNameInput(e.target.value)}
-                                placeholder="Enter level name"
-                                style={{ padding: '3px', fontSize: '0.75rem', color: '#000000', minWidth: '120px' }}
-                            />
-                            <Button
-                                onClick={handleSaveCurrentLevel}
-                                variant="outline"
-                                className="bg-blue-600 hover:bg-blue-500 text-white text-[0.8rem] py-[3px] px-2 rounded shadow-md focus:ring-1 focus:ring-white"
-                            >
-                                Save
-                            </Button>
-                        </div>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                            <label htmlFor="loadLevelSelect" style={{ fontSize: '0.75rem' }}>Load:</label>
-                            <select 
-                                id="loadLevelSelect"
-                                value={selectedLevelToLoad}
-                                onChange={(e) => setSelectedLevelToLoad(e.target.value)}
-                                style={{ padding: '3px', fontSize: '0.75rem', color: '#000000', minWidth: '120px' }}
-                            >
-                                <option value="">Select Level</option>
-                                {savedLevels.map(name => (
-                                    <option key={name} value={name}>{name}</option>
-                                ))}
-                            </select>
-                            <Button
-                                onClick={handleLoadSelectedLevel}
-                                disabled={!selectedLevelToLoad}
-                                variant="outline"
-                                className="bg-green-600 hover:bg-green-500 text-white text-[0.8rem] py-[3px] px-2 rounded shadow-md focus:ring-1 focus:ring-white disabled:opacity-50"
-                            >
-                                Load
-                            </Button>
-                             <Button
-                                onClick={handleDeleteSelectedLevel}
-                                disabled={!selectedLevelToLoad}
-                                variant="outline"
-                                className="bg-red-600 hover:bg-red-500 text-white text-[0.8rem] py-[3px] px-2 rounded shadow-md focus:ring-1 focus:ring-white disabled:opacity-50"
-                            >
-                                Delete
-                            </Button>
+
+                        {/* Save/Load Controls - RE-INSERTED HERE */}
+                        <div 
+                            style={{
+                                display: 'flex',
+                                flexDirection: 'column',
+                                alignItems: 'stretch',
+                                justifyContent: 'flex-start',
+                                color: '#FFFFFF',
+                                boxSizing: 'border-box',
+                                gap: '2px',
+                                flex: 1.5
+                            }}
+                        >
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                <label htmlFor="levelName" style={{ fontSize: '0.75rem', whiteSpace: 'nowrap' }}>Name:</label>
+                                <input 
+                                    type="text" 
+                                    id="levelName" 
+                                    value={levelNameInput}
+                                    onChange={(e) => setLevelNameInput(e.target.value)}
+                                    placeholder="Enter level name"
+                                    style={{ padding: '3px', fontSize: '0.75rem', color: '#000000', minWidth: '100px', flexGrow: 1 }}
+                                />
+                                <Button
+                                    onClick={handleSaveCurrentLevel}
+                                    variant="outline"
+                                    className="bg-blue-600 hover:bg-blue-500 text-white text-[0.75rem] py-0 h-[26px] px-2 rounded shadow-md focus:ring-1 focus:ring-white"
+                                >
+                                    Save
+                                </Button>
+                            </div>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                <label htmlFor="loadLevelSelect" style={{ fontSize: '0.75rem', whiteSpace: 'nowrap' }}>Load:</label>
+                                <select 
+                                    id="loadLevelSelect"
+                                    value={selectedLevelToLoad}
+                                    onChange={(e) => setSelectedLevelToLoad(e.target.value)}
+                                    style={{ padding: '3px', fontSize: '0.75rem', color: '#000000', minWidth: '100px', flexGrow: 1 }}
+                                >
+                                    <option value="">Select Level</option>
+                                    {savedLevels.map(name => (
+                                        <option key={name} value={name}>{name}</option>
+                                    ))}
+                                </select>
+                                <Button
+                                    onClick={handleLoadSelectedLevel}
+                                    disabled={!selectedLevelToLoad}
+                                    variant="outline"
+                                    className="bg-green-600 hover:bg-green-500 text-white text-[0.75rem] py-0 h-[26px] px-2 rounded shadow-md focus:ring-1 focus:ring-white disabled:opacity-50"
+                                >
+                                    Load
+                                </Button>
+                                 <Button
+                                    onClick={handleDeleteSelectedLevel}
+                                    disabled={!selectedLevelToLoad}
+                                    variant="outline"
+                                    className="bg-red-600 hover:bg-red-500 text-white text-[0.75rem] py-0 h-[26px] px-2 rounded shadow-md focus:ring-1 focus:ring-white disabled:opacity-50"
+                                >
+                                    Delete
+                                </Button>
+                            </div>
                         </div>
                     </div>
                 </div>
