@@ -80,6 +80,14 @@ export default function Home() {
         toggleRemoveBrickPaintMode,
         isAddBrickPaintModeActive,
         toggleAddBrickPaintMode,
+        levelNameInput,
+        setLevelNameInput,
+        savedLevels,
+        selectedLevelToLoad,
+        setSelectedLevelToLoad,
+        handleSaveCurrentLevel,
+        handleLoadSelectedLevel,
+        handleDeleteSelectedLevel,
     } = useGameLogic();
 
     useEffect(() => {
@@ -452,6 +460,73 @@ export default function Home() {
                                     Reset
                                 </Button>
                             </div>
+                        </div>
+                    </div>
+                    {/* Save/Load Controls */}
+                    <div 
+                        style={{
+                            width: `${(BOARD_WIDTH * testScaleRef.current) + SIDEBAR_WIDTH_PX}px`,
+                            padding: '5px 10px',
+                            backgroundColor: '#1a2433', // Slightly darker than controls bar for distinction
+                            display: 'flex',
+                            flexDirection: 'row',
+                            alignItems: 'center',
+                            justifyContent: 'space-between', 
+                            color: '#FFFFFF',
+                            boxSizing: 'border-box',
+                            gap: '10px',
+                            borderLeft: '1px solid white',
+                            borderRight: '1px solid white',
+                            borderBottom: '1px solid white'
+                        }}
+                    >
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                            <label htmlFor="levelName" style={{ fontSize: '0.75rem' }}>Name:</label>
+                            <input 
+                                type="text" 
+                                id="levelName" 
+                                value={levelNameInput}
+                                onChange={(e) => setLevelNameInput(e.target.value)}
+                                placeholder="Enter level name"
+                                style={{ padding: '3px', fontSize: '0.75rem', color: '#000000', minWidth: '120px' }}
+                            />
+                            <Button
+                                onClick={handleSaveCurrentLevel}
+                                variant="outline"
+                                className="bg-blue-600 hover:bg-blue-500 text-white text-[0.8rem] py-[3px] px-2 rounded shadow-md focus:ring-1 focus:ring-white"
+                            >
+                                Save
+                            </Button>
+                        </div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                            <label htmlFor="loadLevelSelect" style={{ fontSize: '0.75rem' }}>Load:</label>
+                            <select 
+                                id="loadLevelSelect"
+                                value={selectedLevelToLoad}
+                                onChange={(e) => setSelectedLevelToLoad(e.target.value)}
+                                style={{ padding: '3px', fontSize: '0.75rem', color: '#000000', minWidth: '120px' }}
+                            >
+                                <option value="">Select Level</option>
+                                {savedLevels.map(name => (
+                                    <option key={name} value={name}>{name}</option>
+                                ))}
+                            </select>
+                            <Button
+                                onClick={handleLoadSelectedLevel}
+                                disabled={!selectedLevelToLoad}
+                                variant="outline"
+                                className="bg-green-600 hover:bg-green-500 text-white text-[0.8rem] py-[3px] px-2 rounded shadow-md focus:ring-1 focus:ring-white disabled:opacity-50"
+                            >
+                                Load
+                            </Button>
+                             <Button
+                                onClick={handleDeleteSelectedLevel}
+                                disabled={!selectedLevelToLoad}
+                                variant="outline"
+                                className="bg-red-600 hover:bg-red-500 text-white text-[0.8rem] py-[3px] px-2 rounded shadow-md focus:ring-1 focus:ring-white disabled:opacity-50"
+                            >
+                                Delete
+                            </Button>
                         </div>
                     </div>
                 </div>

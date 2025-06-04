@@ -56,3 +56,36 @@ export const saveHighestLevel = (level: number): void => {
 export const getHighestLevel = (): number => {
   return loadData<number>(KEY_HIGHEST_LEVEL) || 0;
 };
+
+// Custom Level Designs
+const KEY_SAVED_LEVEL_NAMES = 'savedLevelNames';
+const LEVEL_DATA_PREFIX = 'levelData_';
+
+export const getSavedLevelNames = (): string[] => {
+  return loadData<string[]>(KEY_SAVED_LEVEL_NAMES) || [];
+};
+
+export const saveLevelData = (levelName: string, data: any): boolean => {
+  if (!levelName.trim()) {
+    console.error("Level name cannot be empty.");
+    return false;
+  }
+  const names = getSavedLevelNames();
+  if (!names.includes(levelName)) {
+    names.push(levelName);
+    saveData(KEY_SAVED_LEVEL_NAMES, names);
+  }
+  saveData(`${LEVEL_DATA_PREFIX}${levelName}`, data);
+  return true;
+};
+
+export const loadLevelData = (levelName: string): any | null => {
+  return loadData<any>(`${LEVEL_DATA_PREFIX}${levelName}`);
+};
+
+export const deleteLevelData = (levelName: string): void => {
+  const names = getSavedLevelNames();
+  const updatedNames = names.filter(name => name !== levelName);
+  saveData(KEY_SAVED_LEVEL_NAMES, updatedNames);
+  removeData(`${LEVEL_DATA_PREFIX}${levelName}`);
+};

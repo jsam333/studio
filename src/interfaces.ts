@@ -245,3 +245,17 @@ export interface GameLoopCallbacks {
     resetLevelCallback: (mode: GameMode | null, resetScoreAndGold: boolean) => void;
     resetBonusGoldCallback: () => void;
 }
+
+export interface SavedLevelData {
+  name: string;
+  brickColumns: number;
+  brickRows: number;
+  brickGridHeight: number;
+  bricks: Brick[][];
+  enabledPowerUps: PowerUpType[];
+  powerUpLevels: Record<PowerUpType, number>;
+  powerUpSpawnChance: number;
+  initialLaserCharges: number;
+  initialRecoveryCharges: number;
+  initialSafetyNets: number;
+}
