@@ -351,7 +351,7 @@ export default function Home() {
                         {/* Power-up Spawn Chance Control Group */}
                         <div style={{display: 'flex', flexDirection: 'column', alignItems: 'center', flex: 1.5}}>
                             <label htmlFor="powerUpSpawnChance" style={{ marginBottom: '5px', fontSize: '0.75rem' }}>
-                                PU Spawn: {Math.round(testPowerUpSpawnChance * 100)}%
+                                Pwrup Spawnrate: {Math.round(testPowerUpSpawnChance * 100)}%
                             </label>
                             <input 
                                 type="range" 
@@ -367,7 +367,7 @@ export default function Home() {
                         {/* Brick Grid Height Control Group */}
                         <div style={{display: 'flex', flexDirection: 'column', alignItems: 'center', flex: 1.5}}>
                              <label htmlFor="testBrickGridHeight" style={{ marginBottom: '5px', fontSize: '0.75rem'}}>
-                                Grid H: {testBrickGridHeight}
+                                Grid Height: {testBrickGridHeight}
                             </label>
                             <input 
                                 type="range" 
