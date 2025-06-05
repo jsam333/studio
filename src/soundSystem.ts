@@ -51,12 +51,12 @@ export class SoundSystem {
             const oldestSound = soundInstances.shift();
             if (oldestSound) {
                 try {
-                    oldestSound.oscillator.onended = null;
-                    oldestSound.oscillator.stop(0);
+                    oldestSound.oscillator.onended = null; // Prevent onended from firing after manual stop
+                    oldestSound.oscillator.stop(0); // Stop immediately
                     oldestSound.oscillator.disconnect();
                     oldestSound.gainNode.disconnect();
                 } catch (e) {
-                    console.warn("Error stopping oldest sound:", e);
+                    // console.warn("Error stopping oldest sound:", e); // Optional: log if needed
                 }
             }
         }
@@ -83,8 +83,27 @@ export class SoundSystem {
             }
         };
 
-        const effectiveVolume = volume * this.masterVolume;
-        gainNode.gain.setValueAtTime(effectiveVolume, now);
+        let calculatedVolume = volume * this.masterVolume;
+        // Apply volume reduction specifically for 'brickHit' sounds
+        // The `soundInstances` here includes the current sound we are about to play,
+        // so we check `soundInstances.length -1` for the count of *already* playing sounds.
+        if (type === 'brickHit') {
+            const alreadyPlayingBrickHitSounds = soundInstances.length -1;
+            if (alreadyPlayingBrickHitSounds === 1) { // One is already playing, this new one will be the 2nd
+                calculatedVolume *= 0.6; 
+            } else if (alreadyPlayingBrickHitSounds >= 2) { // Two or more are already playing, this new one will be the 3rd (or more, but capped at 3 total)
+                calculatedVolume *= 0.3; 
+            }
+        } else if (type === 'paddleHit' || type === 'powerUpCollected') {
+            const alreadyPlayingSounds = soundInstances.length - 1;
+            if (alreadyPlayingSounds === 1) {
+                calculatedVolume *= 0.6;
+            } else if (alreadyPlayingSounds >= 2) {
+                calculatedVolume *= 0.3;
+            }
+        }
+
+        gainNode.gain.setValueAtTime(calculatedVolume, now);
         oscillator.type = waveType;
         oscillator.frequency.setValueAtTime(frequency, now);
 
@@ -95,7 +114,7 @@ export class SoundSystem {
         oscillator.start(now);
         oscillator.stop(now + duration);
     }
-
+    
     playBrickHitSound() {
         this.playSound('brickHit', 0.5, 600, 0.03, 'square');
     }
