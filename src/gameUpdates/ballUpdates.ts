@@ -187,11 +187,13 @@ export const updateBalls = (
                     const overshoot = nextX > BOARD_WIDTH - currentBallSize ? (nextX - (BOARD_WIDTH - currentBallSize)) : (currentBallSize - nextX);
                     currentSpeedX = -currentSpeedX;
                     nextX = (nextX > BOARD_WIDTH - currentBallSize) ? (BOARD_WIDTH - currentBallSize) - overshoot : currentBallSize + overshoot;
+                    refs.soundSystemRef.current?.playPaddleHitSound(); // Play sound on side wall hit
                 }
                 if (nextY < currentBallSize) {
                     const overshoot = currentBallSize - nextY;
                     currentSpeedY = -currentSpeedY;
                     nextY = currentBallSize + overshoot;
+                    refs.soundSystemRef.current?.playPaddleHitSound(); // Play sound on top wall hit
                 }
                 else if (nextY + currentBallSize > BOARD_HEIGHT) {
                     let stickToSide: 'left' | 'right' | null = null;
