@@ -115,6 +115,9 @@ export function useGameLogic() {
     const [activeGameMode, setActiveGameMode] = useState<GameMode | null>('test'); 
     const [testPowerUpLevels, setTestPowerUpLevelsState] = useState<Record<PowerUpType, number>>({ ...initialTestPowerUpLevels });
 
+    // New ref for persisting test mode enabled power-ups
+    const persistedTestEnabledPowerUpsRef = useRef<Set<PowerUpType>>(new Set(['MULTI_BALL'] as PowerUpType[]));
+
     // New state for Save/Load UI
     const [levelNameInput, setLevelNameInput] = useState<string>("");
     const [savedLevels, setSavedLevels] = useState<string[]>([]);
@@ -326,13 +329,18 @@ export function useGameLogic() {
         setDeleteConfirmationPendingFor(null);
         setEnabledPowerUps(prevEnabled => {
             const allCurrentlyEnabled = ALL_TOGGLEABLE_POWER_UPS.every(type => prevEnabled.has(type)) && prevEnabled.size === ALL_TOGGLEABLE_POWER_UPS.length;
+            let newSet: Set<PowerUpType>;
             if (allCurrentlyEnabled) {
-                return new Set<PowerUpType>(); // Disable all
+                newSet = new Set<PowerUpType>(); // Disable all
             } else {
-                return new Set<PowerUpType>(ALL_TOGGLEABLE_POWER_UPS); // Enable all
+                newSet = new Set<PowerUpType>(ALL_TOGGLEABLE_POWER_UPS); // Enable all
             }
+            if (gameModeRef.current === 'test') { // Only update persisted ref if in test mode
+                persistedTestEnabledPowerUpsRef.current = newSet;
+            }
+            return newSet;
         });
-    }, []);
+    }, [gameModeRef]);
 
     const addTestLaserCharges = useCallback((count: number) => {
         setDeleteConfirmationPendingFor(null);
@@ -488,7 +496,7 @@ export function useGameLogic() {
             } else if (mode === 'main') {
                  spawnablePowerUpsRef.current = new Set(); 
                  setEnabledPowerUps(new Set(ALL_TOGGLEABLE_POWER_UPS)); 
-                 firstTestRunCompletedRef.current = false; 
+                 // firstTestRunCompletedRef.current = false; // DO NOT RESET THIS HERE
                  setShowSidebar(false);
                  setGameOverState('playing');
                  isGameStartedRef.current = false; 
@@ -499,18 +507,48 @@ export function useGameLogic() {
                  isGameStartedRef.current = false; 
 
                  if (!firstTestRunCompletedRef.current) {
+                    const defaultTestEnabledPowerUps = new Set(['MULTI_BALL'] as PowerUpType[]);
+                    setEnabledPowerUps(defaultTestEnabledPowerUps);
+                    persistedTestEnabledPowerUpsRef.current = defaultTestEnabledPowerUps; // Initialize persisted ref
+
                     setTestPowerUpSpawnChanceWithReset(INITIAL_TEST_POWER_UP_SPAWN_CHANCE);
-                    setEnabledPowerUps(new Set(['MULTI_BALL'] as PowerUpType[]));
+                    testPowerUpSpawnChanceRef.current = INITIAL_TEST_POWER_UP_SPAWN_CHANCE; // Initialize ref
+
                     setTestBrickColumns(newTestBrickColumns !== undefined ? newTestBrickColumns : TEST_DEFAULT_BRICK_COLUMNS);
                     setTestBrickRows(newTestBrickRows !== undefined ? newTestBrickRows : TEST_DEFAULT_BRICK_ROWS);
                     setTestBrickGridHeight(newTestBrickGridHeight !== undefined ? newTestBrickGridHeight : TARGET_TOTAL_BRICK_GRID_HEIGHT);
+                    // Refs for dimensions are updated via useEffect on their state variables
+
                     setTestPowerUpLevelsState({ ...initialTestPowerUpLevels }); 
+                    testPowerUpLevelsRef.current = { ...initialTestPowerUpLevels }; // Initialize ref
+
                     firstTestRunCompletedRef.current = true;
-                } else {
-                    setTestBrickColumns(newTestBrickColumns !== undefined ? newTestBrickColumns : testBrickColumns); 
-                    setTestBrickRows(newTestBrickRows !== undefined ? newTestBrickRows : testBrickRows); 
-                    setTestBrickGridHeight(newTestBrickGridHeight !== undefined ? newTestBrickGridHeight : testBrickGridHeight); 
-                }
+                 } else {
+                    // Persist settings from refs to state if it's not the first run
+                    const restoredTestEnabledPowerUps = new Set(persistedTestEnabledPowerUpsRef.current);
+                    setEnabledPowerUps(restoredTestEnabledPowerUps); 
+                    enabledPowerUpsRef.current = restoredTestEnabledPowerUps; // Also directly update the main ref
+
+                    setTestPowerUpLevelsState({ ...testPowerUpLevelsRef.current });
+                    setTestPowerUpSpawnChanceWithReset(testPowerUpSpawnChanceRef.current);
+
+                    // Update dimensions if new values are explicitly passed, otherwise they persist from current state/ref
+                    if (newTestBrickColumns !== undefined) {
+                        setTestBrickColumns(newTestBrickColumns);
+                    } else {
+                        setTestBrickColumns(testBrickColumnsRef.current); 
+                    }
+                    if (newTestBrickRows !== undefined) {
+                        setTestBrickRows(newTestBrickRows);
+                    } else {
+                        setTestBrickRows(testBrickRowsRef.current); 
+                    }
+                    if (newTestBrickGridHeight !== undefined) {
+                        setTestBrickGridHeight(newTestBrickGridHeight);
+                    } else {
+                        setTestBrickGridHeight(testBrickGridHeightRef.current); 
+                    }
+                 }
              }
 
             currentLevelRef.current = 1; 
@@ -524,11 +562,10 @@ export function useGameLogic() {
             }
         }
     }, [
-        resetLevel, setupInitialBall, setActiveGameMode, setEnabledPowerUps, setShowSidebar, setGameOverState, 
-        setTestPowerUpSpawnChanceWithReset, setTestBrickColumns, setTestBrickRows, setTestBrickGridHeight, 
+        resetLevel, setupInitialBall, setActiveGameMode, setEnabledPowerUps, setShowSidebar, setGameOverState,
+        setTestPowerUpSpawnChanceWithReset, setTestBrickColumns, setTestBrickRows, setTestBrickGridHeight,
         testBrickColumns, testBrickRows, testBrickGridHeight,
-        isPaintModeActiveRef, resetPaddle, // Added resetPaddle
-        targetScoreRef, totalBricksRef, brickColumnsRef, brickRowsRef // Added refs for loaded level
+        isPaintModeActiveRef, resetPaddle,
     ]);
 
     useEffect(() => {
@@ -641,7 +678,7 @@ export function useGameLogic() {
     const handleResetGame = useCallback(() => {
         gameIsRunningRef.current = false;
         isGameStartedRef.current = false;
-        testPreviewInitialLaunchDoneRef.current = false; 
+        // testPreviewInitialLaunchDoneRef.current = false; // This seems to be mostly for the initial ball launch X speed.
         if (collectionFieldShrinkTimerRef.current) clearInterval(collectionFieldShrinkTimerRef.current);
         collectionFieldShrinkTimerRef.current = null;
         if (laserIntervalRef.current) clearInterval(laserIntervalRef.current); 
@@ -670,17 +707,19 @@ export function useGameLogic() {
         setIsRemoveBrickPaintModeActive(false);
         setIsAddBrickPaintModeActive(false);
 
-        setTestPowerUpSpawnChanceWithReset(INITIAL_TEST_POWER_UP_SPAWN_CHANCE); 
-        setTestBrickColumns(TEST_DEFAULT_BRICK_COLUMNS); 
-        setTestBrickRows(TEST_DEFAULT_BRICK_ROWS); 
-        setTestBrickGridHeight(TARGET_TOTAL_BRICK_GRID_HEIGHT);
-        setEnabledPowerUps(new Set(['MULTI_BALL'] as PowerUpType[]));
-        setTestPowerUpLevelsState({ ...initialTestPowerUpLevels }); 
-        firstTestRunCompletedRef.current = false; 
+        // // Do not reset test settings here to allow persistence across main game sessions
+        // setTestPowerUpSpawnChanceWithReset(INITIAL_TEST_POWER_UP_SPAWN_CHANCE); 
+        // setTestBrickColumns(TEST_DEFAULT_BRICK_COLUMNS); 
+        // setTestBrickRows(TEST_DEFAULT_BRICK_ROWS); 
+        // setTestBrickGridHeight(TARGET_TOTAL_BRICK_GRID_HEIGHT);
+        // setEnabledPowerUps(new Set(['MULTI_BALL'] as PowerUpType[]));
+        // setTestPowerUpLevelsState({ ...initialTestPowerUpLevels }); 
+        // firstTestRunCompletedRef.current = false; // DO NOT RESET THIS HERE
 
         gameModeRef.current = 'test'; 
         setActiveGameMode('test'); 
         setGameOverState('menu');
+        setEnabledPowerUps(new Set(persistedTestEnabledPowerUpsRef.current)); // Restore persisted test enabled PUs
         setShowSidebar(true); 
         
         resetLevel('test', true); 
@@ -695,7 +734,6 @@ export function useGameLogic() {
 
     }, [
         resetLevel, resetPaddle, clearBonusGoldTimers, setGameOverState, setActiveGameMode, setShowSidebar, setEnabledPowerUps, setupInitialBall,
-        setTestPowerUpSpawnChanceWithReset, setTestBrickColumns, setTestBrickRows, setTestBrickGridHeight,
         setIsPaintModeActive, setIsUpgradePaintModeActive, setIsReinforcePaintModeActive,
         setIsBombPaintModeActive, setIsBallBrickPaintModeActive, setIsRemoveBrickPaintModeActive, setIsAddBrickPaintModeActive
     ]);
@@ -803,9 +841,12 @@ export function useGameLogic() {
         setEnabledPowerUps(prev => {
             const next = new Set(prev);
             if (next.has(type)) next.delete(type); else next.add(type);
+            if (gameModeRef.current === 'test') { // This was already correctly conditional
+                persistedTestEnabledPowerUpsRef.current = next; 
+            }
             return next;
         });
-    }, []);
+    }, [gameModeRef]);
 
     const startNextLevel = useCallback(() => {
         if (gameOverStateRef.current === 'shop') {
