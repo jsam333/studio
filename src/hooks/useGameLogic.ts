@@ -18,6 +18,7 @@ import { useToast } from './use-toast';
 
 const MAX_UPGRADE_LEVEL = 3;
 const INITIAL_LIVES = 3;
+const MAX_LEVEL_NAME_LENGTH = 15;
 
 const getPowerUpTypeForLevel = (baseType: PowerUpType, level: number): PowerUpType | null => {
     if (level < 1 || level > MAX_UPGRADE_LEVEL) return null;
@@ -87,7 +88,6 @@ export function useGameLogic() {
         testBrickRowsRef,
         testBrickGridHeightRef,
         testPowerUpSpawnChance,
-        setTestPowerUpSpawnChance,
         testBrickColumns,
         setTestBrickColumns,
         testBrickRows,
@@ -95,6 +95,18 @@ export function useGameLogic() {
         testBrickGridHeight,
         setTestBrickGridHeight,
     } = useTestModeSettings();
+
+    const [actualTestPowerUpSpawnChance, setActualTestPowerUpSpawnChance] = useState<number>(INITIAL_TEST_POWER_UP_SPAWN_CHANCE);
+
+    // Wrapped setter for testPowerUpSpawnChance
+    const setTestPowerUpSpawnChanceWithReset = useCallback((value: number | ((prevState: number) => number)) => {
+        setDeleteConfirmationPendingFor(null);
+        setActualTestPowerUpSpawnChance(value);
+    }, [setActualTestPowerUpSpawnChance]);
+
+    useEffect(() => {
+        testPowerUpSpawnChanceRef.current = actualTestPowerUpSpawnChance;
+    }, [actualTestPowerUpSpawnChance]);
 
     const [gameOverState, setGameOverState] = useState<GameState>('menu');
     const gameOverStateRef = useRef(gameOverState);
@@ -107,6 +119,7 @@ export function useGameLogic() {
     const [levelNameInput, setLevelNameInput] = useState<string>("");
     const [savedLevels, setSavedLevels] = useState<string[]>([]);
     const [selectedLevelToLoad, setSelectedLevelToLoad] = useState<string>("");
+    const [deleteConfirmationPendingFor, setDeleteConfirmationPendingFor] = useState<string | null>(null);
 
     useEffect(() => {
         testPowerUpLevelsRef.current = testPowerUpLevels;
@@ -155,7 +168,17 @@ export function useGameLogic() {
         }
     }, []);
 
+    useEffect(() => {
+        // If a delete confirmation was pending for a specific level,
+        // and the currently selected level to load is now different (or empty),
+        // then cancel the pending delete confirmation.
+        if (deleteConfirmationPendingFor && selectedLevelToLoad !== deleteConfirmationPendingFor) {
+            setDeleteConfirmationPendingFor(null);
+        }
+    }, [selectedLevelToLoad, deleteConfirmationPendingFor]);
+
     const togglePaintMode = useCallback(() => {
+        setDeleteConfirmationPendingFor(null);
         if (gameModeRef.current === 'test') {
             setIsPaintModeActive(prev => {
                 const newState = !prev;
@@ -170,9 +193,10 @@ export function useGameLogic() {
                 return newState;
             });
         }
-    }, []);
+    }, [selectedLevelToLoad, toast]);
 
     const toggleUpgradePaintMode = useCallback(() => {
+        setDeleteConfirmationPendingFor(null);
         if (gameModeRef.current === 'test') {
             setIsUpgradePaintModeActive(prev => {
                 const newState = !prev;
@@ -187,9 +211,10 @@ export function useGameLogic() {
                 return newState;
             });
         }
-    }, []);
+    }, [selectedLevelToLoad, toast]);
 
     const toggleReinforcePaintMode = useCallback(() => {
+        setDeleteConfirmationPendingFor(null);
         if (gameModeRef.current === 'test') {
             setIsReinforcePaintModeActive(prev => {
                 const newState = !prev;
@@ -204,9 +229,10 @@ export function useGameLogic() {
                 return newState;
             });
         }
-    }, []);
+    }, [selectedLevelToLoad, toast]);
 
     const toggleBombPaintMode = useCallback(() => {
+        setDeleteConfirmationPendingFor(null);
         if (gameModeRef.current === 'test') {
             setIsBombPaintModeActive(prev => {
                 const newState = !prev;
@@ -221,9 +247,10 @@ export function useGameLogic() {
                 return newState;
             });
         }
-    }, []);
+    }, [selectedLevelToLoad, toast]);
 
     const toggleBallBrickPaintMode = useCallback(() => {
+        setDeleteConfirmationPendingFor(null);
         if (gameModeRef.current === 'test') {
             setIsBallBrickPaintModeActive(prev => {
                 const newState = !prev;
@@ -238,9 +265,10 @@ export function useGameLogic() {
                 return newState;
             });
         }
-    }, []);
+    }, [selectedLevelToLoad, toast]);
 
     const toggleRemoveBrickPaintMode = useCallback(() => {
+        setDeleteConfirmationPendingFor(null);
         if (gameModeRef.current === 'test') {
             setIsRemoveBrickPaintModeActive(prev => {
                 const newState = !prev;
@@ -255,9 +283,10 @@ export function useGameLogic() {
                 return newState;
             });
         }
-    }, []);
+    }, [selectedLevelToLoad, toast]);
 
     const toggleAddBrickPaintMode = useCallback(() => {
+        setDeleteConfirmationPendingFor(null);
         if (gameModeRef.current === 'test') {
             setIsAddBrickPaintModeActive(prev => {
                 const newState = !prev;
@@ -272,9 +301,10 @@ export function useGameLogic() {
                 return newState;
             });
         }
-    }, []);
+    }, [selectedLevelToLoad, toast]);
 
     const setTestPowerUpLevel = useCallback((type: PowerUpType, level: number) => {
+        setDeleteConfirmationPendingFor(null);
         setTestPowerUpLevelsState(prevLevels => ({
             ...prevLevels,
             [type]: level
@@ -282,6 +312,7 @@ export function useGameLogic() {
     }, []);
 
     const setAllTestPowerUpLevels = useCallback((level: number) => {
+        setDeleteConfirmationPendingFor(null);
         if (level >= 1 && level <= MAX_UPGRADE_LEVEL) {
             const newLevels = { ...initialTestPowerUpLevels };
             for (const type in newLevels) {
@@ -292,6 +323,7 @@ export function useGameLogic() {
     }, []);
 
     const toggleAllTestPowerUps = useCallback(() => {
+        setDeleteConfirmationPendingFor(null);
         setEnabledPowerUps(prevEnabled => {
             const allCurrentlyEnabled = ALL_TOGGLEABLE_POWER_UPS.every(type => prevEnabled.has(type)) && prevEnabled.size === ALL_TOGGLEABLE_POWER_UPS.length;
             if (allCurrentlyEnabled) {
@@ -303,6 +335,7 @@ export function useGameLogic() {
     }, []);
 
     const addTestLaserCharges = useCallback((count: number) => {
+        setDeleteConfirmationPendingFor(null);
         if (gameModeRef.current === 'test') {
             laserShotsRef.current += count;
             console.log(`Added ${count} laser charges. Total: ${laserShotsRef.current}`);
@@ -310,6 +343,7 @@ export function useGameLogic() {
     }, []);
 
     const addTestRecoveryCharges = useCallback((count: number) => {
+        setDeleteConfirmationPendingFor(null);
         if (gameModeRef.current === 'test') {
             stickyPaddleChargesRef.current += count;
             console.log(`Added ${count} recovery charges. Total: ${stickyPaddleChargesRef.current}`);
@@ -317,6 +351,7 @@ export function useGameLogic() {
     }, []);
 
     const addTestSafetyNetCharge = useCallback(() => {
+        setDeleteConfirmationPendingFor(null);
         if (gameModeRef.current === 'test') {
             safetyNetCountRef.current += 1;
             console.log(`Added 1 safety net. Total: ${safetyNetCountRef.current}`);
@@ -393,6 +428,7 @@ export function useGameLogic() {
         newTestBrickGridHeight?: number,
         loadedLevelData?: SavedLevelData // Added for loading levels
     ) => {
+        setDeleteConfirmationPendingFor(null);
         if (gameOverStateRef.current === 'menu' || mode === 'test' || loadedLevelData) { // Allow loading to override menu state
             scoreRef.current = 0;
             goldRef.current = 0;
@@ -418,7 +454,7 @@ export function useGameLogic() {
                 bricksRef.current = loadedLevelData.bricks; // Directly use loaded bricks
                 setEnabledPowerUps(new Set(loadedLevelData.enabledPowerUps));
                 setTestPowerUpLevelsState(loadedLevelData.powerUpLevels);
-                setTestPowerUpSpawnChance(loadedLevelData.powerUpSpawnChance);
+                setTestPowerUpSpawnChanceWithReset(loadedLevelData.powerUpSpawnChance);
                 laserShotsRef.current = loadedLevelData.initialLaserCharges;
                 stickyPaddleChargesRef.current = loadedLevelData.initialRecoveryCharges;
                 safetyNetCountRef.current = loadedLevelData.initialSafetyNets;
@@ -463,7 +499,7 @@ export function useGameLogic() {
                  isGameStartedRef.current = false; 
 
                  if (!firstTestRunCompletedRef.current) {
-                    setTestPowerUpSpawnChance(INITIAL_TEST_POWER_UP_SPAWN_CHANCE);
+                    setTestPowerUpSpawnChanceWithReset(INITIAL_TEST_POWER_UP_SPAWN_CHANCE);
                     setEnabledPowerUps(new Set(['MULTI_BALL'] as PowerUpType[]));
                     setTestBrickColumns(newTestBrickColumns !== undefined ? newTestBrickColumns : TEST_DEFAULT_BRICK_COLUMNS);
                     setTestBrickRows(newTestBrickRows !== undefined ? newTestBrickRows : TEST_DEFAULT_BRICK_ROWS);
@@ -489,7 +525,7 @@ export function useGameLogic() {
         }
     }, [
         resetLevel, setupInitialBall, setActiveGameMode, setEnabledPowerUps, setShowSidebar, setGameOverState, 
-        setTestPowerUpSpawnChance, setTestBrickColumns, setTestBrickRows, setTestBrickGridHeight, 
+        setTestPowerUpSpawnChanceWithReset, setTestBrickColumns, setTestBrickRows, setTestBrickGridHeight, 
         testBrickColumns, testBrickRows, testBrickGridHeight,
         isPaintModeActiveRef, resetPaddle, // Added resetPaddle
         targetScoreRef, totalBricksRef, brickColumnsRef, brickRowsRef // Added refs for loaded level
@@ -634,7 +670,7 @@ export function useGameLogic() {
         setIsRemoveBrickPaintModeActive(false);
         setIsAddBrickPaintModeActive(false);
 
-        setTestPowerUpSpawnChance(INITIAL_TEST_POWER_UP_SPAWN_CHANCE); 
+        setTestPowerUpSpawnChanceWithReset(INITIAL_TEST_POWER_UP_SPAWN_CHANCE); 
         setTestBrickColumns(TEST_DEFAULT_BRICK_COLUMNS); 
         setTestBrickRows(TEST_DEFAULT_BRICK_ROWS); 
         setTestBrickGridHeight(TARGET_TOTAL_BRICK_GRID_HEIGHT);
@@ -659,7 +695,7 @@ export function useGameLogic() {
 
     }, [
         resetLevel, resetPaddle, clearBonusGoldTimers, setGameOverState, setActiveGameMode, setShowSidebar, setEnabledPowerUps, setupInitialBall,
-        setTestPowerUpSpawnChance, setTestBrickColumns, setTestBrickRows, setTestBrickGridHeight,
+        setTestPowerUpSpawnChanceWithReset, setTestBrickColumns, setTestBrickRows, setTestBrickGridHeight,
         setIsPaintModeActive, setIsUpgradePaintModeActive, setIsReinforcePaintModeActive,
         setIsBombPaintModeActive, setIsBallBrickPaintModeActive, setIsRemoveBrickPaintModeActive, setIsAddBrickPaintModeActive
     ]);
@@ -763,6 +799,7 @@ export function useGameLogic() {
     }, [startBonusGoldCountdown, activeGameMode, gameOverStateRef]);
 
     const handlePowerUpToggle = useCallback((type: PowerUpType) => {
+        setDeleteConfirmationPendingFor(null);
         setEnabledPowerUps(prev => {
             const next = new Set(prev);
             if (next.has(type)) next.delete(type); else next.add(type);
@@ -786,7 +823,7 @@ export function useGameLogic() {
             testPreviewInitialLaunchDoneRef.current = false; 
             paddleVisualEffectActiveRef.current = false;
             paddleVisualEffectStartTimeRef.current = null;
-            setTestPowerUpSpawnChance(INITIAL_TEST_POWER_UP_SPAWN_CHANCE); 
+            setTestPowerUpSpawnChanceWithReset(INITIAL_TEST_POWER_UP_SPAWN_CHANCE); 
             setTestBrickColumns(TEST_DEFAULT_BRICK_COLUMNS); 
             setTestBrickRows(TEST_DEFAULT_BRICK_ROWS); 
             setTestBrickGridHeight(TARGET_TOTAL_BRICK_GRID_HEIGHT);
@@ -800,7 +837,7 @@ export function useGameLogic() {
         }
     }, [
         resetLevel, setActiveGameMode, setShowSidebar, setGameOverState,
-        setTestPowerUpSpawnChance, setTestBrickColumns, setTestBrickRows, setTestBrickGridHeight
+        setTestPowerUpSpawnChanceWithReset, setTestBrickColumns, setTestBrickRows, setTestBrickGridHeight
     ]); 
 
     const addSpawnablePowerUp = useCallback((typeToAdd: PowerUpType) => {
@@ -853,6 +890,7 @@ export function useGameLogic() {
     }, [resetLevel]);
 
     const triggerTestLevelReset = useCallback(() => {
+        setDeleteConfirmationPendingFor(null);
         if (gameModeRef.current === 'test') {
             resetLevel('test', true, testBrickColumnsRef.current, testBrickRowsRef.current, testBrickGridHeightRef.current);
             resetPaddle(); // Ensure paddle is reset
@@ -988,18 +1026,25 @@ export function useGameLogic() {
 
     // Save and Load Logic
     const handleSaveCurrentLevel = useCallback(() => {
+        setDeleteConfirmationPendingFor(null);
         if (gameModeRef.current !== 'test' || !levelNameInput.trim()) {
             toast({ title: "Save Error", description: "Please enter a level name to save.", variant: "destructive" });
             return;
         }
-        const { saveLevelData, getSavedLevelNames } = require('../utils/localStorage'); // Dynamic import
 
+        let nameToSave = levelNameInput.trim();
+        if (nameToSave.length > MAX_LEVEL_NAME_LENGTH) {
+            nameToSave = nameToSave.substring(0, MAX_LEVEL_NAME_LENGTH - 3) + "...";
+            setLevelNameInput(nameToSave);
+        }
+
+        const currentBricks = bricksRef.current;
         const levelData: SavedLevelData = {
-            name: levelNameInput.trim(),
+            name: nameToSave,
             brickColumns: testBrickColumnsRef.current,
             brickRows: testBrickRowsRef.current,
             brickGridHeight: testBrickGridHeightRef.current,
-            bricks: JSON.parse(JSON.stringify(bricksRef.current)), // Deep copy
+            bricks: JSON.parse(JSON.stringify(currentBricks)),
             enabledPowerUps: Array.from(enabledPowerUpsRef.current),
             powerUpLevels: { ...testPowerUpLevelsRef.current },
             powerUpSpawnChance: testPowerUpSpawnChanceRef.current,
@@ -1008,16 +1053,20 @@ export function useGameLogic() {
             initialSafetyNets: safetyNetCountRef.current,
         };
 
-        if (saveLevelData(levelData.name, levelData)) {
-            toast({ title: "Success", description: `Level "${levelData.name}" saved!` });
-            setSavedLevels(getSavedLevelNames()); // Update saved levels list
-            setLevelNameInput(""); // Clear input
+        const { saveLevelData, getSavedLevelNames } = require('../utils/localStorage');
+        const success = saveLevelData(nameToSave, levelData);
+
+        if (success) {
+            const updatedNames = getSavedLevelNames();
+            setSavedLevels(updatedNames);
+            toast({ title: "Success", description: `Level "${nameToSave}" saved.` });
         } else {
-            toast({ title: "Save Error", description: "Failed to save level. Name might be empty or an error occurred.", variant: "destructive" });
+            toast({ title: "Save Error", description: `Level "${nameToSave}" already exists. Choose a different name.`, variant: "destructive" });
         }
-    }, [levelNameInput, toast]);
+    }, [levelNameInput, toast, setLevelNameInput]);
 
     const handleLoadSelectedLevel = useCallback(() => {
+        setDeleteConfirmationPendingFor(null);
         if (!selectedLevelToLoad) {
             toast({ title: "Load Error", description: "Please select a level to load.", variant: "destructive" });
             return;
@@ -1039,14 +1088,22 @@ export function useGameLogic() {
             toast({ title: "Delete Error", description: "Please select a level to delete.", variant: "destructive" });
             return;
         }
-        if (window.confirm(`Are you sure you want to delete level "${selectedLevelToLoad}"?`)) {
+
+        if (deleteConfirmationPendingFor === selectedLevelToLoad) {
+            // Actual deletion
             const { deleteLevelData, getSavedLevelNames } = require('../utils/localStorage'); // Dynamic import
             deleteLevelData(selectedLevelToLoad);
-            setSavedLevels(getSavedLevelNames());
-            setSelectedLevelToLoad(""); // Clear selection
+            const updatedNames = getSavedLevelNames();
+            setSavedLevels(updatedNames);
             toast({ title: "Success", description: `Level "${selectedLevelToLoad}" deleted.` });
+            setSelectedLevelToLoad(""); // Clear selection
+            setDeleteConfirmationPendingFor(null); // Reset confirmation
+        } else {
+            // Pending confirmation
+            setDeleteConfirmationPendingFor(selectedLevelToLoad);
+            toast({ title: "Confirm Deletion", description: `Click Delete again to confirm deletion of "${selectedLevelToLoad}".` });
         }
-    }, [selectedLevelToLoad, toast]);
+    }, [selectedLevelToLoad, deleteConfirmationPendingFor, toast]);
 
 
     return {
@@ -1073,8 +1130,8 @@ export function useGameLogic() {
         testPowerUpLevels, 
         setTestPowerUpLevel, 
         setAllTestPowerUpLevels,
-        testPowerUpSpawnChance, 
-        setTestPowerUpSpawnChance, 
+        testPowerUpSpawnChance: actualTestPowerUpSpawnChance,
+        setTestPowerUpSpawnChance: setTestPowerUpSpawnChanceWithReset, // EXPOSE WRAPPED SETTER
         testBrickColumns, 
         setTestBrickColumns, 
         testBrickRows, 
@@ -1105,5 +1162,6 @@ export function useGameLogic() {
         handleSaveCurrentLevel,
         handleLoadSelectedLevel,
         handleDeleteSelectedLevel,
+        deleteConfirmationPendingFor,
     };
 }

@@ -89,9 +89,9 @@ export const GameView: React.FC<GameViewProps> = ({
         <canvas 
           ref={canvasRef} 
           className="block flex-shrink-0" 
-          onClick={(gameOverState === 'won' || gameOverState === 'lost') && !isTestPreview ? handleResetGame : undefined}
+          onClick={((gameOverState === 'won' || gameOverState === 'lost')) ? handleResetGame : undefined}
           style={{ 
-            cursor: (gameOverState === 'won' || gameOverState === 'lost') && !isTestPreview ? 'pointer' : 'default',
+            cursor: (gameOverState === 'won' || gameOverState === 'lost') ? 'pointer' : 'default',
           }} 
         />
         {showSidebar && (

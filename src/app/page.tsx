@@ -88,6 +88,7 @@ export default function Home() {
         handleSaveCurrentLevel,
         handleLoadSelectedLevel,
         handleDeleteSelectedLevel,
+        deleteConfirmationPendingFor,
     } = useGameLogic();
 
     useEffect(() => {
@@ -290,7 +291,7 @@ export default function Home() {
              alignItems: 'center', 
              minHeight: '100vh', 
         }}>
-            {gameOverState === 'menu' && (
+            { (gameOverState === 'menu' || activeGameMode === 'test') && (
                 <GameMenu 
                     onStartGame={(mode) => {
                         if (mode === 'main') startGame('main');
@@ -298,7 +299,8 @@ export default function Home() {
                 />
             )}
 
-            {gameOverState === 'menu' && activeGameMode === 'test' && (
+            {/* Condition to keep test view mounted during menu, lost, or won states if test mode is active */}
+            {activeGameMode === 'test' && (gameOverState === 'menu' || gameOverState === 'lost' || gameOverState === 'won') && (
                 <div style={{ marginTop: '0px', display: 'flex', flexDirection: 'column', alignItems: 'center' }}> 
                     {/* Test Window Controls - Removed */}
                     {/* <h3 style={{ color: 'white', textAlign: 'center', margin: '10px 0', fontSize: '1.25rem' }}>Test Window Controls</h3> */}
@@ -357,7 +359,7 @@ export default function Home() {
                         }}
                     >
                         {/* Parent Div for Sliders - gap is already 0px */}
-                        <div style={{display: 'flex', flexDirection: 'column', flex: 0.882, gap: '0px' }}>
+                        <div style={{display: 'flex', flexDirection: 'column', flex: 1.0, gap: '0px' }}>
                             {/* Power-up Spawn Chance Control Group */}
                             <div style={{display: 'flex', flexDirection: 'column', alignItems: 'center', margin: '0px', padding: '0px', paddingTop: '1px'}}>
                                 <label htmlFor="powerUpSpawnChance" style={{ marginBottom: '0px', fontSize: '0.75rem', lineHeight: '1' }}>
@@ -502,12 +504,12 @@ export default function Home() {
                                 justifyContent: 'flex-start',
                                 color: '#FFFFFF',
                                 boxSizing: 'border-box',
-                                gap: '2px',
-                                flex: 1.5
+                                gap: '0px',
+                                flex: 2.5
                             }}
                         >
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                <label htmlFor="levelName" style={{ fontSize: '0.75rem', whiteSpace: 'nowrap' }}>Name:</label>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '0px' }}>
+                                <label htmlFor="levelName" style={{ fontSize: '0.75rem', whiteSpace: 'nowrap', width: '90px', textAlign: 'left' }}>Level Name:</label>
                                 <input 
                                     type="text" 
                                     id="levelName" 
@@ -515,17 +517,18 @@ export default function Home() {
                                     onChange={(e) => setLevelNameInput(e.target.value)}
                                     placeholder="Enter level name"
                                     style={{ padding: '3px', fontSize: '0.75rem', color: '#000000', minWidth: '100px', flexGrow: 1 }}
+                                    maxLength={15}
                                 />
                                 <Button
                                     onClick={handleSaveCurrentLevel}
                                     variant="outline"
-                                    className="bg-blue-600 hover:bg-blue-500 text-white text-[0.75rem] py-0 h-[26px] px-2 rounded shadow-md focus:ring-1 focus:ring-white"
+                                    className="bg-blue-600 hover:bg-blue-500 text-white text-[0.75rem] py-0 h-[26px] px-1 rounded shadow-md focus:ring-1 focus:ring-white"
                                 >
                                     Save
                                 </Button>
                             </div>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                <label htmlFor="loadLevelSelect" style={{ fontSize: '0.75rem', whiteSpace: 'nowrap' }}>Load:</label>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '0px' }}>
+                                <label htmlFor="loadLevelSelect" style={{ fontSize: '0.75rem', whiteSpace: 'nowrap', width: '90px', textAlign: 'left' }}>Load Level:</label>
                                 <select 
                                     id="loadLevelSelect"
                                     value={selectedLevelToLoad}
@@ -541,7 +544,7 @@ export default function Home() {
                                     onClick={handleLoadSelectedLevel}
                                     disabled={!selectedLevelToLoad}
                                     variant="outline"
-                                    className="bg-green-600 hover:bg-green-500 text-white text-[0.75rem] py-0 h-[26px] px-2 rounded shadow-md focus:ring-1 focus:ring-white disabled:opacity-50"
+                                    className="bg-green-600 hover:bg-green-500 text-white text-[0.75rem] py-0 h-[26px] px-1 rounded shadow-md focus:ring-1 focus:ring-white disabled:opacity-50"
                                 >
                                     Load
                                 </Button>
@@ -549,9 +552,10 @@ export default function Home() {
                                     onClick={handleDeleteSelectedLevel}
                                     disabled={!selectedLevelToLoad}
                                     variant="outline"
-                                    className="bg-red-600 hover:bg-red-500 text-white text-[0.75rem] py-0 h-[26px] px-2 rounded shadow-md focus:ring-1 focus:ring-white disabled:opacity-50"
+                                    className="bg-red-600 hover:bg-red-500 text-white text-[0.75rem] py-0 h-[26px] px-1 rounded shadow-md focus:ring-1 focus:ring-white disabled:opacity-50"
+                                    style={{ minWidth: (deleteConfirmationPendingFor === selectedLevelToLoad && selectedLevelToLoad) ? '64px' : 'auto' }}
                                 >
-                                    Delete
+                                    {deleteConfirmationPendingFor === selectedLevelToLoad && selectedLevelToLoad ? "Confirm?" : "Delete"}
                                 </Button>
                             </div>
                         </div>
