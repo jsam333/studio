@@ -94,7 +94,7 @@ export class SoundSystem {
             } else if (alreadyPlayingBrickHitSounds >= 2) { // Two or more are already playing, this new one will be the 3rd (or more, but capped at 3 total)
                 calculatedVolume *= 0.3; 
             }
-        } else if (type === 'paddleHit' || type === 'powerUpCollected') {
+        } else if (type === 'paddleHit' || type === 'powerUpCollected' || type === 'explosion') {
             const alreadyPlayingSounds = soundInstances.length - 1;
             if (alreadyPlayingSounds === 1) {
                 calculatedVolume *= 0.6;
