@@ -349,7 +349,12 @@ export const ShopScreen: React.FC<ShopScreenProps> = ({
                         onClick={handleReroll}
                         disabled={goldDisplay < POWER_UP_REROLL_COST}
                         className="text-white bg-blue-600 hover:bg-blue-500 border border-white disabled:opacity-50"
-                        style={{fontSize: scaled.fontSize(14), padding: `${scaled.py(4)}px ${scaled.px(8)}px`}}
+                        style={{
+                            fontSize: scaled.fontSize(14),
+                            padding: `${scaled.py(4)}px ${scaled.px(8)}px`,
+                            height: scaled.footerButtonHeight,
+                            minHeight: scaled.h(36)
+                        }}
                     >
                         Reroll ({POWER_UP_REROLL_COST} Gold)
                     </Button>
@@ -449,70 +454,71 @@ export const ShopScreen: React.FC<ShopScreenProps> = ({
                             const showLevelIndicator = UPGRADABLE_POWER_UPS.includes(item) && levelToShowOnButton > 1;
 
                             return (
-                                <Tooltip key={itemKey}>
-                                    <TooltipTrigger asChild>
-                                        <Button
-                                            onClick={() => handlePurchase(itemToPurchaseOnClick)}
-                                            disabled={isDisabled}
-                                            className={`text-white flex flex-col justify-center items-center border border-white ${buttonBgColor}`}
-                                            style={{
-                                                paddingTop: scaled.py(8),
-                                                paddingBottom: scaled.py(8),
-                                                paddingLeft: scaled.px(4),
-                                                paddingRight: scaled.px(4),
-                                                fontSize: scaled.fontSize(12),
-                                                height: scaled.buttonHeightMd,
-                                            }}
-                                        >
-                                            {/* Icon */}
-                                            {imagePath ? (
-                                                <img
-                                                    src={imagePath}
-                                                    alt={displayName}
-                                                    className="object-contain"
-                                                    style={{
-                                                        width: scaled.imageSizeMd,
-                                                        height: scaled.imageSizeMd,
-                                                    }}
-                                                />
-                                            ) : (
-                                                <div
-                                                    className="rounded-md bg-gray-400 flex items-center justify-center text-white font-bold"
-                                                    aria-label={displayName}
-                                                    style={{
-                                                        width: scaled.imageSizeMd,
-                                                        height: scaled.imageSizeMd,
-                                                    }}
-                                                >?</div>
-                                            )}
+                                <div key={itemKey} className="flex flex-col h-full bg-gray-800 rounded-lg border border-gray-600 overflow-hidden">
+                                    <Button
+                                        onClick={() => handlePurchase(itemToPurchaseOnClick)}
+                                        disabled={isDisabled}
+                                        className={`text-white flex flex-col justify-center items-center ${buttonBgColor} rounded-none border-b border-gray-600`}
+                                        style={{
+                                            paddingTop: scaled.py(8),
+                                            paddingBottom: scaled.py(8),
+                                            paddingLeft: scaled.px(4),
+                                            paddingRight: scaled.px(4),
+                                            fontSize: scaled.fontSize(12),
+                                            height: scaled.buttonHeightMd,
+                                        }}
+                                    >
+                                        {/* Icon */}
+                                        {imagePath ? (
+                                            <img
+                                                src={imagePath}
+                                                alt={displayName}
+                                                className="object-contain"
+                                                style={{
+                                                    width: scaled.imageSizeMd,
+                                                    height: scaled.imageSizeMd,
+                                                }}
+                                            />
+                                        ) : (
+                                            <div
+                                                className="rounded-md bg-gray-400 flex items-center justify-center text-white font-bold"
+                                                aria-label={displayName}
+                                                style={{
+                                                    width: scaled.imageSizeMd,
+                                                    height: scaled.imageSizeMd,
+                                                }}
+                                            >?</div>
+                                        )}
 
-                                            {/* Text block wrapper */}
-                                            <div style={{ marginTop: 0 }} className="flex flex-col items-center">
-                                                {showLevelIndicator && (
-                                                    <span
-                                                        className="font-bold block"
-                                                        style={{ fontSize: scaled.fontSize(12) }}
-                                                    >
-                                                        L{levelToShowOnButton}
-                                                    </span>
-                                                )}
-                                                <span 
-                                                    className="block"
+                                        {/* Text block wrapper */}
+                                        <div style={{ marginTop: 0 }} className="flex flex-col items-center">
+                                            {showLevelIndicator && (
+                                                <span
+                                                    className="font-bold block"
                                                     style={{ fontSize: scaled.fontSize(12) }}
                                                 >
-                                                    {buttonText}
+                                                    L{levelToShowOnButton}
                                                 </span>
-                                            </div>
-                                        </Button>
-                                    </TooltipTrigger>
-                                    <TooltipContent style={{fontSize: scaled.fontSize(12)}}>
+                                            )}
+                                            <span 
+                                                className="block"
+                                                style={{ fontSize: scaled.fontSize(12) }}
+                                            >
+                                                {buttonText}
+                                            </span>
+                                        </div>
+                                    </Button>
+                                    <div 
+                                        className="p-2 flex-grow flex items-center justify-center text-center bg-black bg-opacity-25"
+                                        style={{fontSize: scaled.fontSize(12), minHeight: scaled.h(80)}}
+                                    >
                                         {isKnown ? (
-                                            <p>{displayName} - {description}</p>
+                                            <p><span className="font-bold">{displayName}:</span> {description}</p>
                                         ) : (
                                             <p>???</p>
                                         )}
-                                    </TooltipContent>
-                                </Tooltip>
+                                    </div>
+                                </div>
                             );
                         })
                     ) : (
