@@ -220,6 +220,7 @@ export const handleBombExplosion = (bombBrick: Brick, bombC: number, bombR: numb
 
 export const checkBrickCollision = ( ball: Ball, bricks: Brick[][], columns: number, rows: number, deltaTime: number, gameStateRefs: GameStateRefs, currentTime: number ): CollisionResult => {
     let newSpeedX = ball.speedX; let newSpeedY = ball.speedY; let pointsAwarded = 0; const spawnEvents: PowerUpSpawnEvent[] = []; let pierceOccurred = false; let builderHitOccurred = false; let collisionDetected = false; let brickWasHit = false; const currentBallSize = ball.isBig ? BALL_SIZE + BIG_BALL_SIZE_INCREASE : BALL_SIZE; const nextBallX = ball.x + ball.speedX * deltaTime; const nextBallY = ball.y + ball.speedY * deltaTime; const checkRadius = currentBallSize;
+    let hitUnderside = false;
     
     for (let c = 0; c < columns; c++) {
          if (!bricks[c] || bricks[c].length === 0) continue; 
@@ -246,6 +247,10 @@ export const checkBrickCollision = ( ball: Ball, bricks: Brick[][], columns: num
                         const crossWidth = w * vecY; // Added definition
                         const crossHeight = h * vecX; // Added definition
                         if (Math.abs(crossWidth) > Math.abs(crossHeight)) {
+                            // Top or bottom collision
+                            if (ball.speedY < 0 && vecY > 0) { // Ball moving up, hits bottom of brick
+                                hitUnderside = true;
+                            }
                             tempSpeedY = -ball.speedY;
                         } else {
                             tempSpeedX = -ball.speedX;
@@ -305,10 +310,10 @@ export const checkBrickCollision = ( ball: Ball, bricks: Brick[][], columns: num
                             }
                         }
                     }
-                    return { collision: true, newSpeedX, newSpeedY, spawnEvents, pointsAwarded, pierceOccurred, builderHitOccurred, brickHit: true };
+                    return { collision: true, newSpeedX, newSpeedY, spawnEvents, pointsAwarded, pierceOccurred, builderHitOccurred, brickHit: true, hitUnderside };
                  }
              }
          }
      }
-    return { collision: false, newSpeedX: ball.speedX, newSpeedY: ball.speedY, spawnEvents: [], pointsAwarded: 0, pierceOccurred: false, builderHitOccurred: false, brickHit: false };
+    return { collision: false, newSpeedX: ball.speedX, newSpeedY: ball.speedY, spawnEvents: [], pointsAwarded: 0, pierceOccurred: false, builderHitOccurred: false, brickHit: false, hitUnderside: false };
 };

@@ -9,7 +9,7 @@ import {
     FIELD_MAX_HEIGHT_OFFSET, FIELD_MAX_WIDTH_OFFSET, FIELD_SHRINK_ACCELERATION_FACTOR,
     TARGET_TOTAL_BRICK_GRID_HEIGHT,
 } from '../constants'; 
-import { Ball, PowerUp, Laser, PowerUpType, GameState, GameMode, GameStateRefs as IGameStateRefs, GameLoopCallbacks, PointsField, Particle, HomingTrail, SavedLevelData, Brick } from '../interfaces';
+import { Ball, PowerUp, Laser, PowerUpType, GameState, GameMode, GameStateRefs as IGameStateRefs, GameLoopCallbacks, PointsField, Particle, HomingTrail, SavedLevelData, Brick, PaddleTarget } from '../interfaces';
 import { initialBallState, initializeBricks as initializeBricksLogic } from '../gameLogic';
 import { useLevelLogic, getBrickConfiguration as getBrickConfigurationLogic, getLevelStats as getLevelStatsLogic } from './useLevelLogic';
 import { usePaddleLogic } from './usePaddleLogic';
@@ -40,6 +40,7 @@ export function useGameLogic() {
     const powerUpsRef = useRef<PowerUp[]>([]);
     const particlesRef = useRef<Particle[]>([]); 
     const homingTrailsRef = useRef<HomingTrail[]>([]); 
+    const paddleTargetsRef = useRef<PaddleTarget[]>([]);
     const scoreRef = useRef(0);
     const goldRef = useRef<number>(0);
     const spawnablePowerUpsRef = useRef<Set<PowerUpType>>(new Set());
@@ -694,6 +695,7 @@ export function useGameLogic() {
         pointsFieldsRef.current = [];
         particlesRef.current = []; 
         homingTrailsRef.current = []; 
+        paddleTargetsRef.current = [];
         levelCompletionProcessedRef.current = false;
         paddleVisualEffectActiveRef.current = false;
         paddleVisualEffectStartTimeRef.current = null;
@@ -860,6 +862,7 @@ export function useGameLogic() {
             pointsFieldsRef.current = [];
             particlesRef.current = []; 
             homingTrailsRef.current = []; 
+            paddleTargetsRef.current = [];
             levelCompletionProcessedRef.current = false;
             testPreviewInitialLaunchDoneRef.current = false; 
             paddleVisualEffectActiveRef.current = false;
@@ -921,6 +924,7 @@ export function useGameLogic() {
         pointsFieldsRef.current = [];
         particlesRef.current = []; 
         homingTrailsRef.current = []; 
+        paddleTargetsRef.current = [];
         paddleVisualEffectActiveRef.current = false;
         paddleVisualEffectStartTimeRef.current = null;
         resetLevel(mode, resetScoreAndGold);
@@ -945,7 +949,7 @@ export function useGameLogic() {
     }, [resetLevel, setupInitialBall, testBrickColumnsRef, testBrickRowsRef, testBrickGridHeightRef, setGameOverState, resetPaddle]); // Added resetPaddle
 
     const gameStateRefs: IGameStateRefs = useMemo(() => ({
-        paddleXRef, ballsRef, powerUpsRef, particlesRef, homingTrailsRef, scoreRef, goldRef, spawnablePowerUpsRef, 
+        paddleXRef, ballsRef, powerUpsRef, particlesRef, homingTrailsRef, paddleTargetsRef, scoreRef, goldRef, spawnablePowerUpsRef, 
         paddleWidthRef, widenLevelRef, laserShotsRef, lasersRef, safetyNetCountRef,
         gameIsRunningRef, gameOverStateRef, gameSpeedFactorRef,
         collectionFieldHeightRef, collectionFieldWidthOffsetRef,
@@ -985,7 +989,7 @@ export function useGameLogic() {
         isAddBrickPaintModeActiveRef,
         triggerTestLevelReset,
     }), [
-        paddleXRef, ballsRef, powerUpsRef, particlesRef, homingTrailsRef, scoreRef, goldRef, spawnablePowerUpsRef, 
+        paddleXRef, ballsRef, powerUpsRef, particlesRef, homingTrailsRef, paddleTargetsRef, scoreRef, goldRef, spawnablePowerUpsRef, 
         paddleWidthRef, widenLevelRef, laserShotsRef, lasersRef, safetyNetCountRef,
         gameIsRunningRef, gameOverStateRef, gameSpeedFactorRef,
         collectionFieldHeightRef, collectionFieldWidthOffsetRef,

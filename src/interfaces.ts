@@ -149,6 +149,7 @@ export interface CollisionResult {
   pierceOccurred: boolean;
   builderHitOccurred: boolean;
   brickHit: boolean;
+  hitUnderside?: boolean;
 }
 
 export interface Laser {
@@ -222,6 +223,7 @@ export interface GameStateRefsBase {
     paddleVisualEffectStartTimeRef?: React.MutableRefObject<number | null>; 
     laserIntervalRef: React.MutableRefObject<number | null>;
     homingTrailsRef: React.MutableRefObject<HomingTrail[]>;
+    paddleTargetsRef: React.MutableRefObject<PaddleTarget[]>;
     soundSystemRef: React.MutableRefObject<SoundSystem | null>;
     isRemoveBrickPaintModeActiveRef?: React.MutableRefObject<boolean>;
     isAddBrickPaintModeActiveRef?: React.MutableRefObject<boolean>;
@@ -258,4 +260,14 @@ export interface SavedLevelData {
   initialLaserCharges: number;
   initialRecoveryCharges: number;
   initialSafetyNets: number;
+}
+
+export interface PaddleTarget {
+  id: number;
+  x: number;
+  y: number; // This will be PADDLE_Y
+  startTime: number;
+  totalDuration: number;
+  initialRadius: number;
+  isHit: boolean; // To mark it for removal after the ball hits
 }

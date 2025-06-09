@@ -1,6 +1,6 @@
 // src/gameLoop.ts
 import React from 'react';
-import { Ball, PowerUp, Laser, PowerUpType, PowerUpSpawnEvent, GameMode, Brick, GameState, PointsField, Particle, HomingTrail } from './interfaces'; // Added HomingTrail
+import { Ball, PowerUp, Laser, PowerUpType, PowerUpSpawnEvent, GameMode, Brick, GameState, PointsField, Particle, HomingTrail, PaddleTarget } from './interfaces'; // Added PaddleTarget and HomingTrail
 import { GameStateRefs, GameLoopCallbacks } from './interfaces';
 import { updateLasers } from './gameUpdates/laserUpdates';
 import { updateBalls } from './gameUpdates/ballUpdates';
@@ -25,7 +25,8 @@ import {
     drawPowerUps, drawLasers, drawSafetyNet, 
     drawPowerUpPreviews, 
     drawPointsFields, drawParticles,
-    drawHomingTrails // Added drawHomingTrails
+    drawHomingTrails, // Added drawHomingTrails
+    drawPaddleTargets
 } from './drawFunctions';
 
 const updatePaddleShrinkTimer = (
@@ -194,6 +195,12 @@ export const gameUpdate = (
     const targetFrameTime = 1000 / TARGET_FPS;
     const scaledDeltaTime = elapsedTime / targetFrameTime;
 
+    if (refs.paddleTargetsRef) {
+        refs.paddleTargetsRef.current = refs.paddleTargetsRef.current.filter(target => {
+            return !target.isHit && (currentTime - target.startTime <= target.totalDuration);
+        });
+    }
+
     spawnRequestsReusable.length = 0; 
     const previousBallCount = refs.ballsRef.current.length + refs.stuckBallsRef.current.length;
     const columns = refs.brickColumnsRef.current;
@@ -227,7 +234,7 @@ export const gameUpdate = (
         callbacks.updateScoreCallback(pointsFromBombExplosions);
     }
 
-    updateBalls(refs, callbacks, spawnRequestsReusable, currentTime, gameSpeedFactor, scaledDeltaTime, columns, rows); 
+    updateBalls(refs, callbacks, spawnRequestsReusable, currentTime, gameSpeedFactor, scaledDeltaTime, columns, rows, elapsedTime); 
     updateLasers(refs, callbacks, spawnRequestsReusable, currentTime, scaledDeltaTime, columns, rows); 
     updatePointsFields(refs.pointsFieldsRef.current, currentTime); 
     checkPointsFieldCollisions(refs.ballsRef.current, refs.pointsFieldsRef.current, callbacks.updateScoreCallback);
@@ -260,6 +267,7 @@ export const gameUpdate = (
         refs.collectionFieldHeightRef.current, 
         refs.collectionFieldWidthOffsetRef.current
     );
+    drawPaddleTargets(ctx, refs.paddleTargetsRef.current, currentTime);
     drawPointsFields(ctx, refs.pointsFieldsRef.current); 
     drawGameInfo(
         ctx,
