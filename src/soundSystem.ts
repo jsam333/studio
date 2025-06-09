@@ -161,6 +161,13 @@ export class SoundSystem {
         this.playSound('explosion', 0.9, startFreq, duration, 'sawtooth', endFreq);
     }
 
+    playResourceSaveSound() {
+        // A quick, rising "zap" sound
+        this.playSound('resourceSave', 0.8, 800, 0.1, 'triangle', 1600);
+        // A subtle bass thump for impact
+        this.playSound('resourceSaveThump', 0.6, 60, 0.1, 'sine');
+    }
+
     stopAllSounds(): void {
         if (this.audioContext) {
             this.activeSounds.forEach((instances) => {

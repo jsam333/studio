@@ -126,6 +126,15 @@ export const SAFETY_NET_PARTICLE_SIZE = 1;
 export const SAFETY_NET_PARTICLE_LIFESPAN_MS = 300;
 export const SAFETY_NET_PARTICLE_COLOR = '#1E90FF'; 
 
+// Resource Meter Save
+export const RESOURCE_SAVE_COST = 15;
+export const RESOURCE_SAVE_PARTICLE_COUNT = 30;
+export const RESOURCE_SAVE_PARTICLE_COLOR = 'rgba(0, 255, 255, 0.9)';
+export const RESOURCE_SAVE_PARTICLE_LIFESPAN_MS = 400;
+export const RESOURCE_SAVE_PARTICLE_SPEED_MIN = 1;
+export const RESOURCE_SAVE_PARTICLE_SPEED_MAX = 3;
+export const RESOURCE_SAVE_PARTICLE_SIZE = 1.5;
+
 // Bonus Gold
 export const INITIAL_BONUS_GOLD = 30;
 export const MINIMUM_BONUS_GOLD = 5;

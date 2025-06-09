@@ -36,6 +36,8 @@ const initialTestPowerUpLevels = ALL_TOGGLEABLE_POWER_UPS.reduce((acc, type) => 
 
 export function useGameLogic() {
     const paddleXRef = useRef((BOARD_WIDTH - INITIAL_PADDLE_WIDTH) / 2);
+    const prevPaddleXRef = useRef((BOARD_WIDTH - INITIAL_PADDLE_WIDTH) / 2);
+    const resourceMeterRef = useRef(0);
     const ballsRef = useRef<Ball[]>([]);
     const powerUpsRef = useRef<PowerUp[]>([]);
     const particlesRef = useRef<Particle[]>([]); 
@@ -699,6 +701,8 @@ export function useGameLogic() {
         levelCompletionProcessedRef.current = false;
         paddleVisualEffectActiveRef.current = false;
         paddleVisualEffectStartTimeRef.current = null;
+        resourceMeterRef.current = 0;
+        prevPaddleXRef.current = (BOARD_WIDTH - INITIAL_PADDLE_WIDTH) / 2;
         
         // Reset paint mode states
         setIsPaintModeActive(false);
@@ -867,6 +871,8 @@ export function useGameLogic() {
             testPreviewInitialLaunchDoneRef.current = false; 
             paddleVisualEffectActiveRef.current = false;
             paddleVisualEffectStartTimeRef.current = null;
+            resourceMeterRef.current = 0;
+            prevPaddleXRef.current = (BOARD_WIDTH - INITIAL_PADDLE_WIDTH) / 2;
             setTestPowerUpSpawnChanceWithReset(INITIAL_TEST_POWER_UP_SPAWN_CHANCE); 
             setTestBrickColumns(TEST_DEFAULT_BRICK_COLUMNS); 
             setTestBrickRows(TEST_DEFAULT_BRICK_ROWS); 
@@ -927,6 +933,8 @@ export function useGameLogic() {
         paddleTargetsRef.current = [];
         paddleVisualEffectActiveRef.current = false;
         paddleVisualEffectStartTimeRef.current = null;
+        resourceMeterRef.current = 0;
+        prevPaddleXRef.current = (BOARD_WIDTH - INITIAL_PADDLE_WIDTH) / 2;
         resetLevel(mode, resetScoreAndGold);
         isGameStartedRef.current = false; 
         if (mode === 'test' || (gameModeRef.current === 'test' && mode === null)) { 
@@ -940,6 +948,8 @@ export function useGameLogic() {
             resetLevel('test', true, testBrickColumnsRef.current, testBrickRowsRef.current, testBrickGridHeightRef.current);
             resetPaddle(); // Ensure paddle is reset
             setupInitialBall(); // Ensure ball is reset for the new layout
+            resourceMeterRef.current = 0;
+            prevPaddleXRef.current = (BOARD_WIDTH - INITIAL_PADDLE_WIDTH) / 2;
             // Optionally, ensure the game state is appropriate for a test reset, e.g., menu
             setGameOverState('menu'); 
             // Ensure the game isn't considered "started" in a way that prevents interaction
@@ -949,7 +959,7 @@ export function useGameLogic() {
     }, [resetLevel, setupInitialBall, testBrickColumnsRef, testBrickRowsRef, testBrickGridHeightRef, setGameOverState, resetPaddle]); // Added resetPaddle
 
     const gameStateRefs: IGameStateRefs = useMemo(() => ({
-        paddleXRef, ballsRef, powerUpsRef, particlesRef, homingTrailsRef, paddleTargetsRef, scoreRef, goldRef, spawnablePowerUpsRef, 
+        paddleXRef, prevPaddleXRef, resourceMeterRef, ballsRef, powerUpsRef, particlesRef, homingTrailsRef, paddleTargetsRef, scoreRef, goldRef, spawnablePowerUpsRef, 
         paddleWidthRef, widenLevelRef, laserShotsRef, lasersRef, safetyNetCountRef,
         gameIsRunningRef, gameOverStateRef, gameSpeedFactorRef,
         collectionFieldHeightRef, collectionFieldWidthOffsetRef,
@@ -989,7 +999,7 @@ export function useGameLogic() {
         isAddBrickPaintModeActiveRef,
         triggerTestLevelReset,
     }), [
-        paddleXRef, ballsRef, powerUpsRef, particlesRef, homingTrailsRef, paddleTargetsRef, scoreRef, goldRef, spawnablePowerUpsRef, 
+        paddleXRef, prevPaddleXRef, resourceMeterRef, ballsRef, powerUpsRef, particlesRef, homingTrailsRef, paddleTargetsRef, scoreRef, goldRef, spawnablePowerUpsRef, 
         paddleWidthRef, widenLevelRef, laserShotsRef, lasersRef, safetyNetCountRef,
         gameIsRunningRef, gameOverStateRef, gameSpeedFactorRef,
         collectionFieldHeightRef, collectionFieldWidthOffsetRef,

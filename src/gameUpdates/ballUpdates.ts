@@ -15,7 +15,14 @@ import {
     SPLITTING_BALL_PARTICLE_SIZE,
     HOMING_TRAIL_DURATION,
     INITIAL_BALL_SPEED_Y, // Added for default split speed
-    TARGET_FPS
+    TARGET_FPS,
+    RESOURCE_SAVE_COST,
+    RESOURCE_SAVE_PARTICLE_COUNT,
+    RESOURCE_SAVE_PARTICLE_COLOR,
+    RESOURCE_SAVE_PARTICLE_LIFESPAN_MS,
+    RESOURCE_SAVE_PARTICLE_SPEED_MIN,
+    RESOURCE_SAVE_PARTICLE_SPEED_MAX,
+    RESOURCE_SAVE_PARTICLE_SIZE
 } from '../constants';
 
 const predictPaddleCollisionX = (
@@ -73,7 +80,7 @@ const attemptToCreatePaddleTarget = (
 ): { finalSpeedY: number; newTarget: PaddleTarget } | null => {
     const currentBallSize = ball.isBig ? BALL_SIZE + BIG_BALL_SIZE_INCREASE : BALL_SIZE;
 
-    if (newSpeedY <= 0 || refs.gameModeRef.current !== 'test') return null;
+    if (newSpeedY <= 0) return null;
 
     // --- Trajectory interception check ---
     let willBeIntercepted = false;
@@ -136,64 +143,67 @@ const attemptToCreatePaddleTarget = (
     let totalDurationMs = deltaY / initialPixelsPerMs;
     
     // --- Conflict Detection and Speed Adjustment ---
-    let stillHasConflicts = true;
-    let safetyBreak = 0;
+    if ((refs.ballsRef.current.length + refs.stuckBallsRef.current.length) <= 10) {
+        let stillHasConflicts = true;
+        let safetyBreak = 0;
 
-    while (stillHasConflicts && safetyBreak < 10) {
-        safetyBreak++;
-        stillHasConflicts = false;
+        while (stillHasConflicts && safetyBreak < 10) {
+            safetyBreak++;
+            stillHasConflicts = false;
 
-        const conflictingTargetsInWindow: PaddleTarget[] = [];
-        const newImpactTime = currentTime + totalDurationMs;
+            const conflictingTargetsInWindow: PaddleTarget[] = [];
+            const newImpactTime = currentTime + totalDurationMs;
 
-        for (const target of refs.paddleTargetsRef.current) {
-            if (target.isHit) continue;
+            for (const target of refs.paddleTargetsRef.current) {
+                if (target.isHit) continue;
 
-            const existingImpactTime = target.startTime + target.totalDuration;
-            const timeDifference = Math.abs(newImpactTime - existingImpactTime);
-            
-            if (timeDifference < 200) {
-                conflictingTargetsInWindow.push(target);
-            }
-        }
-
-        if (conflictingTargetsInWindow.length >= 2) {
-            stillHasConflicts = true; 
-            
-            const latestConflictingImpactTime = Math.max(
-                ...conflictingTargetsInWindow.map(t => t.startTime + t.totalDuration)
-            );
-            const earliestConflictingImpactTime = Math.min(
-                ...conflictingTargetsInWindow.map(t => t.startTime + t.totalDuration)
-            );
-
-            const slowDownImpactTime = latestConflictingImpactTime + 200;
-            const slowDownDuration = slowDownImpactTime - currentTime;
-
-            const speedUpImpactTime = earliestConflictingImpactTime - 200;
-            const speedUpDuration = speedUpImpactTime - currentTime;
-
-            const originalSpeed = deltaY / totalDurationMs;
-
-            let slowDownSpeedChange = Infinity;
-            if (slowDownDuration > 50) {
-                const newSlowDownSpeed = deltaY / slowDownDuration;
-                slowDownSpeedChange = Math.abs(newSlowDownSpeed - originalSpeed);
+                const existingImpactTime = target.startTime + target.totalDuration;
+                const timeDifference = Math.abs(newImpactTime - existingImpactTime);
+                
+                if (timeDifference < 200) {
+                    conflictingTargetsInWindow.push(target);
+                }
             }
 
-            let speedUpSpeedChange = Infinity;
-            if (speedUpDuration > 50) {
-                const newSpeedUpSpeed = deltaY / speedUpDuration;
-                speedUpSpeedChange = Math.abs(newSpeedUpSpeed - originalSpeed);
-            }
-            
-            if (speedUpSpeedChange < slowDownSpeedChange) {
-                totalDurationMs = speedUpDuration;
-            } else {
-                totalDurationMs = slowDownDuration;
+            if (conflictingTargetsInWindow.length >= 2) {
+                stillHasConflicts = true; 
+                
+                const latestConflictingImpactTime = Math.max(
+                    ...conflictingTargetsInWindow.map(t => t.startTime + t.totalDuration)
+                );
+                const earliestConflictingImpactTime = Math.min(
+                    ...conflictingTargetsInWindow.map(t => t.startTime + t.totalDuration)
+                );
+
+                const slowDownImpactTime = latestConflictingImpactTime + 200;
+                const slowDownDuration = slowDownImpactTime - currentTime;
+
+                const speedUpImpactTime = earliestConflictingImpactTime - 200;
+                const speedUpDuration = speedUpImpactTime - currentTime;
+
+                const originalSpeed = deltaY / totalDurationMs;
+
+                let slowDownSpeedChange = Infinity;
+                if (slowDownDuration > 50) {
+                    const newSlowDownSpeed = deltaY / slowDownDuration;
+                    slowDownSpeedChange = Math.abs(newSlowDownSpeed - originalSpeed);
+                }
+
+                let speedUpSpeedChange = Infinity;
+                if (speedUpDuration > 50) {
+                    const newSpeedUpSpeed = deltaY / speedUpDuration;
+                    speedUpSpeedChange = Math.abs(newSpeedUpSpeed - originalSpeed);
+                }
+                
+                if (speedUpSpeedChange < slowDownSpeedChange) {
+                    totalDurationMs = speedUpDuration;
+                } else {
+                    totalDurationMs = slowDownDuration;
+                }
             }
         }
     }
+    
     // After the loop, calculate the final speed based on the final deconflicted duration
     const finalPixelsPerMs = deltaY / totalDurationMs;
     const finalActualSpeedY = finalPixelsPerMs * (1000 / TARGET_FPS);
@@ -453,6 +463,50 @@ export const updateBalls = (
                     } else {
                         ballsToRemoveIds.add(ball.id);
                         processNormalUpdate = false;
+                    }
+                }
+                else if (currentSpeedY > 0 && ball.y + currentBallSize > PADDLE_Y) {
+                    // This is the new Resource Save check
+                    if (refs.resourceMeterRef.current >= RESOURCE_SAVE_COST) {
+                        const paddleLeft = refs.paddleXRef.current;
+                        const paddleRight = paddleLeft + refs.paddleWidthRef.current;
+                        
+                        // Check if the ball's X position is within the paddle's range
+                        if(ball.x > paddleLeft && ball.x < paddleRight) {
+                            // Consume resource
+                            refs.resourceMeterRef.current -= RESOURCE_SAVE_COST;
+                            
+                            // Reverse ball direction and apply paddle physics
+                            currentSpeedY = -Math.abs(currentSpeedY); // Ensure it goes up
+                            const deltaX = ball.x - (paddleLeft + refs.paddleWidthRef.current / 2);
+                            currentSpeedX = Math.max(-currentMaxBallSpeedX, Math.min(currentMaxBallSpeedX, currentSpeedX + (deltaX * 0.1)));
+
+                            // Correct position to be just above the paddle
+                            ball.y = PADDLE_Y - currentBallSize - 0.1; // Place it just above
+                            
+                            // Play sound
+                            // refs.soundSystemRef.current?.playResourceSaveSound();
+
+                            // Create particle explosion
+                            // for (let k = 0; k < RESOURCE_SAVE_PARTICLE_COUNT; k++) {
+                            //     const angle = Math.random() * 2 * Math.PI; // Full circle explosion
+                            //     const speed = RESOURCE_SAVE_PARTICLE_SPEED_MIN + Math.random() * (RESOURCE_SAVE_PARTICLE_SPEED_MAX - RESOURCE_SAVE_PARTICLE_SPEED_MIN);
+                            //     const particle: Particle = {
+                            //         id: Date.now() + Math.random(),
+                            //         x: ball.x, y: ball.y + currentBallSize, // Start from below the ball
+                            //         speedX: Math.cos(angle) * speed,
+                            //         speedY: Math.sin(angle) * speed,
+                            //         lifespan: RESOURCE_SAVE_PARTICLE_LIFESPAN_MS,
+                            //         color: RESOURCE_SAVE_PARTICLE_COLOR,
+                            //         size: RESOURCE_SAVE_PARTICLE_SIZE,
+                            //         createdAt: currentTime, alpha: 1
+                            //     };
+                            //     refs.particlesRef.current.push(particle);
+                            // }
+                            
+                            // Recalculate nextY for this frame after the save
+                            nextY = ball.y + currentSpeedY * deltaTime;
+                        }
                     }
                 }
                 else if (currentSpeedY > 0 && ball.y + currentBallSize <= PADDLE_Y && nextY + currentBallSize > PADDLE_Y) {

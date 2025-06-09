@@ -176,6 +176,8 @@ export type GameMode = 'main' | 'test';
 
 export interface GameStateRefsBase {
     paddleXRef: React.MutableRefObject<number>;
+    prevPaddleXRef: React.MutableRefObject<number>; // To calculate paddle velocity
+    resourceMeterRef: React.MutableRefObject<number>; // For the new resource meter
     ballsRef: React.MutableRefObject<Ball[]>;
     bricksRef: React.MutableRefObject<Brick[][]>;
     powerUpsRef: React.MutableRefObject<PowerUp[]>;

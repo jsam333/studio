@@ -9,6 +9,7 @@ import { applyPowerUpEffects } from './gameUpdates/powerUpEffects';
 import { checkGameStatus } from './gameUpdates/gameStatus';
 import { handleSpawnEvents } from './gameUpdates/gameLoopUtils';
 import { updateParticles } from './gameUpdates/particleUpdates'; 
+import { updateResourceMeter } from './gameUpdates/resourceMeterUpdates';
 import { updateBombGlowsAndTriggerExplosions } from './gameLogic'; // Corrected import path
 import {
     BOARD_WIDTH, BOARD_HEIGHT, BASE_BALL_SPEED_FACTOR, POWER_UP_COLORS,
@@ -26,7 +27,7 @@ import {
     drawPowerUpPreviews, 
     drawPointsFields, drawParticles,
     drawHomingTrails, // Added drawHomingTrails
-    drawPaddleTargets
+    drawResourceMeter
 } from './drawFunctions';
 
 const updatePaddleShrinkTimer = (
@@ -201,6 +202,8 @@ export const gameUpdate = (
         });
     }
 
+    updateResourceMeter(refs, elapsedTime);
+
     spawnRequestsReusable.length = 0; 
     const previousBallCount = refs.ballsRef.current.length + refs.stuckBallsRef.current.length;
     const columns = refs.brickColumnsRef.current;
@@ -267,7 +270,6 @@ export const gameUpdate = (
         refs.collectionFieldHeightRef.current, 
         refs.collectionFieldWidthOffsetRef.current
     );
-    drawPaddleTargets(ctx, refs.paddleTargetsRef.current, currentTime);
     drawPointsFields(ctx, refs.pointsFieldsRef.current); 
     drawGameInfo(
         ctx,

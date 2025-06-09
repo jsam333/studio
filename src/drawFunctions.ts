@@ -9,5 +9,5 @@ export * from './drawFunctions/drawSafetyNet';
 export * from './drawFunctions/drawEndMessage';
 export * from './drawFunctions/drawPointsFields';
 export * from './drawFunctions/drawHomingTrails';
-export * from './drawFunctions/drawPaddleTargets';
+export * from './drawFunctions/drawResourceMeter';
 export * from './drawFunctions/drawUtils'; // Export utils in case they are needed elsewhere, though primarily for internal use.
