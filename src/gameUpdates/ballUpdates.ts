@@ -143,6 +143,7 @@ const attemptToCreatePaddleTarget = (
     let totalDurationMs = deltaY / initialPixelsPerMs;
     
     // --- Conflict Detection and Speed Adjustment ---
+    /*
     if ((refs.ballsRef.current.length + refs.stuckBallsRef.current.length) <= 10) {
         let stillHasConflicts = true;
         let safetyBreak = 0;
@@ -203,6 +204,7 @@ const attemptToCreatePaddleTarget = (
             }
         }
     }
+    */
     
     // After the loop, calculate the final speed based on the final deconflicted duration
     const finalPixelsPerMs = deltaY / totalDurationMs;
@@ -456,6 +458,7 @@ export const updateBalls = (
                         if (ball.isSplitting && ball.splittingEndTime) { ball.splittingPausedDuration = ball.splittingEndTime - currentTime; ball.splittingEndTime = undefined; }
                         processNormalUpdate = false;
                     } else if (refs.safetyNetCountRef.current > 0) {
+                        refs.soundSystemRef.current?.playSafetyNetHitSound();
                         currentSpeedY = -Math.abs(currentSpeedY);
                         ball.y = BOARD_HEIGHT - currentBallSize - refs.safetyNetCountRef.current * SAFETY_NET_HEIGHT;
                         refs.safetyNetCountRef.current--;

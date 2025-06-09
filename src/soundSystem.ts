@@ -158,7 +158,16 @@ export class SoundSystem {
         const duration = 0.2; 
         const startFreq = 150; 
         const endFreq = 50;    
-        this.playSound('explosion', 0.9, startFreq, duration, 'sawtooth', endFreq);
+        this.playSound('explosion', 0.8, startFreq, duration, 'triangle', endFreq);
+    }
+
+    playBallLaunchSound() {
+        this.playSound('ballLaunch', 0.7, 200, 0.1, 'sine', 800);
+    }
+
+    playSafetyNetHitSound() {
+        // A slightly more "techy" or "buzzy" sound than a regular wall bounce
+        this.playSound('safetyNetHit', 0.6, 250, 0.08, 'triangle', 200);
     }
 
     playResourceSaveSound() {

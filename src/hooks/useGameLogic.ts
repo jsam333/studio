@@ -15,6 +15,7 @@ import { useLevelLogic, getBrickConfiguration as getBrickConfigurationLogic, get
 import { usePaddleLogic } from './usePaddleLogic';
 import { useTestModeSettings, TEST_DEFAULT_BRICK_COLUMNS, TEST_DEFAULT_BRICK_ROWS } from './useTestModeSettings';
 import { useToast } from './use-toast';
+import { SoundSystem } from '../soundSystem';
 
 const MAX_UPGRADE_LEVEL = 3;
 const INITIAL_LIVES = 3;
@@ -35,6 +36,12 @@ const initialTestPowerUpLevels = ALL_TOGGLEABLE_POWER_UPS.reduce((acc, type) => 
 }, {} as Record<PowerUpType, number>);
 
 export function useGameLogic() {
+    const soundSystemRef = useRef<SoundSystem | null>(null);
+    useEffect(() => {
+        if (typeof window !== 'undefined' && !soundSystemRef.current) {
+            soundSystemRef.current = new SoundSystem();
+        }
+    }, []);
     const paddleXRef = useRef((BOARD_WIDTH - INITIAL_PADDLE_WIDTH) / 2);
     const prevPaddleXRef = useRef((BOARD_WIDTH - INITIAL_PADDLE_WIDTH) / 2);
     const resourceMeterRef = useRef(0);
@@ -773,6 +780,10 @@ export function useGameLogic() {
             }
         }
 
+        if (trulyInitialLaunch) {
+            soundSystemRef.current?.playBallLaunchSound();
+        }
+
         const launchedBalls = stuckBallsRef.current.map(ball => {
             const currentBallSize = ball.isBig ? BALL_SIZE + BIG_BALL_SIZE_INCREASE : BALL_SIZE;
             let currentLaunchX = 0, currentLaunchY = 0;
@@ -840,7 +851,7 @@ export function useGameLogic() {
         });
         ballsRef.current.push(...launchedBalls);
         stuckBallsRef.current = [];
-    }, [startBonusGoldCountdown, activeGameMode, gameOverStateRef]);
+    }, [startBonusGoldCountdown, activeGameMode, gameOverStateRef, soundSystemRef]);
 
     const handlePowerUpToggle = useCallback((type: PowerUpType) => {
         setDeleteConfirmationPendingFor(null);
@@ -998,6 +1009,7 @@ export function useGameLogic() {
         isRemoveBrickPaintModeActiveRef,
         isAddBrickPaintModeActiveRef,
         triggerTestLevelReset,
+        soundSystemRef,
     }), [
         paddleXRef, prevPaddleXRef, resourceMeterRef, ballsRef, powerUpsRef, particlesRef, homingTrailsRef, paddleTargetsRef, scoreRef, goldRef, spawnablePowerUpsRef, 
         paddleWidthRef, widenLevelRef, laserShotsRef, lasersRef, safetyNetCountRef,
@@ -1038,6 +1050,7 @@ export function useGameLogic() {
         isRemoveBrickPaintModeActiveRef,
         isAddBrickPaintModeActiveRef,
         triggerTestLevelReset,
+        soundSystemRef,
     ]);
 
     const drawEndMessageCallback = useCallback((context: CanvasRenderingContext2D, state: GameState, finalScore: number) => {

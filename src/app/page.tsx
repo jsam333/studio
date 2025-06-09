@@ -13,7 +13,6 @@ import { useIsMobile } from '../hooks/use-mobile';
 import { GameMenu } from '../components/GameMenu';
 import { GameView } from '../components/GameView';
 import { Button } from '../components/ui/button';
-import { SoundSystem } from '../soundSystem';
 
 const SIDEBAR_WIDTH_PX = 192; 
 const MAX_BRICK_GRID_HEIGHT = BOARD_HEIGHT - BRICK_OFFSET_TOP - PADDLE_HEIGHT - 30; // 30 for some spacing
@@ -34,7 +33,6 @@ export default function Home() {
     const testLastTimeRef = useRef<number>(0);
     const isMobile = useIsMobile();
     const [isInitialTestSetupDone, setIsInitialTestSetupDone] = useState(false);
-    const soundSystemRef = useRef<SoundSystem | null>(null);
 
     const {
         gameOverState,
@@ -90,18 +88,6 @@ export default function Home() {
         handleDeleteSelectedLevel,
         deleteConfirmationPendingFor,
     } = useGameLogic();
-
-    useEffect(() => {
-        if (typeof window !== 'undefined' && !soundSystemRef.current) {
-            soundSystemRef.current = new SoundSystem();
-        }
-    }, []);
-
-    useEffect(() => {
-        if (gameStateRefs && soundSystemRef.current) {
-            (gameStateRefs as any).soundSystemRef = soundSystemRef;
-        }
-    }, [gameStateRefs, soundSystemRef.current]);
 
     useEffect(() => {
         if (!isInitialTestSetupDone) {
