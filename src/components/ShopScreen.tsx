@@ -261,13 +261,13 @@ export const ShopScreen: React.FC<ShopScreenProps> = ({
             <div className="flex-grow overflow-auto"> 
                 {/* Owned PowerUps Display */}
                 <div
-                    className="w-full mb-4 mx-auto"
-                    style={{ maxWidth: scaled.w(672), marginBottom: scaled.mb(16) }}
+                    className="w-full mb-4"
+                    style={{ marginBottom: scaled.mb(16) }}
                 >
                     {displaySpawnablePowerUps.length > 0 ? (
                         <div
                             className="flex flex-wrap justify-center bg-black bg-opacity-20 rounded"
-                            style={{ gap: scaled.gap(8), padding: scaled.p(8) }}
+                            style={{ gap: scaled.gap(4), padding: scaled.p(8) }}
                         >
                             {displaySpawnablePowerUps.map(powerUp => {
                                 const baseType = getBasePowerUpType(powerUp);
@@ -279,7 +279,7 @@ export const ShopScreen: React.FC<ShopScreenProps> = ({
                                         <TooltipTrigger asChild>
                                             <div
                                                 className="border border-gray-500 rounded bg-gray-700 flex flex-col items-center"
-                                                style={{ padding: scaled.p(4) }}
+                                                style={{ padding: `${scaled.py(4)}px ${scaled.px(2)}px` }}
                                             >
                                                 {imagePath ? (
                                                     <img
@@ -510,8 +510,8 @@ export const ShopScreen: React.FC<ShopScreenProps> = ({
                                         </div>
                                     </Button>
                                     <div 
-                                        className="px-1 py-2 flex-grow flex items-center justify-center text-center bg-black bg-opacity-25"
-                                        style={{fontSize: scaled.fontSize(12), minHeight: scaled.h(80)}}
+                                        className="px-1 py-1 flex-grow flex items-center justify-center text-center bg-black bg-opacity-25"
+                                        style={{fontSize: scaled.fontSize(12), minHeight: scaled.h(60)}}
                                     >
                                         {isKnown ? (
                                             <p><span className="font-bold">{displayName}:</span> {description}</p>
