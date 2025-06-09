@@ -326,15 +326,16 @@ export const ShopScreen: React.FC<ShopScreenProps> = ({
                     className="font-bold text-center"
                     style={{
                         fontSize: scaled.fontSize(30),
-                        marginBlock: scaled.my(20)
+                        marginBlock: scaled.my(10)
                     }}
-                >Buy Something!</h1>
+                >
+                    Buy Something!</h1>
 
                 <div
-                    className="flex flex-row items-center justify-center mb-6"
+                    className="flex flex-row items-center justify-center"
                     style={{
                         gap: scaled.gap(12),
-                        marginBottom: scaled.mb(24)
+                        marginBottom: scaled.mb(12)
                     }}
                 >
                     <p
@@ -509,7 +510,7 @@ export const ShopScreen: React.FC<ShopScreenProps> = ({
                                         </div>
                                     </Button>
                                     <div 
-                                        className="p-2 flex-grow flex items-center justify-center text-center bg-black bg-opacity-25"
+                                        className="px-1 py-2 flex-grow flex items-center justify-center text-center bg-black bg-opacity-25"
                                         style={{fontSize: scaled.fontSize(12), minHeight: scaled.h(80)}}
                                     >
                                         {isKnown ? (
