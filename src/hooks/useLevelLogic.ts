@@ -108,21 +108,21 @@ export const getLevelStats = (level: number, gameMode: GameMode | null, testBric
 
     let scoreGoal = count;
     if (gameMode === 'main') {
-        if (level === 6) { scoreGoal += 2; } // Updated
-        else if (level === 7) { scoreGoal += 6; } // Updated
-        else if (level === 8) { scoreGoal += 13; } // Updated
-        else if (level === 9) { scoreGoal += 21; } // Updated
-        else if (level === 10) { scoreGoal += 31; } // Updated
-        else if (level === 11) { scoreGoal += 49; } // Updated
-        else if (level === 12) { scoreGoal += 71; } // Updated
-        else if (level === 13) { scoreGoal += 100; } // Updated
-        else if (level === 14) { scoreGoal += 136; } // Updated
-        else if (level === 15) { scoreGoal += 173; } // Updated
-        else if (level === 16) { scoreGoal += 238; } // Updated
-        else if (level === 17) { scoreGoal += 319; } // Updated
-        else if (level === 18) { scoreGoal += 400; } // Updated
-        else if (level === 19) { scoreGoal += 536; } // Updated
-        else if (level >= 20) { scoreGoal += 715; } // Updated for level 20 and above
+        if (level === 6) { scoreGoal += 2; }
+        else if (level === 7) { scoreGoal += 5; }
+        else if (level === 8) { scoreGoal += 11; }
+        else if (level === 9) { scoreGoal += 18; }
+        else if (level === 10) { scoreGoal += 26; }
+        else if (level === 11) { scoreGoal += 41; }
+        else if (level === 12) { scoreGoal += 59; }
+        else if (level === 13) { scoreGoal += 83; }
+        else if (level === 14) { scoreGoal += 113; }
+        else if (level === 15) { scoreGoal += 144; }
+        else if (level === 16) { scoreGoal += 211; }
+        else if (level === 17) { scoreGoal += 294; }
+        else if (level === 18) { scoreGoal += 381; }
+        else if (level === 19) { scoreGoal += 513; }
+        else if (level >= 20) { scoreGoal += 688; }
     }
     return { totalBricks: count, targetScore: scoreGoal };
 };
