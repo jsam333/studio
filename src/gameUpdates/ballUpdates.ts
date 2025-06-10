@@ -390,6 +390,7 @@ export const updateBalls = (
                     if (brickCollisionResult.pointsAwarded > 0) { callbacks.updateScoreCallback(brickCollisionResult.pointsAwarded); }
                     spawnRequests.push(...brickCollisionResult.spawnEvents);
 
+                    /*
                     if (brickCollisionResult.hitUnderside) {
                         const targetResult = attemptToCreatePaddleTarget(ball, currentSpeedX, currentSpeedY, refs, currentTime, gameSpeedFactor, refs.bricksRef.current, columns, rows);
                         if (targetResult) {
@@ -397,6 +398,7 @@ export const updateBalls = (
                             refs.paddleTargetsRef.current.push(targetResult.newTarget);
                         }
                     }
+                    */
                 }
 
                 const effectiveSpeedX = currentSpeedX * deltaTime;
@@ -424,11 +426,13 @@ export const updateBalls = (
                     nextY = currentBallSize + overshoot;
                     refs.soundSystemRef.current?.playPaddleHitSound(); // Play sound on top wall hit
 
+                    /*
                     const targetResult = attemptToCreatePaddleTarget(ball, currentSpeedX, currentSpeedY, refs, currentTime, gameSpeedFactor, refs.bricksRef.current, columns, rows);
                     if (targetResult) {
                         currentSpeedY = targetResult.finalSpeedY;
                         refs.paddleTargetsRef.current.push(targetResult.newTarget);
                     }
+                    */
                 }
                 else if (nextY + currentBallSize > BOARD_HEIGHT) {
                     let stickToSide: 'left' | 'right' | null = null;

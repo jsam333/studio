@@ -310,6 +310,15 @@ export const checkBrickCollision = ( ball: Ball, bricks: Brick[][], columns: num
                             }
                         }
                     }
+                    /*
+                    if (brickCollisionResult.hitUnderside) {
+                        const targetResult = attemptToCreatePaddleTarget(ball, currentSpeedX, currentSpeedY, refs, currentTime, gameSpeedFactor, refs.bricksRef.current, columns, rows);
+                        if (targetResult) {
+                            currentSpeedY = targetResult.finalSpeedY;
+                            refs.paddleTargetsRef.current.push(targetResult.newTarget);
+                        }
+                    }
+                    */
                     return { collision: true, newSpeedX, newSpeedY, spawnEvents, pointsAwarded, pierceOccurred, builderHitOccurred, brickHit: true, hitUnderside };
                  }
              }
