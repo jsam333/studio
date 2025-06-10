@@ -118,11 +118,11 @@ export const getLevelStats = (level: number, gameMode: GameMode | null, testBric
         else if (level === 13) { scoreGoal += 91; }
         else if (level === 14) { scoreGoal += 124; }
         else if (level === 15) { scoreGoal += 158; }
-        else if (level === 16) { scoreGoal += 211; }
-        else if (level === 17) { scoreGoal += 294; }
-        else if (level === 18) { scoreGoal += 381; }
-        else if (level === 19) { scoreGoal += 513; }
-        else if (level >= 20) { scoreGoal += 688; }
+        else if (level === 16) { scoreGoal += 218; }
+        else if (level === 17) { scoreGoal += 302; }
+        else if (level === 18) { scoreGoal += 390; }
+        else if (level === 19) { scoreGoal += 524; }
+        else if (level >= 20) { scoreGoal += 702; }
     }
     return { totalBricks: count, targetScore: scoreGoal };
 };
