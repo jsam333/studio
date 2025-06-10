@@ -108,16 +108,16 @@ export const getLevelStats = (level: number, gameMode: GameMode | null, testBric
 
     let scoreGoal = count;
     if (gameMode === 'main') {
-        if (level === 6) { scoreGoal += 2; }
-        else if (level === 7) { scoreGoal += 5; }
-        else if (level === 8) { scoreGoal += 11; }
-        else if (level === 9) { scoreGoal += 18; }
-        else if (level === 10) { scoreGoal += 26; }
-        else if (level === 11) { scoreGoal += 41; }
-        else if (level === 12) { scoreGoal += 59; }
-        else if (level === 13) { scoreGoal += 83; }
-        else if (level === 14) { scoreGoal += 113; }
-        else if (level === 15) { scoreGoal += 144; }
+        if (level === 6) { scoreGoal += 2; } 
+        else if (level === 7) { scoreGoal += 6; }
+        else if (level === 8) { scoreGoal += 12; }
+        else if (level === 9) { scoreGoal += 20; }
+        else if (level === 10) { scoreGoal += 29; }
+        else if (level === 11) { scoreGoal += 45; }
+        else if (level === 12) { scoreGoal += 65; }
+        else if (level === 13) { scoreGoal += 91; }
+        else if (level === 14) { scoreGoal += 124; }
+        else if (level === 15) { scoreGoal += 158; }
         else if (level === 16) { scoreGoal += 211; }
         else if (level === 17) { scoreGoal += 294; }
         else if (level === 18) { scoreGoal += 381; }
