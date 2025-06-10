@@ -102,6 +102,7 @@ export interface Ball {
   isSplitting?: boolean;
   splittingEndTime?: number;
   splittingPausedDuration?: number;
+  splitsRemaining?: number;
   isHoming?: boolean;
   stuckOffset?: number; 
   stuckSide?: 'left' | 'right' | null; 

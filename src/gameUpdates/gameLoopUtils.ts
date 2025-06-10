@@ -178,6 +178,7 @@ export const createNewBall = (x: number, y: number, speedX: number, speedY: numb
     isSplitting: false, 
     splittingEndTime: undefined,
     splittingPausedDuration: undefined,
+    splitsRemaining: undefined,
     isHoming: false,
     stuckOffset: undefined,
     stuckSide: null,

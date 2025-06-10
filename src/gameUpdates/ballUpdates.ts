@@ -306,7 +306,11 @@ export const updateBalls = (
                     if (ball.isDouble && ball.doubleEndTime && currentTime >= ball.doubleEndTime) { ball.isDouble = false; ball.doubleEndTime = undefined; }
                     if (ball.isBlue && ball.blueEndTime && currentTime >= ball.blueEndTime) { ball.isBlue = false; ball.blueEndTime = undefined; }
                     if (ball.isBig && ball.bigEndTime && currentTime >= ball.bigEndTime) { ball.isBig = false; ball.bigEndTime = undefined; }
-                    if (ball.isSplitting && ball.splittingEndTime && currentTime >= ball.splittingEndTime) { ball.isSplitting = false; ball.splittingEndTime = undefined; }
+                    if (ball.isSplitting && ball.splittingEndTime && currentTime >= ball.splittingEndTime) { 
+                        ball.isSplitting = false; 
+                        ball.splittingEndTime = undefined; 
+                        ball.splitsRemaining = undefined;
+                    }
                 }
 
                 let currentSpeedX = ball.speedX;
@@ -341,7 +345,8 @@ export const updateBalls = (
                     }
 
                     if (brickCollisionResult.pierceOccurred) { /* Speed unchanged by pierce itself, homing deactivation handled above */ }
-                    else if (ball.isSplitting && brickCollisionResult.brickHit) {
+                    else if (ball.isSplitting && ball.splitsRemaining && ball.splitsRemaining > 0 && brickCollisionResult.brickHit) {
+                        ball.splitsRemaining--;
                         // Use currentSpeedX and currentSpeedY which are now corrected (1x) if ball was homing.
                         // If the ball was not homing, these are simply brickCollisionResult.newSpeedX/Y.
                         let newBallBaseSpeedX = -currentSpeedX / gameSpeedFactor;
@@ -386,6 +391,14 @@ export const updateBalls = (
                             };
                             refs.particlesRef.current.push(particle);
                         }
+                        if (ball.splitsRemaining <= 0) {
+                            ball.isSplitting = false;
+                            ball.splitsRemaining = undefined;
+                            ball.splittingEndTime = undefined;
+                        }
+                    } else if (ball.isBlue) { // Builder Ball
+                        builderHitOccurred = true;
+                        // Builder ball does not trigger bomb glow, it upgrades or does nothing to bombs
                     }
                     if (brickCollisionResult.pointsAwarded > 0) { callbacks.updateScoreCallback(brickCollisionResult.pointsAwarded); }
                     spawnRequests.push(...brickCollisionResult.spawnEvents);

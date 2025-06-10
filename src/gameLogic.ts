@@ -102,6 +102,7 @@ export const initialBallState: Ball = {
   isSplitting: false, 
   splittingEndTime: undefined, 
   splittingPausedDuration: undefined, 
+  splitsRemaining: undefined,
   isHoming: false,
   lastFramePointsFieldIds: new Set(),
   // @ts-ignore 

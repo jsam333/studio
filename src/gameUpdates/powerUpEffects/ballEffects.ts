@@ -42,6 +42,7 @@ export const applyBallEffects = (
             const ballsToModify = eligibleBalls.slice(0, numToAffect);
             ballsToModify.forEach(ball => {
                 ball.isSplitting = true;
+                ball.splitsRemaining = 3;
                 ball.splittingEndTime = currentTime + SPLITTING_BALL_DURATION; 
                 ball.isGlowEffectActive = true;
                 ball.glowEffectStartTime = currentTime;
