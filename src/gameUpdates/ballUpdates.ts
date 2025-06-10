@@ -396,9 +396,6 @@ export const updateBalls = (
                             ball.splitsRemaining = undefined;
                             ball.splittingEndTime = undefined;
                         }
-                    } else if (ball.isBlue) { // Builder Ball
-                        builderHitOccurred = true;
-                        // Builder ball does not trigger bomb glow, it upgrades or does nothing to bombs
                     }
                     if (brickCollisionResult.pointsAwarded > 0) { callbacks.updateScoreCallback(brickCollisionResult.pointsAwarded); }
                     spawnRequests.push(...brickCollisionResult.spawnEvents);
