@@ -25,8 +25,14 @@ export const applyBallEffects = (
         case 'HOMING_BALL':
         case 'HOMING_BALL_L2':
         case 'HOMING_BALL_L3': {
+            let numToAffectHoming = 2;
+            if (type === 'HOMING_BALL_L2') {
+                numToAffectHoming = 4;
+            } else if (type === 'HOMING_BALL_L3') {
+                numToAffectHoming = 6;
+            }
             const eligibleBalls = refs.ballsRef.current.filter(b => !b.isHoming);
-            const ballsToModify = eligibleBalls.slice(0, numToAffect);
+            const ballsToModify = eligibleBalls.slice(0, numToAffectHoming);
             ballsToModify.forEach(ball => {
                 ball.isHoming = true;
                 // Note: Homing duration TBD
@@ -114,14 +120,13 @@ export const applyBallEffects = (
         case 'DOUBLE_BALL_L2':
         case 'DOUBLE_BALL_L3': {
             const eligibleBalls = refs.ballsRef.current.filter(
-                b => !b.isDouble && !b.isBlue && (!b.pierceHitsRemaining || b.pierceHitsRemaining <= 0)
+                b => !b.isDouble && !b.isBlue
             );
             const ballsToModify = eligibleBalls.slice(0, numToAffect);
             ballsToModify.forEach(ball => {
                 ball.isDouble = true;
                 ball.doubleEndTime = currentTime + DOUBLE_BALL_DURATION; 
                 ball.isBlue = false; ball.blueEndTime = undefined;
-                ball.pierceHitsRemaining = 0;
                 ball.isGlowEffectActive = true;
                 ball.glowEffectStartTime = currentTime;
             });
@@ -131,13 +136,12 @@ export const applyBallEffects = (
         case 'PIERCE_BALL_L2':
         case 'PIERCE_BALL_L3': {
             const eligibleBalls = refs.ballsRef.current.filter(
-                b => !b.isDouble && !b.isBlue && (!b.pierceHitsRemaining || b.pierceHitsRemaining <= 0)
+                b => !b.isBlue && (!b.pierceHitsRemaining || b.pierceHitsRemaining <= 0)
             );
             const ballsToModify = eligibleBalls.slice(0, numToAffect);
             ballsToModify.forEach(ball => {
                 ball.pierceHitsRemaining = PIERCE_BALL_HITS;
                 ball.isBlue = false; ball.blueEndTime = undefined;
-                ball.isDouble = false; ball.doubleEndTime = undefined;
                 ball.isGlowEffectActive = true;
                 ball.glowEffectStartTime = currentTime;
             });

@@ -92,14 +92,10 @@ export const drawBalls = (
          let fillStyle = "#ffffff";
          if (ball.stuckOffset !== undefined || ball.stuckSide) { 
              fillStyle = "#cccccc";
-         } else if (ball.isHoming) {
-             fillStyle = POWER_UP_COLORS['HOMING_BALL'] || '#f1c40f';
          } else if (ball.isSplitting) {
              fillStyle = POWER_UP_COLORS['SPLITTING_BALL'] || '#9b59b6';
          } else if (ball.isBlue) {
              fillStyle = POWER_UP_COLORS['BUILDER_BALL']!;
-         } else if (ball.pierceHitsRemaining && ball.pierceHitsRemaining > 0) {
-             fillStyle = POWER_UP_COLORS['PIERCE_BALL']!;
          } else if (ball.isDouble) {
              fillStyle = "#808080";
          } else {
@@ -108,6 +104,26 @@ export const drawBalls = (
         ctx.fillStyle = fillStyle;
         ctx.fill();
         ctx.closePath(); 
+
+        // Draw inner homing circle if applicable
+        if (ball.isHoming) {
+            ctx.beginPath();
+            // Inner circle is 55% of the ball's radius
+            ctx.arc(ball.x, ball.y, currentRadius * 0.55, 0, Math.PI * 2);
+            ctx.fillStyle = POWER_UP_COLORS['HOMING_BALL'] || '#f1c40f';
+            ctx.fill();
+            ctx.closePath();
+        }
+
+        // Draw inner piercing circle if applicable
+        if (ball.pierceHitsRemaining && ball.pierceHitsRemaining > 0) {
+            ctx.beginPath();
+            // Inner circle is 55% of the ball's radius
+            ctx.arc(ball.x, ball.y, currentRadius * 0.55, 0, Math.PI * 2);
+            ctx.fillStyle = POWER_UP_COLORS['PIERCE_BALL']!;
+            ctx.fill();
+            ctx.closePath();
+        }
 
         // 3. Draw the stroke on top of everything
         let strokeStyle: string | undefined = undefined;
