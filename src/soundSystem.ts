@@ -177,6 +177,13 @@ export class SoundSystem {
         this.playSound('resourceSaveThump', 0.6, 60, 0.1, 'sine');
     }
 
+    playShopPurchaseSound() {
+        // "Cha" sound - reversed
+        this.playSound('cashRegisterCha', 0.7, 1800, 0.05, 'triangle', 1200);
+        // "Ching" sound - reversed
+        this.playSound('cashRegisterChing', 0.7, 1000, 0.15, 'sine', 1500);
+    }
+
     stopAllSounds(): void {
         if (this.audioContext) {
             this.activeSounds.forEach((instances) => {

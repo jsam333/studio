@@ -193,6 +193,7 @@ export const ShopScreen: React.FC<ShopScreenProps> = ({
 
     if (gameStateRefs.goldRef.current < cost) return;
 
+    gameStateRefs.soundSystemRef.current?.playShopPurchaseSound();
     gameStateRefs.goldRef.current -= cost;
     setGoldDisplay(gameStateRefs.goldRef.current);
     addSpawnablePowerUp(actualItemToAdd);
