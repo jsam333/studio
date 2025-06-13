@@ -8,7 +8,7 @@ import { updatePowerUps } from './gameUpdates/powerUpUpdates';
 import { applyPowerUpEffects } from './gameUpdates/powerUpEffects';
 import { checkGameStatus } from './gameUpdates/gameStatus';
 import { handleSpawnEvents } from './gameUpdates/gameLoopUtils';
-import { updateParticles } from './gameUpdates/particleUpdates'; 
+import { updateParticles, createRainbowParticleExplosion } from './gameUpdates/particleUpdates'; 
 import { updateResourceMeter } from './gameUpdates/resourceMeterUpdates';
 import { updateBombGlowsAndTriggerExplosions } from './gameLogic'; // Corrected import path
 import {
@@ -27,7 +27,8 @@ import {
     drawPowerUpPreviews, 
     drawPointsFields, drawParticles,
     drawHomingTrails, // Added drawHomingTrails
-    drawResourceMeter
+    drawResourceMeter,
+    drawLevelClearedMessage
 } from './drawFunctions';
 
 const updatePaddleShrinkTimer = (
@@ -181,6 +182,54 @@ export const gameUpdate = (
     const currentGameState = refs.gameOverStateRef.current;
     const gameMode = refs.gameModeRef.current;
     const isTestPreview = gameMode === 'test' && currentGameState === 'menu';
+
+    if (currentGameState === 'level_cleared') {
+        if (!refs.levelClearedTimeRef.current) {
+            refs.levelClearedTimeRef.current = Date.now();
+            refs.soundSystemRef.current?.playLevelClearedSound();
+
+            const bricks = refs.bricksRef.current;
+            for (let c = 0; c < bricks.length; c++) {
+                if (!bricks[c]) continue;
+                for (let r = 0; r < bricks[c].length; r++) {
+                    const brick = bricks[c][r];
+                    if (brick && (brick.status === 1 || brick.status === 2)) {
+                        createRainbowParticleExplosion(refs.particlesRef.current, brick.x, brick.y, brick.width, brick.height);
+                        brick.status = 0; // Erase the brick
+                    }
+                }
+            }
+        }
+
+        const currentTime = Date.now();
+        const elapsedTimeForMessage = currentTime - (refs.levelClearedTimeRef.current || currentTime);
+
+        // Update particles to make them animate
+        updateParticles(refs, currentTime, elapsedTime);
+
+        ctx.clearRect(0, 0, BOARD_WIDTH, BOARD_HEIGHT);
+        
+        drawBricks(ctx, refs.bricksRef.current, refs.brickColumnsRef.current, refs.brickRowsRef.current, currentTime);
+        drawPaddle(ctx, refs.paddleXRef.current, refs.paddleWidthRef.current, refs.laserShotsRef.current, refs.stickyPaddleChargesRef.current, refs.collectionFieldHeightRef.current, refs.collectionFieldWidthOffsetRef.current);
+        drawPointsFields(ctx, refs.pointsFieldsRef.current);
+        drawGameInfo(ctx, refs.scoreRef.current, refs.targetScoreRef.current, refs.goldRef.current, refs.bonusGoldRef.current, gameMode === 'test', refs.livesRef.current, refs.bonusGoldTimerCountdownRef.current);
+        drawSafetyNet(ctx, refs.safetyNetCountRef.current);
+        drawBalls(ctx, refs.ballsRef.current, refs.stuckBallsRef.current, currentTime);
+        drawPowerUps(ctx, refs.powerUpsRef.current);
+        drawLasers(ctx, refs.lasersRef.current);
+        drawParticles(ctx, refs.particlesRef.current);
+        if (refs.homingTrailsRef?.current) {
+            drawHomingTrails(ctx, refs.homingTrailsRef.current, currentTime, HOMING_TRAIL_DURATION);
+        }
+        
+        drawLevelClearedMessage(ctx, elapsedTimeForMessage);
+
+        if (currentTime - (refs.levelClearedTimeRef.current || 0) >= 500) {
+            refs.levelClearedTimeRef.current = null;
+            callbacks.setGameOverState('shop');
+        }
+        return;
+    }
 
     if (!isTestPreview && (currentGameState === 'won' || currentGameState === 'lost' || currentGameState === 'shop' || currentGameState === 'menu')) {
         ctx.clearRect(0, 0, BOARD_WIDTH, BOARD_HEIGHT);

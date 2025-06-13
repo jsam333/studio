@@ -61,7 +61,7 @@ export const checkGameStatus = (
                      nextState = 'won';
                      console.log(`Final Level (${FINAL_LEVEL}) complete! You Win! Final Score: ${refs.scoreRef.current}`);
                  } else {
-                     nextState = 'shop';
+                     nextState = 'level_cleared';
                      const bonusEarned = Math.max(MINIMUM_BONUS_GOLD, refs.bonusGoldRef.current);
                      refs.goldRef.current += bonusEarned;
                      console.log(`Level ${refs.currentLevelRef.current} complete! Score: ${refs.scoreRef.current}. Awarded ${bonusEarned} bonus gold. Total gold: ${refs.goldRef.current}`);

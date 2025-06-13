@@ -80,6 +80,7 @@ export function useGameLogic() {
     const firstTestRunCompletedRef = useRef<boolean>(false); 
     const pointsFieldsRef = useRef<PointsField[]>([]);
     const levelCompletionProcessedRef = useRef<boolean>(false);
+    const levelClearedTimeRef = useRef<number | null>(null);
     const paddleVisualEffectActiveRef = useRef<boolean>(false);
     const paddleVisualEffectStartTimeRef = useRef<number | null>(null);
     const testPowerUpLevelsRef = useRef<Record<PowerUpType, number>>({ ...initialTestPowerUpLevels });
@@ -993,6 +994,7 @@ export function useGameLogic() {
         initialBonusGoldDecrementCompleteRef,
         pointsFieldsRef,
         levelCompletionProcessedRef,
+        levelClearedTimeRef,
         paddleVisualEffectActiveRef, 
         paddleVisualEffectStartTimeRef,
         laserIntervalRef, 
@@ -1034,6 +1036,7 @@ export function useGameLogic() {
         initialBonusGoldDecrementCompleteRef,
         pointsFieldsRef,
         levelCompletionProcessedRef,
+        levelClearedTimeRef,
         paddleVisualEffectActiveRef, 
         paddleVisualEffectStartTimeRef,
         laserIntervalRef,

@@ -159,7 +159,7 @@ export default function Home() {
         }
         
         const shouldContinueAnimation = (mode === 'test' && currentGameState === 'menu' && currentActiveMode === 'test') || 
-                                        (currentGameState === 'playing' || currentGameState === 'level_reset');
+                                        (currentGameState === 'playing' || currentGameState === 'level_reset' || currentGameState === 'level_cleared');
 
         if (shouldContinueAnimation) {
             const animFrameIdRef = mode === 'test' ? testAnimationFrameIdRef : animationFrameIdRef;
@@ -179,7 +179,7 @@ export default function Home() {
 
     useEffect(() => {
         const isTestPreviewActive = activeGameMode === 'test' && gameOverState === 'menu';
-        const isMainGameActive = gameOverState === 'playing' || gameOverState === 'lost' || gameOverState === 'won';
+        const isMainGameActive = gameOverState === 'playing' || gameOverState === 'lost' || gameOverState === 'won' || gameOverState === 'level_cleared';
 
         let cleanupCanvas: () => void = () => {};
         let cleanupTestCanvas: () => void = () => {};
@@ -232,7 +232,7 @@ export default function Home() {
                     isMobile,
                     showSidebarState: showSidebar
                 });
-                if (gameOverState === 'playing' && !animationFrameIdRef.current) {
+                if ((gameOverState === 'playing' || gameOverState === 'level_cleared') && !animationFrameIdRef.current) {
                     lastTimeRef.current = performance.now();
                     animationFrameIdRef.current = requestAnimationFrame(gameLoopRef.current);
                 }
@@ -549,7 +549,7 @@ export default function Home() {
                 </div>
             )}
 
-            {(gameOverState === 'playing' || gameOverState === 'shop' || gameOverState === 'lost' || gameOverState === 'won') && activeGameMode === 'main' && (
+            {(gameOverState === 'playing' || gameOverState === 'shop' || gameOverState === 'lost' || gameOverState === 'won' || gameOverState === 'level_cleared') && activeGameMode === 'main' && (
                 <GameView
                     gameContainerRef={gameContainerRef}
                     canvasRef={canvasRef}

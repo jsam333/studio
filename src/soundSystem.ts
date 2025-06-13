@@ -35,13 +35,15 @@ export class SoundSystem {
         frequency: number = 440,
         duration: number = 0.1,
         waveType: OscillatorType = 'sine',
-        endFrequency?: number
+        endFrequency?: number,
+        delay: number = 0
     ) {
         if (!this.audioContext) return;
 
         const oscillator = this.audioContext.createOscillator();
         const gainNode = this.audioContext.createGain();
         const now = this.audioContext.currentTime;
+        const startTime = now + delay;
 
         oscillator.connect(gainNode);
         gainNode.connect(this.audioContext.destination);
@@ -103,16 +105,16 @@ export class SoundSystem {
             }
         }
 
-        gainNode.gain.setValueAtTime(calculatedVolume, now);
+        gainNode.gain.setValueAtTime(calculatedVolume, startTime);
         oscillator.type = waveType;
-        oscillator.frequency.setValueAtTime(frequency, now);
+        oscillator.frequency.setValueAtTime(frequency, startTime);
 
         if (endFrequency !== undefined && endFrequency !== frequency) {
-            oscillator.frequency.linearRampToValueAtTime(endFrequency, now + duration);
+            oscillator.frequency.linearRampToValueAtTime(endFrequency, startTime + duration);
         }
 
-        oscillator.start(now);
-        oscillator.stop(now + duration);
+        oscillator.start(startTime);
+        oscillator.stop(startTime + duration);
     }
     
     playBrickHitSound() {
@@ -178,10 +180,17 @@ export class SoundSystem {
     }
 
     playShopPurchaseSound() {
-        // "Cha" sound - reversed
-        this.playSound('cashRegisterCha', 0.7, 1800, 0.05, 'triangle', 1200);
-        // "Ching" sound - reversed
-        this.playSound('cashRegisterChing', 0.7, 1000, 0.15, 'sine', 1500);
+        // "Cha" sound - low to high
+        this.playSound('cashRegisterCha', 0.7, 1200, 0.025, 'triangle', 1800);
+        // "Ching" sound - low to high
+        this.playSound('cashRegisterChing', 0.7, 1000, 0.075, 'sine', 1500);
+    }
+
+    playLevelClearedSound() {
+        // First pulse
+        this.playSound('levelClear1', 0.8, 400, 0.1, 'sine', 1600);
+        // Second pulse, delayed
+        this.playSound('levelClear2', 0.8, 500, 0.1, 'sine', 1800, 0.15);
     }
 
     stopAllSounds(): void {

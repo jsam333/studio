@@ -172,7 +172,7 @@ export interface PointsField {
     ballsPassed: number; 
 }
 
-export type GameState = 'menu' | 'playing' | 'won' | 'lost' | 'shop' | 'level_reset';
+export type GameState = 'menu' | 'playing' | 'won' | 'lost' | 'shop' | 'level_reset' | 'level_cleared';
 export type GameMode = 'main' | 'test';
 
 export interface GameStateRefsBase {
@@ -225,6 +225,7 @@ export interface GameStateRefsBase {
     paddleVisualEffectActiveRef?: React.MutableRefObject<boolean>; 
     paddleVisualEffectStartTimeRef?: React.MutableRefObject<number | null>; 
     laserIntervalRef: React.MutableRefObject<number | null>;
+    levelClearedTimeRef: React.MutableRefObject<number | null>;
     homingTrailsRef: React.MutableRefObject<HomingTrail[]>;
     paddleTargetsRef: React.MutableRefObject<PaddleTarget[]>;
     soundSystemRef: React.MutableRefObject<SoundSystem | null>;
