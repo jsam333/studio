@@ -188,6 +188,24 @@ export const gameUpdate = (
             refs.levelClearedTimeRef.current = Date.now();
             refs.soundSystemRef.current?.playLevelClearedSound();
 
+            // Text particle effect
+            const text = "Level Cleared!";
+            ctx.save();
+            ctx.font = "bold 30px Arial";
+            const textMetrics = ctx.measureText(text);
+            const textWidth = textMetrics.width;
+            
+            const centerY = BOARD_HEIGHT / 2;
+            const centerX = BOARD_WIDTH / 2;
+            const leftX = centerX - textWidth / 2;
+            const rightX = centerX + textWidth / 2;
+
+            // Left, center, and right bursts
+            createRainbowParticleExplosion(refs.particlesRef.current, leftX, centerY, 0, 0);
+            createRainbowParticleExplosion(refs.particlesRef.current, centerX, centerY, 0, 0);
+            createRainbowParticleExplosion(refs.particlesRef.current, rightX, centerY, 0, 0);
+            ctx.restore();
+
             const bricks = refs.bricksRef.current;
             for (let c = 0; c < bricks.length; c++) {
                 if (!bricks[c]) continue;
