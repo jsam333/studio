@@ -502,24 +502,31 @@ export const updateBalls = (
                             ball.y = PADDLE_Y - currentBallSize - 0.1; // Place it just above
                             
                             // Play sound
-                            // refs.soundSystemRef.current?.playResourceSaveSound();
+                            refs.soundSystemRef.current?.playPaddleHitSound();
 
+                            /*
                             // Create particle explosion
-                            // for (let k = 0; k < RESOURCE_SAVE_PARTICLE_COUNT; k++) {
-                            //     const angle = Math.random() * 2 * Math.PI; // Full circle explosion
-                            //     const speed = RESOURCE_SAVE_PARTICLE_SPEED_MIN + Math.random() * (RESOURCE_SAVE_PARTICLE_SPEED_MAX - RESOURCE_SAVE_PARTICLE_SPEED_MIN);
-                            //     const particle: Particle = {
-                            //         id: Date.now() + Math.random(),
-                            //         x: ball.x, y: ball.y + currentBallSize, // Start from below the ball
-                            //         speedX: Math.cos(angle) * speed,
-                            //         speedY: Math.sin(angle) * speed,
-                            //         lifespan: RESOURCE_SAVE_PARTICLE_LIFESPAN_MS,
-                            //         color: RESOURCE_SAVE_PARTICLE_COLOR,
-                            //         size: RESOURCE_SAVE_PARTICLE_SIZE,
-                            //         createdAt: currentTime, alpha: 1
-                            //     };
-                            //     refs.particlesRef.current.push(particle);
-                            // }
+                            for (let k = 0; k < RESOURCE_SAVE_PARTICLE_COUNT; k++) {
+                                const angle = Math.random() * 2 * Math.PI; // Full circle explosion
+                                const speed = RESOURCE_SAVE_PARTICLE_SPEED_MIN + Math.random() * (RESOURCE_SAVE_PARTICLE_SPEED_MAX - RESOURCE_SAVE_PARTICLE_SPEED_MIN);
+                                const particle: Particle = {
+                                    id: Date.now() + Math.random(),
+                                    x: ball.x, y: ball.y + currentBallSize, // Start from below the ball
+                                    speedX: Math.cos(angle) * speed,
+                                    speedY: Math.sin(angle) * speed,
+                                    lifespan: RESOURCE_SAVE_PARTICLE_LIFESPAN_MS,
+                                    color: RESOURCE_SAVE_PARTICLE_COLOR,
+                                    size: RESOURCE_SAVE_PARTICLE_SIZE,
+                                    createdAt: currentTime, alpha: 1
+                                };
+                                refs.particlesRef.current.push(particle);
+                            }
+                            */
+
+                            // Big Ball effect on resource save
+                            if (ball.isBig) {
+                                ballsToAdd.push(createNewBall(ball.x, PADDLE_Y - BALL_SIZE - 5, (Math.random() - 0.5) * 6, -3 - Math.random() * 2, BASE_BALL_SPEED_FACTOR));
+                            }
                             
                             // Recalculate nextY for this frame after the save
                             nextY = ball.y + currentSpeedY * deltaTime;
