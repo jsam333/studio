@@ -247,7 +247,7 @@ export const ShopScreen: React.FC<ShopScreenProps> = ({
     mb: (base: number) => base * scaleFactor,
     mx: (base: number) => base * scaleFactor,
     iconSizeMd: 32 * scaleFactor,
-    buttonHeightMd: 96 * scaleFactor, // For shop item buttons
+    buttonHeightMd: 125 * scaleFactor, // For shop item buttons
     footerButtonHeight: 48 * scaleFactor, // For Start Level / Back to Menu buttons
     imageSizeMd: 40 * scaleFactor,
   };
@@ -262,15 +262,18 @@ export const ShopScreen: React.FC<ShopScreenProps> = ({
             <div className="flex-grow overflow-auto"> 
                 {/* Owned PowerUps Display */}
                 <div
-                    className="w-full mb-4"
-                    style={{ marginBottom: scaled.mb(16) }}
+                    className="w-full"
                 >
-                    {displaySpawnablePowerUps.length > 0 ? (
-                        <div
-                            className="flex flex-wrap justify-center bg-black bg-opacity-20 rounded"
-                            style={{ gap: scaled.gap(4), padding: scaled.p(8) }}
-                        >
-                            {displaySpawnablePowerUps.map(powerUp => {
+                    <div
+                        className="flex flex-wrap justify-center items-center bg-black bg-opacity-20 rounded"
+                        style={{
+                            gap: scaled.gap(4),
+                            padding: `${scaled.py(0)}px ${scaled.px(8)}px`,
+                            height: scaled.h(70) // Ensure fixed height
+                        }}
+                    >
+                        {displaySpawnablePowerUps.length > 0 ? (
+                            displaySpawnablePowerUps.map(powerUp => {
                                 const baseType = getBasePowerUpType(powerUp);
                                 const imagePath = POWER_UP_IMAGE_PATHS[baseType];
                                 const displayName = powerUp.replace(/_/g, ' ');
@@ -280,7 +283,7 @@ export const ShopScreen: React.FC<ShopScreenProps> = ({
                                         <TooltipTrigger asChild>
                                             <div
                                                 className="border border-gray-500 rounded bg-gray-700 flex flex-col items-center"
-                                                style={{ padding: `${scaled.py(4)}px ${scaled.px(2)}px` }}
+                                                style={{ padding: `${scaled.py(4)}px ${scaled.px(2)}px ${scaled.py(1)}px` }}
                                             >
                                                 {imagePath ? (
                                                     <img
@@ -300,12 +303,16 @@ export const ShopScreen: React.FC<ShopScreenProps> = ({
                                                         }}
                                                     >{baseType.substring(0,1)}</div>
                                                 )}
-                                                {level > 1 && (
-                                                    <span
-                                                        className="font-bold"
-                                                        style={{ fontSize: scaled.fontSize(12), marginTop: scaled.px(2) }}
-                                                    >L{level}</span>
-                                                )}
+                                                <span
+                                                    className="font-bold"
+                                                    style={{
+                                                        fontSize: scaled.fontSize(12),
+                                                        marginTop: scaled.px(2),
+                                                        visibility: level > 1 ? 'visible' : 'hidden'
+                                                    }}
+                                                >
+                                                    L{level}
+                                                </span>
                                             </div>
                                         </TooltipTrigger>
                                         <TooltipContent style={{fontSize: scaled.fontSize(12)}}>
@@ -313,21 +320,23 @@ export const ShopScreen: React.FC<ShopScreenProps> = ({
                                         </TooltipContent>
                                     </Tooltip>
                                 );
-                            })}
-                        </div>
-                    ) : (
-                        <div
-                            className="text-center text-gray-400 italic bg-black bg-opacity-20 rounded"
-                            style={{ padding: scaled.p(8), fontSize: scaled.fontSize(14) }}
-                        >No power-ups active.</div>
-                    )}
+                            })
+                        ) : (
+                            <div
+                                className="text-center text-gray-400 italic"
+                                style={{ fontSize: scaled.fontSize(14) }}
+                            >
+                                No power-ups active.
+                            </div>
+                        )}
+                    </div>
                 </div>
 
                 <h1
                     className="font-bold text-center"
                     style={{
                         fontSize: scaled.fontSize(30),
-                        marginBlock: scaled.my(10)
+                        marginBottom: scaled.my(10)
                     }}
                 >
                     Buy Something!</h1>
@@ -376,8 +385,8 @@ export const ShopScreen: React.FC<ShopScreenProps> = ({
                         gap: scaled.gap(12),
                         marginBottom: scaled.mb(32),
                         width: '100%',
-                        maxWidth: scaled.w(576),
-                        minWidth: scaled.w(480),
+                        maxWidth: scaled.w(750),
+                        minWidth: scaled.w(624),
                     }}
                 >
                     {shopItems.length > 0 ? (
@@ -512,7 +521,7 @@ export const ShopScreen: React.FC<ShopScreenProps> = ({
                                     </Button>
                                     <div 
                                         className="px-1 py-1 flex-grow flex items-center justify-center text-center bg-black bg-opacity-25"
-                                        style={{fontSize: scaled.fontSize(12), minHeight: scaled.h(60)}}
+                                        style={{fontSize: scaled.fontSize(12), height: scaled.h(78)}}
                                     >
                                         {isKnown ? (
                                             <p><span className="font-bold">{displayName}:</span> {description}</p>
