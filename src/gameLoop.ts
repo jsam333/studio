@@ -184,8 +184,10 @@ export const gameUpdate = (
     const isTestPreview = gameMode === 'test' && currentGameState === 'menu';
 
     if (currentGameState === 'level_cleared') {
+        const currentTime = Date.now();
+
         if (!refs.levelClearedTimeRef.current) {
-            refs.levelClearedTimeRef.current = Date.now();
+            refs.levelClearedTimeRef.current = currentTime;
             refs.soundSystemRef.current?.playLevelClearedSound();
 
             // Text particle effect
@@ -207,19 +209,45 @@ export const gameUpdate = (
             ctx.restore();
 
             const bricks = refs.bricksRef.current;
-            for (let c = 0; c < bricks.length; c++) {
-                if (!bricks[c]) continue;
-                for (let r = 0; r < bricks[c].length; r++) {
-                    const brick = bricks[c][r];
+            const bricksToClear: { brick: Brick, order: number }[] = [];
+            let order = 0;
+            const rows = refs.brickRowsRef.current;
+            const columns = refs.brickColumnsRef.current;
+
+            for (let r = 0; r < rows; r++) {
+                for (let c = columns - 1; c >= 0; c--) {
+                    const brick = bricks[c]?.[r];
                     if (brick && (brick.status === 1 || brick.status === 2)) {
-                        createRainbowParticleExplosion(refs.particlesRef.current, brick.x, brick.y, brick.width, brick.height);
-                        brick.status = 0; // Erase the brick
+                        bricksToClear.push({ brick, order });
+                        order++;
                     }
+                }
+            }
+            
+            const totalAnimationDuration = 350; // Use 350ms to be safe within the 400ms window
+            bricksToClear.forEach(item => {
+                const delay = bricksToClear.length > 0 ? (item.order / bricksToClear.length) * totalAnimationDuration : 0;
+                item.brick.disappearTime = (refs.levelClearedTimeRef.current ?? currentTime) + delay;
+                item.brick.status = 1; // Ensure brick is drawable
+            });
+        }
+
+        // This part runs every frame during the animation
+        const bricks = refs.bricksRef.current;
+        const columns = refs.brickColumnsRef.current;
+        const rows = refs.brickRowsRef.current;
+        for (let c = 0; c < columns; c++) {
+            if (!bricks[c]) continue;
+            for (let r = 0; r < rows; r++) {
+                const brick = bricks[c][r];
+                if (brick && brick.disappearTime && currentTime >= brick.disappearTime) {
+                    createRainbowParticleExplosion(refs.particlesRef.current, brick.x, brick.y, brick.width, brick.height);
+                    brick.status = 0; // Erase the brick
+                    delete brick.disappearTime; // Process only once
                 }
             }
         }
 
-        const currentTime = Date.now();
         const elapsedTimeForMessage = currentTime - (refs.levelClearedTimeRef.current || currentTime);
 
         // Update particles to make them animate
@@ -242,7 +270,7 @@ export const gameUpdate = (
         
         drawLevelClearedMessage(ctx, elapsedTimeForMessage);
 
-        if (currentTime - (refs.levelClearedTimeRef.current || 0) >= 500) {
+        if (currentTime - (refs.levelClearedTimeRef.current || 0) >= 400) {
             refs.levelClearedTimeRef.current = null;
             callbacks.setGameOverState('shop');
         }

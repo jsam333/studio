@@ -23,6 +23,7 @@ export interface Brick {
   specialFlashStartTime?: number; // For MAKE_SPECIAL light flash effect
   isBombGlowActive?: boolean;
   bombGlowStartTime?: number;
+  disappearTime?: number;
 }
 
 export interface Particle {
