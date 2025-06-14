@@ -173,7 +173,7 @@ export interface PointsField {
     ballsPassed: number; 
 }
 
-export type GameState = 'menu' | 'playing' | 'won' | 'lost' | 'shop' | 'level_reset' | 'level_cleared';
+export type GameState = 'menu' | 'playing' | 'won' | 'lost' | 'shop' | 'level_reset' | 'level_cleared' | 'life_lost_animation';
 export type GameMode = 'main' | 'test';
 
 export interface GameStateRefsBase {
@@ -227,11 +227,13 @@ export interface GameStateRefsBase {
     paddleVisualEffectStartTimeRef?: React.MutableRefObject<number | null>; 
     laserIntervalRef: React.MutableRefObject<number | null>;
     levelClearedTimeRef: React.MutableRefObject<number | null>;
+    lifeLostAnimationTimeRef: React.MutableRefObject<number | null>;
     homingTrailsRef: React.MutableRefObject<HomingTrail[]>;
     paddleTargetsRef: React.MutableRefObject<PaddleTarget[]>;
     soundSystemRef: React.MutableRefObject<SoundSystem | null>;
     isRemoveBrickPaintModeActiveRef?: React.MutableRefObject<boolean>;
     isAddBrickPaintModeActiveRef?: React.MutableRefObject<boolean>;
+    totalGoldSpentOnPowerUpsRef: React.MutableRefObject<number>;
 }
 
 export interface GameStateRefs extends GameStateRefsBase {

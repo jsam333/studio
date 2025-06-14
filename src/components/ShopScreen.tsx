@@ -30,44 +30,20 @@ import {
 import LevelPreview from './LevelPreview';
 import { getBrickConfiguration, getLevelStats } from '../hooks/useLevelLogic';
 import { initializeBricks } from '../gameLogic';
+import {
+    MAX_LEVEL,
+    getCurrentLevel,
+    getPowerUpTypeForLevel,
+    getBasePowerUpType,
+    getPowerUpLevelFromString
+} from '../utils/powerUpHelpers';
 
 const SHOP_ITEMS_COUNT = 5;
-const MAX_LEVEL = 3;
 
 interface NextLevelInfo {
     totalBricks: number;
     targetScore: number;
 }
-
-const getCurrentLevel = (ownedPowerUps: Set<PowerUpType>, baseType: PowerUpType): number => {
-    for (let level = MAX_LEVEL; level >= 1; level--) {
-        const type = getPowerUpTypeForLevel(baseType, level);
-        if (type && ownedPowerUps.has(type)) return level;
-    }
-    return 0;
-};
-
-const getPowerUpTypeForLevel = (baseType: PowerUpType, level: number): PowerUpType | null => {
-    if (level < 1 || level > MAX_LEVEL) return null;
-    if (level === 1) return baseType;
-    return `${baseType}_L${level}` as PowerUpType;
-};
-
-const getBasePowerUpType = (powerUp: PowerUpType): PowerUpType => {
-    const L_INDEX = powerUp.indexOf('_L');
-    if (L_INDEX !== -1) {
-        return powerUp.substring(0, L_INDEX) as PowerUpType;
-    }
-    return powerUp;
-};
-
-const getPowerUpLevelFromString = (powerUp: PowerUpType): number => {
-    const match = powerUp.match(/_L(\d)$/);
-    if (match && match[1]) {
-        return parseInt(match[1], 10);
-    }
-    return 1;
-};
 
 const UPGRADABLE_POWER_UPS: PowerUpType[] = [
     'MULTI_BALL', 'WIDEN_PADDLE', 'LASER_PADDLE', 'RECOVERY_PADDLE',
@@ -188,6 +164,7 @@ export const ShopScreen: React.FC<ShopScreenProps> = ({
 
     gameStateRefs.soundSystemRef.current?.playShopPurchaseSound();
     gameStateRefs.goldRef.current -= cost;
+    gameStateRefs.totalGoldSpentOnPowerUpsRef.current += cost;
     setGoldDisplay(gameStateRefs.goldRef.current);
     addSpawnablePowerUp(actualItemToAdd);
 

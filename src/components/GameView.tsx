@@ -2,6 +2,7 @@
 import React, { LegacyRef } from 'react';
 import { PowerUpSidebar } from './PowerUpSidebar';
 import { ShopScreen } from './ShopScreen';
+import { GameOverScreen } from './GameOverScreen'; // Import GameOverScreen
 import { PowerUpType, GameOverState, GameStateRefs } from '../interfaces';
 import { BOARD_HEIGHT } from '../constants'; // Import BOARD_HEIGHT
 import { useToast } from '../hooks/use-toast';
@@ -37,7 +38,7 @@ interface GameViewProps {
   toggleBombPaintMode?: () => void;
   isBallBrickPaintModeActive?: boolean;
   toggleBallBrickPaintMode?: () => void;
-  // triggerTestLevelReset?: () => void; // Removed prop
+  startGame: (mode: 'main') => void; // Add startGame prop
 }
 
 export const GameView: React.FC<GameViewProps> = ({
@@ -70,7 +71,7 @@ export const GameView: React.FC<GameViewProps> = ({
   toggleBombPaintMode,
   isBallBrickPaintModeActive,
   toggleBallBrickPaintMode,
-  // triggerTestLevelReset, // Removed prop from destructuring
+  startGame, // Destructure startGame
 }) => {
   const { toast } = useToast();
   const containerClasses = isTestPreview
@@ -120,16 +121,6 @@ export const GameView: React.FC<GameViewProps> = ({
           />
         )}
 
-        {/* {isTestPreview && triggerTestLevelReset && (
-          <Button
-            onClick={triggerTestLevelReset}
-            variant="outline"
-            className="absolute bottom-2 right-2 bg-gray-700 hover:bg-gray-600 text-white text-xs py-1 px-2 rounded shadow-md focus:ring-1 focus:ring-white"
-          >
-            Reset Level
-          </Button>
-        )} Removed button from here */}
-
         {gameOverState === 'shop' && !isTestPreview && (
           <div 
             className="absolute top-0 left-0 w-full h-full flex items-center justify-center bg-black bg-opacity-75"
@@ -144,6 +135,17 @@ export const GameView: React.FC<GameViewProps> = ({
                 />
             </div>
           </div>
+        )}
+
+        {(gameOverState === 'won' || gameOverState === 'lost') && !isTestPreview && (
+            <GameOverScreen 
+                won={gameOverState === 'won'}
+                finalScore={gameStateRefs.scoreRef.current}
+                totalGoldSpent={gameStateRefs.totalGoldSpentOnPowerUpsRef.current}
+                spawnablePowerUps={gameStateRefs.spawnablePowerUpsRef.current}
+                onRestart={() => startGame('main')}
+                onMenu={handleResetGame}
+            />
         )}
       </div>
     </div>

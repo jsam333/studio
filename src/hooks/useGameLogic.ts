@@ -81,6 +81,7 @@ export function useGameLogic() {
     const pointsFieldsRef = useRef<PointsField[]>([]);
     const levelCompletionProcessedRef = useRef<boolean>(false);
     const levelClearedTimeRef = useRef<number | null>(null);
+    const lifeLostAnimationTimeRef = useRef<number | null>(null);
     const paddleVisualEffectActiveRef = useRef<boolean>(false);
     const paddleVisualEffectStartTimeRef = useRef<number | null>(null);
     const testPowerUpLevelsRef = useRef<Record<PowerUpType, number>>({ ...initialTestPowerUpLevels });
@@ -173,6 +174,8 @@ export function useGameLogic() {
     useEffect(() => {
         isAddBrickPaintModeActiveRef.current = isAddBrickPaintModeActive;
     }, [isAddBrickPaintModeActive]);
+
+    const totalGoldSpentOnPowerUpsRef = useRef<number>(0);
 
     // Load saved level names on mount
     useEffect(() => {
@@ -451,6 +454,7 @@ export function useGameLogic() {
         if (gameOverStateRef.current === 'menu' || mode === 'test' || loadedLevelData) { // Allow loading to override menu state
             scoreRef.current = 0;
             goldRef.current = 0;
+            totalGoldSpentOnPowerUpsRef.current = 0;
             livesRef.current = INITIAL_LIVES;
             bonusGoldTimerCountdownRef.current = null;
             initialBonusGoldDecrementCompleteRef.current = false;
@@ -571,13 +575,36 @@ export function useGameLogic() {
             if (loadedLevelData || mode === 'test') {
                 setGameOverState('menu'); // Ensure it's menu after setup for test/load
             }
+        } else if (gameOverState === 'life_lost_animation') {
+            livesRef.current--; // Decrement final life to 0
+            if (soundSystemRef.current && typeof soundSystemRef.current.playLifeLostSound === 'function') {
+                soundSystemRef.current.playLifeLostSound();
+            }
+            scoreRef.current = 0;
+            resetLevel(gameModeRef.current, false);
+            bonusGoldTimerCountdownRef.current = null;
+            initialBonusGoldDecrementCompleteRef.current = false;
+            pointsFieldsRef.current = [];
+            particlesRef.current = []; 
+            homingTrailsRef.current = []; 
+            levelCompletionProcessedRef.current = false;
+            paddleVisualEffectActiveRef.current = false;
+            paddleVisualEffectStartTimeRef.current = null;
+            setGameOverState('playing');
+        } else if (gameOverState !== 'playing') {
+            paddleShrinkCountdownRef.current = null;
+            bonusGoldTimerCountdownRef.current = null;
+            initialBonusGoldDecrementCompleteRef.current = false;
+            pointsFieldsRef.current = [];
+            particlesRef.current = []; 
+            homingTrailsRef.current = []; 
+            paddleVisualEffectActiveRef.current = false;
+            paddleVisualEffectStartTimeRef.current = null;
+            if (gameSpeedFactorRef.current !== BASE_BALL_SPEED_FACTOR) {
+                 gameSpeedFactorRef.current = BASE_BALL_SPEED_FACTOR;
+            }
         }
-    }, [
-        resetLevel, setupInitialBall, setActiveGameMode, setEnabledPowerUps, setShowSidebar, setGameOverState,
-        setTestPowerUpSpawnChanceWithReset, setTestBrickColumns, setTestBrickRows, setTestBrickGridHeight,
-        testBrickColumns, testBrickRows, testBrickGridHeight,
-        isPaintModeActiveRef, resetPaddle,
-    ]);
+    }, [gameOverState, activeGameMode, resetLevel, setGameOverState]);
 
     useEffect(() => {
         startGameCallbackRef.current = startGame;
@@ -610,6 +637,11 @@ export function useGameLogic() {
             paddleVisualEffectActiveRef.current = false;
             paddleVisualEffectStartTimeRef.current = null;
             setGameOverState('playing');
+        } else if (gameOverState === 'life_lost_animation') {
+            livesRef.current--; // Decrement final life to 0
+            if (soundSystemRef.current && typeof soundSystemRef.current.playLifeLostSound === 'function') {
+                soundSystemRef.current.playLifeLostSound();
+            }
         } else if (gameOverState !== 'playing') {
             paddleShrinkCountdownRef.current = null;
             bonusGoldTimerCountdownRef.current = null;
@@ -700,6 +732,7 @@ export function useGameLogic() {
 
         scoreRef.current = 0;
         goldRef.current = 0;
+        totalGoldSpentOnPowerUpsRef.current = 0;
         spawnablePowerUpsRef.current = new Set();
         currentLevelRef.current = 1;
         livesRef.current = INITIAL_LIVES;
@@ -998,6 +1031,7 @@ export function useGameLogic() {
         pointsFieldsRef,
         levelCompletionProcessedRef,
         levelClearedTimeRef,
+        lifeLostAnimationTimeRef,
         paddleVisualEffectActiveRef, 
         paddleVisualEffectStartTimeRef,
         laserIntervalRef, 
@@ -1015,6 +1049,7 @@ export function useGameLogic() {
         isAddBrickPaintModeActiveRef,
         triggerTestLevelReset,
         soundSystemRef,
+        totalGoldSpentOnPowerUpsRef
     }), [
         paddleXRef, prevPaddleXRef, resourceMeterRef, ballsRef, powerUpsRef, particlesRef, homingTrailsRef, paddleTargetsRef, scoreRef, goldRef, spawnablePowerUpsRef, 
         paddleWidthRef, widenLevelRef, laserShotsRef, lasersRef, safetyNetCountRef,
@@ -1040,6 +1075,7 @@ export function useGameLogic() {
         pointsFieldsRef,
         levelCompletionProcessedRef,
         levelClearedTimeRef,
+        lifeLostAnimationTimeRef,
         paddleVisualEffectActiveRef, 
         paddleVisualEffectStartTimeRef,
         laserIntervalRef,
@@ -1057,6 +1093,7 @@ export function useGameLogic() {
         isAddBrickPaintModeActiveRef,
         triggerTestLevelReset,
         soundSystemRef,
+        totalGoldSpentOnPowerUpsRef
     ]);
 
     const drawEndMessageCallback = useCallback((context: CanvasRenderingContext2D, state: GameState, finalScore: number) => {

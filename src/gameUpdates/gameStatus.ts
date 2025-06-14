@@ -38,8 +38,8 @@ export const checkGameStatus = (
             if (refs.livesRef.current > 1) {
                 nextState = 'level_reset';
             } else {
-                nextState = 'lost';
-                console.log("Game Over! Ran out of lives.");
+                nextState = 'life_lost_animation';
+                console.log("Final life lost, starting animation.");
             }
         }
     }

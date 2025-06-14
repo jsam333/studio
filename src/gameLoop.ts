@@ -277,6 +277,34 @@ export const gameUpdate = (
         return;
     }
 
+    if (currentGameState === 'life_lost_animation') {
+        const currentTime = Date.now();
+        if (refs.lifeLostAnimationTimeRef && !refs.lifeLostAnimationTimeRef.current) {
+            refs.lifeLostAnimationTimeRef.current = currentTime;
+        }
+
+        // Keep drawing the game state as it was
+        ctx.clearRect(0, 0, BOARD_WIDTH, BOARD_HEIGHT);
+        drawBricks(ctx, refs.bricksRef.current, refs.brickColumnsRef.current, refs.brickRowsRef.current, currentTime);
+        drawPaddle(ctx, refs.paddleXRef.current, refs.paddleWidthRef.current, refs.laserShotsRef.current, refs.stickyPaddleChargesRef.current, refs.collectionFieldHeightRef.current, refs.collectionFieldWidthOffsetRef.current);
+        drawPointsFields(ctx, refs.pointsFieldsRef.current);
+        drawGameInfo(ctx, refs.scoreRef.current, refs.targetScoreRef.current, refs.goldRef.current, refs.bonusGoldRef.current, gameMode === 'test', refs.livesRef.current, refs.bonusGoldTimerCountdownRef.current);
+        drawSafetyNet(ctx, refs.safetyNetCountRef.current);
+        drawBalls(ctx, refs.ballsRef.current, refs.stuckBallsRef.current, currentTime);
+        drawPowerUps(ctx, refs.powerUpsRef.current);
+        drawLasers(ctx, refs.lasersRef.current);
+        drawParticles(ctx, refs.particlesRef.current);
+        if (refs.homingTrailsRef?.current) {
+            drawHomingTrails(ctx, refs.homingTrailsRef.current, currentTime, HOMING_TRAIL_DURATION);
+        }
+
+        if (refs.lifeLostAnimationTimeRef && refs.lifeLostAnimationTimeRef.current && (currentTime - refs.lifeLostAnimationTimeRef.current >= 400)) {
+            refs.lifeLostAnimationTimeRef.current = null;
+            callbacks.setGameOverState('lost');
+        }
+        return;
+    }
+
     if (!isTestPreview && (currentGameState === 'won' || currentGameState === 'lost' || currentGameState === 'shop' || currentGameState === 'menu')) {
         ctx.clearRect(0, 0, BOARD_WIDTH, BOARD_HEIGHT);
         if (currentGameState === 'won' || currentGameState === 'lost') {
