@@ -147,30 +147,26 @@ export const damageBrick = (brick: Brick, spawnEvents: PowerUpSpawnEvent[], game
         brick.flashStartTime = currentTime; // Set flash start time
         // fadeOutAlpha will be handled by updateBrickAnimations
 
-        let marker: SpawnMarker = 'NONE';
+        // Handle ball spawning from ball bricks
         if (wasHoldingBall) {
-            marker = 'SPAWN_BALL'; 
-        } else if (brick.isSpecial) {
-            marker = 'SPAWN_SPECIAL';
-        } else { // Regular bricks can spawn PENDING powerups
+            spawnEvents.push({ marker: 'SPAWN_BALL', brickX: brick.x, brickY: brick.y, brickWidth: brick.width, brickHeight: brick.height });
+        }
+
+        // Handle power-up spawning
+        if (brick.isSpecial) {
+            spawnEvents.push({ marker: 'SPAWN_SPECIAL', brickX: brick.x, brickY: brick.y, brickWidth: brick.width, brickHeight: brick.height });
+        } else { // Regular and ball bricks can spawn PENDING powerups
             const gameMode = gameStateRefs.gameModeRef.current;
             if (gameMode === 'test') {
                 const chance = gameStateRefs.testPowerUpSpawnChanceRef.current;
                 const randomVal = Math.random();
-                console.log(`Test Mode Spawn Check: Chance=${chance}, Random=${randomVal.toFixed(3)}`);
                 if (randomVal < chance) {
-                    marker = 'PENDING';
-                    console.log('>>> Test Mode Power-up Will Spawn');
-                } else {
-                    console.log('>>> Test Mode Power-up Will NOT Spawn');
+                    spawnEvents.push({ marker: 'PENDING', brickX: brick.x, brickY: brick.y, brickWidth: brick.width, brickHeight: brick.height });
                 }
             } else { 
-                marker = 'PENDING'; 
+                // For main mode, always push a PENDING event. The actual chance is rolled in handleSpawnEvents.
+                spawnEvents.push({ marker: 'PENDING', brickX: brick.x, brickY: brick.y, brickWidth: brick.width, brickHeight: brick.height });
             }
-        }
-
-        if (marker !== 'NONE') { // Bombs don't spawn powerups directly from damageBrick
-            spawnEvents.push({ marker, brickX: brick.x, brickY: brick.y, brickWidth: brick.width, brickHeight: brick.height });
         }
     }
     return points;
@@ -191,6 +187,21 @@ export const updateBombGlowsAndTriggerExplosions = (bricks: Brick[][], columns: 
                 brick.isFlashing = true; // Start flashing animation
                 brick.flashStartTime = currentTime; // Set flash start time
                 totalPointsFromExplosions += BOMB_BRICK_POINTS; // Award points for this bomb
+
+                // Bomb bricks should have a chance to drop power-ups too
+                const gameMode = gameStateRefs.gameModeRef.current;
+                let marker: SpawnMarker = 'NONE';
+                if (gameMode === 'test') {
+                    const chance = gameStateRefs.testPowerUpSpawnChanceRef.current;
+                    if (Math.random() < chance) {
+                        marker = 'PENDING';
+                    }
+                } else {
+                    marker = 'PENDING';
+                }
+                if (marker === 'PENDING') {
+                    spawnEvents.push({ marker, brickX: brick.x, brickY: brick.y, brickWidth: brick.width, brickHeight: brick.height });
+                }
 
                 // Trigger explosion for its neighbors
                 totalPointsFromExplosions += handleBombExplosion(brick, c, r, bricks, columns, rows, spawnEvents, gameStateRefs, currentTime);
