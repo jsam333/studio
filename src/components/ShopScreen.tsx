@@ -9,7 +9,9 @@ import {
     POWER_UP_IMAGE_PATHS,
     BASE_SHOP_WIDTH,
     BASE_SHOP_HEIGHT,
-    POWER_UP_REROLL_COST
+    POWER_UP_REROLL_COST,
+    BOARD_WIDTH,
+    BOARD_HEIGHT
 } from '../constants';
 import { shuffleArray } from '../utils/helpers';
 import { calculateBaseSpawnChance } from '../gameUpdates/gameLoopUtils';
@@ -25,7 +27,7 @@ import {
     saveHighestLevel,
     getHighestLevel
 } from '../utils/localStorage';
-import BrickPreview from './BrickPreview';
+import LevelPreview from './LevelPreview';
 import { getBrickConfiguration, getLevelStats } from '../hooks/useLevelLogic';
 import { initializeBricks } from '../gameLogic';
 
@@ -96,7 +98,6 @@ export const ShopScreen: React.FC<ShopScreenProps> = ({
   const [currentSpawnChance, setCurrentSpawnChance] = useState(0);
   const [displaySpawnablePowerUps, setDisplaySpawnablePowerUps] = useState<PowerUpType[]>([]);
   const [knownPowerUps, setKnownPowerUps] = useState<string[]>([]);
-  const [nextLevelBricksPreview, setNextLevelBricksPreview] = useState<Brick[][] | null>(null);
   const [nextLevelInfo, setNextLevelInfo] = useState<NextLevelInfo | null>(null);
   const [nextLevelBeatTime, setNextLevelBeatTime] = useState<number | null>(null);
   const [highestLevelReachedByPlayer, setHighestLevelReachedByPlayer] = useState<number>(0);
@@ -140,13 +141,6 @@ export const ShopScreen: React.FC<ShopScreenProps> = ({
     const gameMode = gameStateRefs.gameModeRef.current;
 
     if (highestLevelReachedByPlayer >= nextLevelVal) {
-      const config = getBrickConfiguration(nextLevelVal, gameMode);
-      if (config) {
-        const bricks = initializeBricks(config.brickColumns, config.brickRows, config.brickHeight, nextLevelVal, gameMode);
-        setNextLevelBricksPreview(bricks);
-      } else {
-        setNextLevelBricksPreview(null);
-      }
       const stats = getLevelStats(nextLevelVal, gameMode);
       setNextLevelInfo(stats);
 
@@ -162,7 +156,6 @@ export const ShopScreen: React.FC<ShopScreenProps> = ({
       setNextLevelBeatTime(totalTimeToBeat);
 
     } else {
-      setNextLevelBricksPreview(null);
       setNextLevelInfo(null);
       setNextLevelBeatTime(null);
     }
@@ -232,7 +225,7 @@ export const ShopScreen: React.FC<ShopScreenProps> = ({
     startNextLevel();
   };
 
-  const canPreviewNextLevel = highestLevelReachedByPlayer >= (currentLevel + 1);
+  const canPreviewNextLevel = true;
 
   // Scaled values helper
   const scaled = {
@@ -383,7 +376,6 @@ export const ShopScreen: React.FC<ShopScreenProps> = ({
                     className="grid grid-cols-5 mx-auto" 
                     style={{
                         gap: scaled.gap(12),
-                        marginBottom: scaled.mb(32),
                         width: '100%',
                         maxWidth: scaled.w(750),
                         minWidth: scaled.w(624),
@@ -546,8 +538,8 @@ export const ShopScreen: React.FC<ShopScreenProps> = ({
                     paddingRight: scaled.px(16),
                     paddingTop: scaled.py(8),
                     paddingBottom: scaled.py(8),
-                    height: scaled.h(120),
-                    minHeight: scaled.h(100)
+                    height: scaled.h(155),
+                    minHeight: scaled.h(145)
                 }}
             >
                 <div className="flex flex-col" style={{gap: scaled.gap(8)}}>
@@ -596,12 +588,12 @@ export const ShopScreen: React.FC<ShopScreenProps> = ({
                     </div>
                 )}
 
-                {canPreviewNextLevel && nextLevelBricksPreview && (
+                {canPreviewNextLevel && (
                     <div style={{ flexShrink: 0 }}> 
-                        <BrickPreview
-                            bricks={nextLevelBricksPreview}
-                            previewWidth={scaled.w(293)} 
-                            previewHeight={scaled.h(50)}
+                        <LevelPreview
+                            level={currentLevel + 1}
+                            previewWidth={scaled.w(220)}
+                            previewHeight={scaled.w(220) * (BOARD_HEIGHT / BOARD_WIDTH)}
                         />
                     </div>
                 )}
