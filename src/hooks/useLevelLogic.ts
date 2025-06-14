@@ -189,7 +189,7 @@ export function useLevelLogic({
 
         const currentLevel = currentLevelRef.current;
         const baseDelay = 5000;
-        const incrementPerLevel = 800;
+        const incrementPerLevel = 900;
         let startDelay = baseDelay + (currentLevel - 1) * incrementPerLevel;
 
         const maxDelayForLevel20 = baseDelay + (20 - 1) * incrementPerLevel;
