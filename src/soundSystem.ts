@@ -145,6 +145,10 @@ export class SoundSystem {
         this.playSound('ballLostFall', 0.6, 150, 0.3, 'square', 75);
     }
 
+    playLifeLostSound() {
+        this.playSound('lifeLost', 0.7, 160, 0.2, 'sawtooth', 80);
+    }
+
     playLaserImpactSound() {
         this.playSound('laserImpact', 0.4, 600, 0.08, 'sawtooth', 300);
     }

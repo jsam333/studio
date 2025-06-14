@@ -596,6 +596,9 @@ export function useGameLogic() {
 
         if (gameOverState === 'level_reset') {
             livesRef.current--;
+            if (soundSystemRef.current && typeof soundSystemRef.current.playLifeLostSound === 'function') {
+                soundSystemRef.current.playLifeLostSound();
+            }
             scoreRef.current = 0;
             resetLevel(gameModeRef.current, false);
             bonusGoldTimerCountdownRef.current = null;
