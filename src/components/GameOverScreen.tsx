@@ -1,8 +1,8 @@
-import React from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Button } from './ui/button';
 import { PowerUpType } from '../interfaces';
 import { getBasePowerUpType, getPowerUpLevelFromString } from '../utils/powerUpHelpers';
-import { POWER_UP_IMAGE_PATHS, GOLD_COLOR } from '../constants';
+import { POWER_UP_IMAGE_PATHS, GOLD_COLOR, BASE_SHOP_WIDTH, BASE_SHOP_HEIGHT } from '../constants';
 import { ScrollArea } from './ui/scroll-area';
 import {
     Tooltip,
@@ -10,81 +10,113 @@ import {
     TooltipProvider,
     TooltipTrigger,
 } from './ui/tooltip';
+import { OwnedPowerUpsDisplay } from './OwnedPowerUpsDisplay';
 
 interface GameOverScreenProps {
     won: boolean;
-    finalScore: number;
-    totalGoldSpent: number;
+    totalGoldCollected: number;
     spawnablePowerUps: Set<PowerUpType>;
     onRestart: () => void;
     onMenu: () => void;
+    currentLevel: number;
 }
 
 export const GameOverScreen: React.FC<GameOverScreenProps> = ({
     won,
-    finalScore,
-    totalGoldSpent,
+    totalGoldCollected,
     spawnablePowerUps,
     onRestart,
-    onMenu
+    onMenu,
+    currentLevel
 }) => {
     const powerUpsArray = Array.from(spawnablePowerUps);
+    const [scaleFactor, setScaleFactor] = useState(1);
+
+    const updateScaleFactor = useCallback(() => {
+        const currentWidth = window.innerWidth;
+        const currentHeight = window.innerHeight;
+        const scaleX = currentWidth / BASE_SHOP_WIDTH;
+        const scaleY = currentHeight / BASE_SHOP_HEIGHT;
+        setScaleFactor(Math.min(scaleX, scaleY));
+    }, []);
+
+    useEffect(() => {
+        updateScaleFactor();
+        window.addEventListener('resize', updateScaleFactor);
+        return () => window.removeEventListener('resize', updateScaleFactor);
+    }, [updateScaleFactor]);
+
+    const scaled = {
+        fontSize: (base: number) => Math.max(8, base * scaleFactor),
+        px: (base: number) => base * scaleFactor,
+        py: (base: number) => base * scaleFactor,
+        p: (base: number) => base * scaleFactor,
+        gap: (base: number) => base * scaleFactor,
+        h: (base: number) => base * scaleFactor,
+        w: (base: number) => base * scaleFactor,
+        my: (base: number) => base * scaleFactor,
+        mb: (base: number) => base * scaleFactor,
+        mx: (base: number) => base * scaleFactor,
+        iconSize: (base: number) => base * scaleFactor,
+        iconSizeMd: 32 * scaleFactor,
+    };
 
     return (
         <TooltipProvider>
-            <div className="absolute top-0 left-0 w-full h-full flex items-center justify-center bg-black bg-opacity-80">
-                <div className="bg-gray-800 text-white border-2 border-gray-500 rounded-lg shadow-xl w-[450px] max-w-[90%] max-h-[90%] p-6 flex flex-col">
-                    <h1 className="text-4xl font-bold text-center mb-4">{won ? 'You Won!' : 'Game Over'}</h1>
-                    
-                    <div className="text-center text-xl mb-2">Final Score: {finalScore}</div>
-                    <div className="text-center text-lg mb-4" style={{ color: GOLD_COLOR }}>
-                        Gold Value of Powerups: {totalGoldSpent}
-                    </div>
+            <div 
+                className="absolute top-0 left-0 w-full h-full flex flex-col items-center justify-start bg-gray-800 text-white"
+                style={{ padding: `0 0 ${scaled.p(24)}px` }}
+            >
+                <OwnedPowerUpsDisplay spawnablePowerUps={spawnablePowerUps} scaled={scaled} />
 
-                    <div className="text-lg text-center font-semibold mb-2">Powerups Acquired:</div>
-                    <ScrollArea className="flex-grow bg-black bg-opacity-25 rounded-md p-2 mb-4 min-h-[100px]">
-                        {powerUpsArray.length > 0 ? (
-                            <div className="grid grid-cols-5 gap-2">
-                                {powerUpsArray.map(powerUp => {
-                                    const baseType = getBasePowerUpType(powerUp);
-                                    const level = getPowerUpLevelFromString(powerUp);
-                                    const imagePath = POWER_UP_IMAGE_PATHS[baseType];
-                                    const displayName = powerUp.replace(/_/g, ' ');
+                <h1 
+                    className="font-bold text-center"
+                    style={{
+                        fontSize: scaled.fontSize(30),
+                        marginTop: scaled.my(20),
+                        marginBottom: scaled.mb(10)
+                    }}
+                >
+                    {won ? 'You Won!' : `Lost to Level ${currentLevel}`}
+                </h1>
+                
+                <div 
+                    className="text-center" 
+                    style={{ 
+                        color: GOLD_COLOR,
+                        fontSize: scaled.fontSize(20),
+                        marginBottom: scaled.mb(24)
+                    }}
+                >
+                    Total Gold Collected: {totalGoldCollected}
+                </div>
 
-                                    return (
-                                        <Tooltip key={powerUp}>
-                                            <TooltipTrigger asChild>
-                                                <div className="bg-gray-700 p-2 rounded flex flex-col items-center justify-center aspect-square">
-                                                    {imagePath ? (
-                                                        <img src={imagePath} alt={displayName} className="w-8 h-8 object-contain" />
-                                                    ) : (
-                                                        <div className="w-8 h-8 rounded bg-gray-500 flex items-center justify-center text-xs font-bold">?</div>
-                                                    )}
-                                                    {level > 1 && (
-                                                        <span className="text-xs font-bold mt-1">L{level}</span>
-                                                    )}
-                                                </div>
-                                            </TooltipTrigger>
-                                            <TooltipContent>
-                                                <p>{displayName}</p>
-                                            </TooltipContent>
-                                        </Tooltip>
-                                    );
-                                })}
-                            </div>
-                        ) : (
-                            <div className="text-center text-gray-400 italic flex items-center justify-center h-full">No power-ups acquired.</div>
-                        )}
-                    </ScrollArea>
-
-                    <div className="flex justify-around mt-auto">
-                        <Button onClick={onRestart} className="bg-blue-600 hover:bg-blue-500 text-white font-bold py-2 px-6 rounded text-lg">
-                            Play Again
-                        </Button>
-                        <Button onClick={onMenu} className="bg-gray-600 hover:bg-gray-500 text-white font-bold py-2 px-6 rounded text-lg">
-                            Main Menu
-                        </Button>
-                    </div>
+                <div 
+                    className="flex justify-around mt-auto w-full"
+                    style={{ maxWidth: scaled.w(448) }}
+                >
+                    <Button 
+                        onClick={onRestart} 
+                        className="bg-gray-800 hover:bg-gray-700 text-white border border-white transition-all hover:border-purple-400 hover:text-purple-300"
+                        style={{
+                            padding: `${scaled.py(12)}px ${scaled.px(32)}px`,
+                            borderRadius: scaled.px(8),
+                            fontSize: scaled.fontSize(20)
+                        }}
+                    >
+                        Play Again
+                    </Button>
+                    <Button 
+                        onClick={onMenu} 
+                        className="bg-gray-800 hover:bg-gray-700 text-white border border-white transition-all hover:border-yellow-400 hover:text-yellow-300"
+                        style={{
+                            padding: `${scaled.py(12)}px ${scaled.px(32)}px`,
+                            borderRadius: scaled.px(8),
+                            fontSize: scaled.fontSize(20)
+                        }}
+                    >
+                        Main Menu
+                    </Button>
                 </div>
             </div>
         </TooltipProvider>

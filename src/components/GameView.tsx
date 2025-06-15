@@ -140,11 +140,11 @@ export const GameView: React.FC<GameViewProps> = ({
         {(gameOverState === 'won' || gameOverState === 'lost') && !isTestPreview && (
             <GameOverScreen 
                 won={gameOverState === 'won'}
-                finalScore={gameStateRefs.scoreRef.current}
-                totalGoldSpent={gameStateRefs.totalGoldSpentOnPowerUpsRef.current}
+                totalGoldCollected={gameStateRefs.totalGoldSpentOnPowerUpsRef.current + gameStateRefs.goldRef.current}
                 spawnablePowerUps={gameStateRefs.spawnablePowerUpsRef.current}
                 onRestart={() => startGame('main')}
                 onMenu={handleResetGame}
+                currentLevel={currentLevel}
             />
         )}
       </div>
