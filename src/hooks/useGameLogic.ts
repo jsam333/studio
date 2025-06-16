@@ -451,7 +451,7 @@ export function useGameLogic() {
         loadedLevelData?: SavedLevelData // Added for loading levels
     ) => {
         setDeleteConfirmationPendingFor(null);
-        if (gameOverStateRef.current === 'menu' || mode === 'test' || loadedLevelData) { // Allow loading to override menu state
+        if (['menu', 'lost', 'won'].includes(gameOverStateRef.current) || mode === 'test' || loadedLevelData) {
             scoreRef.current = 0;
             goldRef.current = 0;
             totalGoldSpentOnPowerUpsRef.current = 0;

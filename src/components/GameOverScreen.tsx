@@ -65,7 +65,7 @@ export const GameOverScreen: React.FC<GameOverScreenProps> = ({
         <TooltipProvider>
             <div 
                 className="absolute top-0 left-0 w-full h-full flex flex-col items-center justify-start bg-gray-800 text-white"
-                style={{ padding: `0 0 ${scaled.p(24)}px` }}
+                style={{ padding: `0 0 ${scaled.p(12)}px` }}
             >
                 <OwnedPowerUpsDisplay spawnablePowerUps={spawnablePowerUps} scaled={scaled} />
 
@@ -97,9 +97,9 @@ export const GameOverScreen: React.FC<GameOverScreenProps> = ({
                 >
                     <Button 
                         onClick={onRestart} 
-                        className="bg-gray-800 hover:bg-gray-700 text-white border border-white transition-all hover:border-purple-400 hover:text-purple-300"
+                        className="bg-gray-800 hover:bg-gray-700 text-white border border-white hover:border-purple-400 hover:text-purple-300"
                         style={{
-                            padding: `${scaled.py(12)}px ${scaled.px(32)}px`,
+                            padding: `${scaled.py(15)}px ${scaled.px(32)}px`,
                             borderRadius: scaled.px(8),
                             fontSize: scaled.fontSize(20)
                         }}
@@ -108,9 +108,9 @@ export const GameOverScreen: React.FC<GameOverScreenProps> = ({
                     </Button>
                     <Button 
                         onClick={onMenu} 
-                        className="bg-gray-800 hover:bg-gray-700 text-white border border-white transition-all hover:border-yellow-400 hover:text-yellow-300"
+                        className="bg-gray-800 hover:bg-gray-700 text-white border border-white hover:border-yellow-400 hover:text-yellow-300"
                         style={{
-                            padding: `${scaled.py(12)}px ${scaled.px(32)}px`,
+                            padding: `${scaled.py(15)}px ${scaled.px(32)}px`,
                             borderRadius: scaled.px(8),
                             fontSize: scaled.fontSize(20)
                         }}

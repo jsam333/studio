@@ -237,7 +237,8 @@ export const ShopScreen: React.FC<ShopScreenProps> = ({
                     className="font-bold text-center"
                     style={{
                         fontSize: scaled.fontSize(30),
-                        marginBottom: scaled.my(10)
+                        marginTop: scaled.my(4),
+                        marginBottom: scaled.my(4)
                     }}
                 >
                     Buy Something!</h1>
@@ -246,7 +247,7 @@ export const ShopScreen: React.FC<ShopScreenProps> = ({
                     className="flex flex-row items-center justify-center"
                     style={{
                         gap: scaled.gap(12),
-                        marginBottom: scaled.mb(12)
+                        marginBottom: scaled.mb(6)
                     }}
                 >
                     <p
@@ -260,7 +261,7 @@ export const ShopScreen: React.FC<ShopScreenProps> = ({
                     <Button
                         onClick={handleReroll}
                         disabled={goldDisplay < POWER_UP_REROLL_COST}
-                        className="text-white bg-blue-600 hover:bg-blue-500 border border-white disabled:opacity-50"
+                        className="text-white bg-gray-800 hover:bg-gray-700 border border-white disabled:opacity-50"
                         style={{
                             fontSize: scaled.fontSize(14),
                             padding: `${scaled.py(4)}px ${scaled.px(8)}px`,
@@ -268,7 +269,7 @@ export const ShopScreen: React.FC<ShopScreenProps> = ({
                             minHeight: scaled.h(36)
                         }}
                     >
-                        Reroll ({POWER_UP_REROLL_COST} Gold)
+                        Reroll Powerups ({POWER_UP_REROLL_COST} Gold)
                     </Button>
                     <p
                         className="text-blue-300"
