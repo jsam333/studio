@@ -218,7 +218,7 @@ export const ShopScreen: React.FC<ShopScreenProps> = ({
     mb: (base: number) => base * scaleFactor,
     mx: (base: number) => base * scaleFactor,
     iconSizeMd: 32 * scaleFactor,
-    buttonHeightMd: 125 * scaleFactor, // For shop item buttons
+    buttonHeightMd: 100 * scaleFactor, // For shop item buttons
     footerButtonHeight: 48 * scaleFactor, // For Start Level / Back to Menu buttons
     imageSizeMd: 40 * scaleFactor,
   };
@@ -284,7 +284,7 @@ export const ShopScreen: React.FC<ShopScreenProps> = ({
                 <div
                     className="grid grid-cols-5 mx-auto" 
                     style={{
-                        gap: scaled.gap(12),
+                        gap: scaled.gap(3),
                         width: '100%',
                         maxWidth: scaled.w(750),
                         minWidth: scaled.w(624),
@@ -372,8 +372,8 @@ export const ShopScreen: React.FC<ShopScreenProps> = ({
                                         disabled={isDisabled}
                                         className={`text-white flex flex-col justify-center items-center ${buttonBgColor} rounded-none border-b border-gray-600`}
                                         style={{
-                                            paddingTop: scaled.py(8),
-                                            paddingBottom: scaled.py(8),
+                                            paddingTop: scaled.py(4),
+                                            paddingBottom: scaled.py(4),
                                             paddingLeft: scaled.px(4),
                                             paddingRight: scaled.px(4),
                                             fontSize: scaled.fontSize(12),

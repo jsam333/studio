@@ -224,7 +224,7 @@ export const gameUpdate = (
             refs.levelClearedTimeRef.current = currentTime;
             refs.soundSystemRef.current?.playLevelClearedSound();
 
-            // Text particle effect
+            // Text particle effect for "Level Cleared!" text
             const text = "Level Cleared!";
             ctx.save();
             ctx.font = "bold 30px Arial";
@@ -236,48 +236,25 @@ export const gameUpdate = (
             const leftX = centerX - textWidth / 2;
             const rightX = centerX + textWidth / 2;
 
-            // Left, center, and right bursts
+            // Left, center, and right bursts for the text
             createRainbowParticleExplosion(refs.particlesRef.current, leftX, centerY, 0, 0);
             createRainbowParticleExplosion(refs.particlesRef.current, centerX, centerY, 0, 0);
             createRainbowParticleExplosion(refs.particlesRef.current, rightX, centerY, 0, 0);
             ctx.restore();
 
+            // Burst all remaining bricks at once
             const bricks = refs.bricksRef.current;
-            const bricksToClear: { brick: Brick, order: number }[] = [];
-            let order = 0;
             const rows = refs.brickRowsRef.current;
             const columns = refs.brickColumnsRef.current;
 
-            for (let r = 0; r < rows; r++) {
-                for (let c = columns - 1; c >= 0; c--) {
+            for (let c = 0; c < columns; c++) {
+                if (!bricks[c]) continue;
+                for (let r = 0; r < rows; r++) {
                     const brick = bricks[c]?.[r];
                     if (brick && (brick.status === 1 || brick.status === 2)) {
-                        bricksToClear.push({ brick, order });
-                        order++;
+                        createRainbowParticleExplosion(refs.particlesRef.current, brick.x, brick.y, brick.width, brick.height);
+                        brick.status = 0; // Erase the brick immediately
                     }
-                }
-            }
-            
-            const totalAnimationDuration = 350; // Use 350ms to be safe within the 400ms window
-            bricksToClear.forEach(item => {
-                const delay = bricksToClear.length > 0 ? (item.order / bricksToClear.length) * totalAnimationDuration : 0;
-                item.brick.disappearTime = (refs.levelClearedTimeRef.current ?? currentTime) + delay;
-                item.brick.status = 1; // Ensure brick is drawable
-            });
-        }
-
-        // This part runs every frame during the animation
-        const bricks = refs.bricksRef.current;
-        const columns = refs.brickColumnsRef.current;
-        const rows = refs.brickRowsRef.current;
-        for (let c = 0; c < columns; c++) {
-            if (!bricks[c]) continue;
-            for (let r = 0; r < rows; r++) {
-                const brick = bricks[c][r];
-                if (brick && brick.disappearTime && currentTime >= brick.disappearTime) {
-                    createRainbowParticleExplosion(refs.particlesRef.current, brick.x, brick.y, brick.width, brick.height);
-                    brick.status = 0; // Erase the brick
-                    delete brick.disappearTime; // Process only once
                 }
             }
         }
@@ -289,6 +266,7 @@ export const gameUpdate = (
 
         ctx.clearRect(0, 0, BOARD_WIDTH, BOARD_HEIGHT);
         
+        // Draw the game state. Bricks are status 0, so they won't be drawn.
         drawBricks(ctx, refs.bricksRef.current, refs.brickColumnsRef.current, refs.brickRowsRef.current, currentTime);
         drawPaddle(ctx, refs.paddleXRef.current, refs.paddleWidthRef.current, refs.laserShotsRef.current, refs.stickyPaddleChargesRef.current, refs.collectionFieldHeightRef.current, refs.collectionFieldWidthOffsetRef.current);
         drawPointsFields(ctx, refs.pointsFieldsRef.current);
@@ -304,7 +282,8 @@ export const gameUpdate = (
         
         drawLevelClearedMessage(ctx, elapsedTimeForMessage, refs.levelGoldEarnedRef.current);
 
-        if (currentTime - (refs.levelClearedTimeRef.current || 0) >= 400) {
+        // Reverted duration back to original value
+        if (currentTime - (refs.levelClearedTimeRef.current || 0) >= 400) { 
             refs.levelClearedTimeRef.current = null;
             callbacks.setGameOverState('shop');
         }
