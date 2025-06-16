@@ -123,6 +123,58 @@ export const drawBricks = (ctx: CanvasRenderingContext2D, bricks: Brick[][], col
                 } else { // Active (status 1) or other non-handled status
                     ctx.fillStyle = finalFillStyle; 
                     ctx.fill();
+                    
+                    // ADDED: Draw shine animation on top
+                    if (brick.isShining && brick.shineStartTime) {
+                        const SHINE_DURATION = 800; // ms, increased from 500
+                        const shineProgress = (currentTime - brick.shineStartTime) / SHINE_DURATION;
+                    
+                        if (shineProgress >= 0 && shineProgress <= 1) {
+                            // To make the shine appear more horizontal, we make the gradient more vertical
+                            // by extending its y-axis, which changes the angle of the perpendicular shine.
+                            const gradient = ctx.createLinearGradient(
+                                brick.x,
+                                brick.y + brick.height * 1.5, // y-start (extended downwards)
+                                brick.x + brick.width,
+                                brick.y - brick.height * 0.5  // y-end (extended upwards)
+                            );
+                    
+                            const shineWidth = 0.3; // Half the width of the shine falloff
+                    
+                            // Remap progress to a range that starts and ends outside the brick [0,1] range
+                            // so the full shine effect is visible as it enters and exits.
+                            const totalMovementRange = 1 + shineWidth * 2;
+                            const shinePosition = -shineWidth + (shineProgress * totalMovementRange);
+
+                            const start = shinePosition - shineWidth;
+                            const end = shinePosition + shineWidth;
+                            
+                            const shineColor = 'rgba(255, 255, 255, 0.3)';
+                            const transparentColor = 'rgba(255, 255, 255, 0)';
+                    
+                            // This logic ensures the shine band is correctly drawn even when it's partially off the brick.
+                            const visibleStart = Math.max(0, start);
+                            const visibleEnd = Math.min(1, end);
+
+                            if (visibleStart < visibleEnd) {
+                                const peakPosition = Math.max(visibleStart, Math.min(visibleEnd, shinePosition));
+
+                                // Add start stop
+                                gradient.addColorStop(visibleStart, transparentColor);
+
+                                // Add peak stop
+                                gradient.addColorStop(peakPosition, shineColor);
+
+                                // Add end stop, but only if it's different from the peak
+                                if (visibleEnd > peakPosition) {
+                                    gradient.addColorStop(visibleEnd, transparentColor);
+                                }
+                            }
+                            
+                            ctx.fillStyle = gradient;
+                            ctx.fill(); // Fills the same brick path again with the shine gradient
+                        }
+                    }
                 }
                 
                 // For status 1 and status 2 (during flash/fade), we might have already closed the path for the main rect.

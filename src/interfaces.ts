@@ -24,6 +24,8 @@ export interface Brick {
   isBombGlowActive?: boolean;
   bombGlowStartTime?: number;
   disappearTime?: number;
+  isShining?: boolean;
+  shineStartTime?: number;
 }
 
 export interface Particle {
@@ -234,6 +236,7 @@ export interface GameStateRefsBase {
     isRemoveBrickPaintModeActiveRef?: React.MutableRefObject<boolean>;
     isAddBrickPaintModeActiveRef?: React.MutableRefObject<boolean>;
     totalGoldSpentOnPowerUpsRef: React.MutableRefObject<number>;
+    levelGoldEarnedRef: React.MutableRefObject<number>;
 }
 
 export interface GameStateRefs extends GameStateRefsBase {

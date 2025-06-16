@@ -108,7 +108,24 @@ const checkPointsFieldCollisions = (
     });
 };
 
-const updateBrickStateAndAnimations = (bricks: Brick[][], columns: number, rows: number, currentTime: number, scaledDeltaTime: number) => {
+const updateBrickStateAndAnimations = (bricks: Brick[][], columns: number, rows: number, currentTime: number, scaledDeltaTime: number, activeBrickCount: number) => {
+    // Define the range for shine chance based on the number of active bricks.
+    const MIN_CHANCE = 0.00005; // Chance for a full grid of bricks.
+    const MAX_CHANCE = 0.0005;  // Chance for just one brick.
+    const MAX_BRICKS_FOR_SCALING = columns * rows;
+
+    // Calculate the dynamic chance using linear interpolation.
+    let shineChancePerFrame;
+    if (activeBrickCount <= 1) {
+        shineChancePerFrame = MAX_CHANCE;
+    } else if (activeBrickCount >= MAX_BRICKS_FOR_SCALING) {
+        shineChancePerFrame = MIN_CHANCE;
+    } else {
+        // Inverse linear interpolation: chance decreases as brick count increases.
+        const t = (activeBrickCount - 1) / (MAX_BRICKS_FOR_SCALING - 1);
+        shineChancePerFrame = MAX_CHANCE - t * (MAX_CHANCE - MIN_CHANCE);
+    }
+    
     for (let c = 0; c < columns; c++) {
         if (!bricks[c]) continue;
         for (let r = 0; r < rows; r++) {
@@ -152,6 +169,23 @@ const updateBrickStateAndAnimations = (bricks: Brick[][], columns: number, rows:
                     if (currentTime - brick.specialFlashStartTime >= BRICK_SPECIAL_FLASH_DURATION_MS) {
                         brick.isSpecialFlashActive = false;
                         delete brick.specialFlashStartTime;
+                    }
+                }
+
+                // Randomly trigger shine effect using the dynamic chance.
+                if (brick.status === 1 && !brick.isShining && !brick.isFlashing && !brick.isRegenVisualEffectActive && !brick.isDarkFlashActive && !brick.isSpecialFlashActive && !brick.isBombGlowActive) {
+                    if (Math.random() < shineChancePerFrame) {
+                        brick.isShining = true;
+                        brick.shineStartTime = currentTime;
+                    }
+                }
+
+                // Reset shine effect after it's done
+                if (brick.isShining && brick.shineStartTime) {
+                    const SHINE_DURATION = 800; // ms, increased from 500
+                    if (currentTime - brick.shineStartTime > SHINE_DURATION) {
+                        brick.isShining = false;
+                        delete brick.shineStartTime;
                     }
                 }
             }
@@ -268,7 +302,7 @@ export const gameUpdate = (
             drawHomingTrails(ctx, refs.homingTrailsRef.current, currentTime, HOMING_TRAIL_DURATION);
         }
         
-        drawLevelClearedMessage(ctx, elapsedTimeForMessage);
+        drawLevelClearedMessage(ctx, elapsedTimeForMessage, refs.levelGoldEarnedRef.current);
 
         if (currentTime - (refs.levelClearedTimeRef.current || 0) >= 400) {
             refs.levelClearedTimeRef.current = null;
@@ -332,10 +366,23 @@ export const gameUpdate = (
     const columns = refs.brickColumnsRef.current;
     const rows = refs.brickRowsRef.current;
 
+    // Count active bricks to adjust shine effect frequency.
+    let activeBrickCount = 0;
+    const bricks = refs.bricksRef.current;
+    for (let c = 0; c < columns; c++) {
+        if (!bricks[c]) continue;
+        for (let r = 0; r < rows; r++) {
+            const brick = bricks[c][r];
+            if (brick && brick.status === 1) {
+                activeBrickCount++;
+            }
+        }
+    }
+
     updateBallGlowEffects(refs.ballsRef.current, currentTime);
     updateBallGlowEffects(refs.stuckBallsRef.current, currentTime); 
 
-    updateBrickStateAndAnimations(refs.bricksRef.current, columns, rows, currentTime, scaledDeltaTime); 
+    updateBrickStateAndAnimations(refs.bricksRef.current, columns, rows, currentTime, scaledDeltaTime, activeBrickCount); 
     updateParticles(refs, currentTime, elapsedTime); 
     
     if (refs.paddleShrinkCountdownRef?.current !== null) {

@@ -59,6 +59,7 @@ export const GameOverScreen: React.FC<GameOverScreenProps> = ({
         mx: (base: number) => base * scaleFactor,
         iconSize: (base: number) => base * scaleFactor,
         iconSizeMd: 32 * scaleFactor,
+        footerButtonHeight: 48 * scaleFactor,
     };
 
     return (
@@ -99,9 +100,11 @@ export const GameOverScreen: React.FC<GameOverScreenProps> = ({
                         onClick={onRestart} 
                         className="bg-gray-800 hover:bg-gray-700 text-white border border-white hover:border-purple-400 hover:text-purple-300"
                         style={{
-                            padding: `${scaled.py(15)}px ${scaled.px(32)}px`,
-                            borderRadius: scaled.px(8),
-                            fontSize: scaled.fontSize(20)
+                            paddingLeft: scaled.px(24),
+                            paddingRight: scaled.px(24),
+                            height: scaled.footerButtonHeight,
+                            minHeight: scaled.h(36),
+                            fontSize: scaled.fontSize(18)
                         }}
                     >
                         Play Again
@@ -110,12 +113,14 @@ export const GameOverScreen: React.FC<GameOverScreenProps> = ({
                         onClick={onMenu} 
                         className="bg-gray-800 hover:bg-gray-700 text-white border border-white hover:border-yellow-400 hover:text-yellow-300"
                         style={{
-                            padding: `${scaled.py(15)}px ${scaled.px(32)}px`,
-                            borderRadius: scaled.px(8),
-                            fontSize: scaled.fontSize(20)
+                            paddingLeft: scaled.px(24),
+                            paddingRight: scaled.px(24),
+                            height: scaled.footerButtonHeight,
+                            minHeight: scaled.h(36),
+                            fontSize: scaled.fontSize(18)
                         }}
                     >
-                        Main Menu
+                        Back to Menu
                     </Button>
                 </div>
             </div>

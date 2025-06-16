@@ -176,6 +176,7 @@ export function useGameLogic() {
     }, [isAddBrickPaintModeActive]);
 
     const totalGoldSpentOnPowerUpsRef = useRef<number>(0);
+    const levelGoldEarnedRef = useRef<number>(0);
 
     // Load saved level names on mount
     useEffect(() => {
@@ -1049,7 +1050,8 @@ export function useGameLogic() {
         isAddBrickPaintModeActiveRef,
         triggerTestLevelReset,
         soundSystemRef,
-        totalGoldSpentOnPowerUpsRef
+        totalGoldSpentOnPowerUpsRef,
+        levelGoldEarnedRef,
     }), [
         paddleXRef, prevPaddleXRef, resourceMeterRef, ballsRef, powerUpsRef, particlesRef, homingTrailsRef, paddleTargetsRef, scoreRef, goldRef, spawnablePowerUpsRef, 
         paddleWidthRef, widenLevelRef, laserShotsRef, lasersRef, safetyNetCountRef,
@@ -1093,7 +1095,8 @@ export function useGameLogic() {
         isAddBrickPaintModeActiveRef,
         triggerTestLevelReset,
         soundSystemRef,
-        totalGoldSpentOnPowerUpsRef
+        totalGoldSpentOnPowerUpsRef,
+        levelGoldEarnedRef,
     ]);
 
     const drawEndMessageCallback = useCallback((context: CanvasRenderingContext2D, state: GameState, finalScore: number) => {
