@@ -1,3 +1,14 @@
+import { SavedLevelData } from '../interfaces';
+
+export interface GameSessionData {
+  level: number;
+  gold: number;
+  spawnablePowerUps: string[];
+  shopItems: string[];
+  lives: number;
+  totalGoldSpentOnPowerUps: number;
+}
+
 export const saveData = <T>(key: string, data: T): void => {
   try {
     const jsonData = JSON.stringify(data);
@@ -88,4 +99,18 @@ export const deleteLevelData = (levelName: string): void => {
   const updatedNames = names.filter(name => name !== levelName);
   saveData(KEY_SAVED_LEVEL_NAMES, updatedNames);
   removeData(`${LEVEL_DATA_PREFIX}${levelName}`);
+};
+
+const KEY_GAME_SESSION = 'brickBlastGameSession';
+
+export const saveGameSession = (data: GameSessionData): void => {
+  saveData(KEY_GAME_SESSION, data);
+};
+
+export const loadGameSession = (): GameSessionData | null => {
+  return loadData<GameSessionData>(KEY_GAME_SESSION);
+};
+
+export const removeGameSession = (): void => {
+  removeData(KEY_GAME_SESSION);
 };

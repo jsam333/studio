@@ -87,6 +87,9 @@ export default function Home() {
         handleLoadSelectedLevel,
         handleDeleteSelectedLevel,
         deleteConfirmationPendingFor,
+        savedSession,
+        continueGame,
+        initialShopItemsForLoad,
     } = useGameLogic();
 
     useEffect(() => {
@@ -179,7 +182,7 @@ export default function Home() {
 
     useEffect(() => {
         const isTestPreviewActive = activeGameMode === 'test' && gameOverState === 'menu';
-        const isMainGameActive = gameOverState === 'playing' || gameOverState === 'lost' || gameOverState === 'won' || gameOverState === 'level_cleared' || gameOverState === 'life_lost_animation';
+        const isMainGameActive = gameOverState === 'playing' || gameOverState === 'shop' || gameOverState === 'lost' || gameOverState === 'won' || gameOverState === 'level_cleared' || gameOverState === 'life_lost_animation';
 
         let cleanupCanvas: () => void = () => {};
         let cleanupTestCanvas: () => void = () => {};
@@ -281,7 +284,9 @@ export default function Home() {
                 <GameMenu 
                     onStartGame={(mode) => {
                         if (mode === 'main') startGame('main');
-                    }} 
+                    }}
+                    savedSession={savedSession}
+                    onContinueGame={continueGame}
                 />
             )}
 
@@ -326,6 +331,8 @@ export default function Home() {
                         toggleRemoveBrickPaintMode={toggleRemoveBrickPaintMode}
                         isAddBrickPaintModeActive={isAddBrickPaintModeActive}
                         toggleAddBrickPaintMode={toggleAddBrickPaintMode}
+                        startGame={startGame}
+                        initialShopItems={initialShopItemsForLoad}
                     />
                     <div 
                         style={{
@@ -573,6 +580,7 @@ export default function Home() {
                     isBallBrickPaintModeActive={isBallBrickPaintModeActive}
                     toggleBallBrickPaintMode={toggleBallBrickPaintMode}
                     startGame={startGame}
+                    initialShopItems={initialShopItemsForLoad}
                 />
             )}
         </div>

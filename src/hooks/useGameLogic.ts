@@ -8,6 +8,7 @@ import {
     INITIAL_TEST_POWER_UP_SPAWN_CHANCE, MIN_BALL_SPEED_Y,
     FIELD_MAX_HEIGHT_OFFSET, FIELD_MAX_WIDTH_OFFSET, FIELD_SHRINK_ACCELERATION_FACTOR,
     TARGET_TOTAL_BRICK_GRID_HEIGHT,
+    INITIAL_LIVES,
 } from '../constants'; 
 import { Ball, PowerUp, Laser, PowerUpType, GameState, GameMode, GameStateRefs as IGameStateRefs, GameLoopCallbacks, PointsField, Particle, HomingTrail, SavedLevelData, Brick, PaddleTarget } from '../interfaces';
 import { initialBallState, initializeBricks as initializeBricksLogic } from '../gameLogic';
@@ -16,24 +17,9 @@ import { usePaddleLogic } from './usePaddleLogic';
 import { useTestModeSettings, TEST_DEFAULT_BRICK_COLUMNS, TEST_DEFAULT_BRICK_ROWS } from './useTestModeSettings';
 import { useToast } from './use-toast';
 import { SoundSystem } from '../soundSystem';
-
-const MAX_UPGRADE_LEVEL = 3;
-const INITIAL_LIVES = 3;
-const MAX_LEVEL_NAME_LENGTH = 15;
-
-const getPowerUpTypeForLevel = (baseType: PowerUpType, level: number): PowerUpType | null => {
-    if (level < 1 || level > MAX_UPGRADE_LEVEL) return null;
-    if (level === 1) return baseType; // Base type itself is L1
-    const base = baseType.split('_L')[0] as PowerUpType;
-    return `${base}_L${level}` as PowerUpType;
-};
-
-const UPGRADABLE_POWER_UPS: PowerUpType[] = ALL_TOGGLEABLE_POWER_UPS;
-
-const initialTestPowerUpLevels = ALL_TOGGLEABLE_POWER_UPS.reduce((acc, type) => {
-    acc[type] = 1;
-    return acc;
-}, {} as Record<PowerUpType, number>);
+import { MAX_UPGRADE_LEVEL, UPGRADABLE_POWER_UPS, initialTestPowerUpLevels } from './gameLogicConstants';
+import { getPowerUpTypeForLevel } from './gameLogicUtils';
+import { GameSessionData } from '../utils/localStorage';
 
 export function useGameLogic() {
     const soundSystemRef = useRef<SoundSystem | null>(null);
@@ -135,6 +121,16 @@ export function useGameLogic() {
     const [savedLevels, setSavedLevels] = useState<string[]>([]);
     const [selectedLevelToLoad, setSelectedLevelToLoad] = useState<string>("");
     const [deleteConfirmationPendingFor, setDeleteConfirmationPendingFor] = useState<string | null>(null);
+    const [savedSession, setSavedSession] = useState<GameSessionData | null>(null);
+    const [initialShopItemsForLoad, setInitialShopItemsForLoad] = useState<PowerUpType[] | null>(null);
+
+    useEffect(() => {
+        if (typeof window !== 'undefined') {
+            const { getSavedLevelNames, loadGameSession } = require('../utils/localStorage'); // Dynamically import for client-side
+            setSavedLevels(getSavedLevelNames());
+            setSavedSession(loadGameSession());
+        }
+    }, [gameOverState]);
 
     useEffect(() => {
         testPowerUpLevelsRef.current = testPowerUpLevels;
@@ -177,14 +173,6 @@ export function useGameLogic() {
 
     const totalGoldSpentOnPowerUpsRef = useRef<number>(0);
     const levelGoldEarnedRef = useRef<number>(0);
-
-    // Load saved level names on mount
-    useEffect(() => {
-        if (typeof window !== 'undefined') {
-            const { getSavedLevelNames } = require('../utils/localStorage'); // Dynamically import for client-side
-            setSavedLevels(getSavedLevelNames());
-        }
-    }, []);
 
     useEffect(() => {
         // If a delete confirmation was pending for a specific level,
@@ -451,6 +439,11 @@ export function useGameLogic() {
         newTestBrickGridHeight?: number,
         loadedLevelData?: SavedLevelData // Added for loading levels
     ) => {
+        const { removeGameSession } = require('../utils/localStorage');
+        if (mode === 'main') {
+            removeGameSession();
+        }
+        setInitialShopItemsForLoad(null);
         setDeleteConfirmationPendingFor(null);
         if (['menu', 'lost', 'won'].includes(gameOverStateRef.current) || mode === 'test' || loadedLevelData) {
             scoreRef.current = 0;
@@ -722,7 +715,12 @@ export function useGameLogic() {
         stuckBallsRef.current = [];
     }, [bonusGoldRef, bonusGoldTimerCountdownRef, bonusCountdownStartedRef, initialBonusGoldDecrementCompleteRef, ballsRef, stuckBallsRef]);
 
-    const handleResetGame = useCallback(() => {
+    const handleResetGame = useCallback((clearSession = true) => {
+        const { removeGameSession } = require('../utils/localStorage');
+        if (clearSession) {
+            removeGameSession();
+        }
+
         gameIsRunningRef.current = false;
         isGameStartedRef.current = false;
         // testPreviewInitialLaunchDoneRef.current = false; // This seems to be mostly for the initial ball launch X speed.
@@ -905,6 +903,11 @@ export function useGameLogic() {
 
     const startNextLevel = useCallback(() => {
         if (gameOverStateRef.current === 'shop') {
+            const { removeGameSession } = require('../utils/localStorage');
+            removeGameSession();
+            setSavedSession(null);
+
+            setInitialShopItemsForLoad(null);
             scoreRef.current = 0;
             currentLevelRef.current++;
             const nextMode: GameMode = 'main';
@@ -936,7 +939,7 @@ export function useGameLogic() {
         }
     }, [
         resetLevel, setActiveGameMode, setShowSidebar, setGameOverState,
-        setTestPowerUpSpawnChanceWithReset, setTestBrickColumns, setTestBrickRows, setTestBrickGridHeight
+        setTestPowerUpSpawnChanceWithReset, setTestBrickColumns, setTestBrickRows, setTestBrickGridHeight, setSavedSession
     ]); 
 
     const addSpawnablePowerUp = useCallback((typeToAdd: PowerUpType) => {
@@ -1219,6 +1222,28 @@ export function useGameLogic() {
         }
     }, [selectedLevelToLoad, deleteConfirmationPendingFor, toast]);
 
+    const continueGame = useCallback(() => {
+        const { loadGameSession, removeGameSession } = require('../utils/localStorage');
+        const session = loadGameSession();
+        if (session) {
+            currentLevelRef.current = session.level;
+            goldRef.current = session.gold;
+            livesRef.current = session.lives;
+            totalGoldSpentOnPowerUpsRef.current = session.totalGoldSpentOnPowerUps;
+            spawnablePowerUpsRef.current = new Set(session.spawnablePowerUps as PowerUpType[]);
+            setInitialShopItemsForLoad(session.shopItems as PowerUpType[]);
+
+            // Set game state to go to shop
+            gameModeRef.current = 'main';
+            setActiveGameMode('main');
+            setShowSidebar(false);
+            setGameOverState('shop');
+            
+            // Remove the session data so it can't be resumed again from the menu after this
+            removeGameSession();
+            setSavedSession(null); // Update state to hide resume button
+        }
+    }, [setGameOverState, setActiveGameMode, setShowSidebar]);
 
     return {
         gameOverState,
@@ -1277,5 +1302,8 @@ export function useGameLogic() {
         handleLoadSelectedLevel,
         handleDeleteSelectedLevel,
         deleteConfirmationPendingFor,
+        savedSession,
+        continueGame,
+        initialShopItemsForLoad
     };
 }

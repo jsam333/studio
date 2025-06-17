@@ -39,6 +39,7 @@ interface GameViewProps {
   isBallBrickPaintModeActive?: boolean;
   toggleBallBrickPaintMode?: () => void;
   startGame: (mode: 'main') => void; // Add startGame prop
+  initialShopItems?: PowerUpType[] | null;
 }
 
 export const GameView: React.FC<GameViewProps> = ({
@@ -72,6 +73,7 @@ export const GameView: React.FC<GameViewProps> = ({
   isBallBrickPaintModeActive,
   toggleBallBrickPaintMode,
   startGame, // Destructure startGame
+  initialShopItems,
 }) => {
   const { toast } = useToast();
   const containerClasses = isTestPreview
@@ -132,6 +134,7 @@ export const GameView: React.FC<GameViewProps> = ({
                     addSpawnablePowerUp={addSpawnablePowerUp}
                     startNextLevel={startNextLevel}
                     handleResetGame={handleResetGame} 
+                    initialShopItems={initialShopItems}
                 />
             </div>
           </div>

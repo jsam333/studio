@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { Button } from './ui/button';
 import { PowerUpType, GameStateRefs, Brick } from '../interfaces';
 import {
@@ -25,7 +25,8 @@ import {
     addPowerUpToLocalStorage,
     getPowerUpsFromLocalStorage,
     saveHighestLevel,
-    getHighestLevel
+    getHighestLevel,
+    saveGameSession
 } from '../utils/localStorage';
 import LevelPreview from './LevelPreview';
 import { getBrickConfiguration, getLevelStats } from '../hooks/useLevelLogic';
@@ -59,7 +60,8 @@ interface ShopScreenProps {
   currentLevel: number;
   addSpawnablePowerUp: (powerUp: PowerUpType) => void;
   startNextLevel: () => void;
-  handleResetGame: () => void;
+  handleResetGame: (clearSession?: boolean) => void;
+  initialShopItems?: PowerUpType[] | null;
 }
 
 export const ShopScreen: React.FC<ShopScreenProps> = ({
@@ -67,9 +69,10 @@ export const ShopScreen: React.FC<ShopScreenProps> = ({
   currentLevel,
   addSpawnablePowerUp,
   startNextLevel,
-  handleResetGame
+  handleResetGame,
+  initialShopItems,
 }) => {
-  const [shopItems, setShopItems] = useState<PowerUpType[]>([]);
+  const [shopItems, setShopItems] = useState<PowerUpType[]>(initialShopItems || []);
   const [purchasedInSession, setPurchasedInSession] = useState<Map<PowerUpType, boolean>>(new Map());
   const [goldDisplay, setGoldDisplay] = useState(gameStateRefs.goldRef.current);
   const [currentSpawnChance, setCurrentSpawnChance] = useState(0);
@@ -79,6 +82,19 @@ export const ShopScreen: React.FC<ShopScreenProps> = ({
   const [nextLevelBeatTime, setNextLevelBeatTime] = useState<number | null>(null);
   const [highestLevelReachedByPlayer, setHighestLevelReachedByPlayer] = useState<number>(0);
   const [scaleFactor, setScaleFactor] = useState(1);
+  const hasSavedOnLoadRef = useRef(false);
+
+  const saveCurrentSession = useCallback((itemsToSave: PowerUpType[]) => {
+    const sessionData = {
+        level: gameStateRefs.currentLevelRef.current,
+        gold: gameStateRefs.goldRef.current,
+        spawnablePowerUps: Array.from(gameStateRefs.spawnablePowerUpsRef.current),
+        shopItems: itemsToSave,
+        lives: gameStateRefs.livesRef.current,
+        totalGoldSpentOnPowerUps: gameStateRefs.totalGoldSpentOnPowerUpsRef.current,
+    };
+    saveGameSession(sessionData);
+  }, [gameStateRefs]);
 
   const updateScaleFactor = useCallback(() => {
     const currentWidth = window.innerWidth;
@@ -101,17 +117,38 @@ export const ShopScreen: React.FC<ShopScreenProps> = ({
     const currentShopSelection = potentialShopPool.slice(0, SHOP_ITEMS_COUNT);
     setShopItems(currentShopSelection);
     setPurchasedInSession(new Map()); // Reset purchases when items reroll
+    return currentShopSelection;
   }, [gameStateRefs.spawnablePowerUpsRef]);
 
   useEffect(() => {
-    generateShopItems();
+    if (hasSavedOnLoadRef.current) return;
+
+    let itemsToSave: PowerUpType[];
+    if (initialShopItems && initialShopItems.length > 0) {
+      itemsToSave = initialShopItems;
+      setShopItems(initialShopItems);
+    } else {
+      itemsToSave = generateShopItems();
+    }
+
+    saveCurrentSession(itemsToSave);
+
+    hasSavedOnLoadRef.current = true;
+  }, [initialShopItems, generateShopItems, gameStateRefs, saveCurrentSession]);
+
+  useEffect(() => {
     setGoldDisplay(gameStateRefs.goldRef.current);
     const chance = calculateBaseSpawnChance(gameStateRefs.spawnablePowerUpsRef.current, 'main');
     setCurrentSpawnChance(chance);
     setDisplaySpawnablePowerUps(Array.from(gameStateRefs.spawnablePowerUpsRef.current).sort());
     setKnownPowerUps(getPowerUpsFromLocalStorage());
     setHighestLevelReachedByPlayer(getHighestLevel());
-  }, [gameStateRefs.goldRef, gameStateRefs.spawnablePowerUpsRef, generateShopItems]);
+  }, [
+      gameStateRefs.goldRef, 
+      gameStateRefs.spawnablePowerUpsRef, 
+      generateShopItems, 
+      initialShopItems
+    ]);
 
   useEffect(() => {
     const nextLevelVal = currentLevel + 1;
@@ -181,13 +218,16 @@ export const ShopScreen: React.FC<ShopScreenProps> = ({
     const newChance = calculateBaseSpawnChance(gameStateRefs.spawnablePowerUpsRef.current, 'main');
     setCurrentSpawnChance(newChance);
     setDisplaySpawnablePowerUps(Array.from(gameStateRefs.spawnablePowerUpsRef.current).sort());
+    
+    saveCurrentSession(shopItems);
   };
 
   const handleReroll = () => {
     if (gameStateRefs.goldRef.current >= POWER_UP_REROLL_COST) {
         gameStateRefs.goldRef.current -= POWER_UP_REROLL_COST;
         setGoldDisplay(gameStateRefs.goldRef.current);
-        generateShopItems(); // This will generate new items and reset purchasedInSession
+        const newShopItems = generateShopItems(); 
+        saveCurrentSession(newShopItems);
     } else {
         // Optionally, provide feedback that the player doesn't have enough gold
         console.log("Not enough gold to reroll.");
@@ -454,7 +494,7 @@ export const ShopScreen: React.FC<ShopScreenProps> = ({
                 <div className="flex flex-col" style={{gap: scaled.gap(8)}}>
                     <Button
                         onClick={handleStartNextLevel}
-                        className="bg-gray-800 hover:bg-gray-700 text-white border border-white transition-all hover:border-purple-400 hover:text-purple-300"
+                        className="bg-gray-800 hover:bg-gray-700 text-white border border-white hover:border-purple-400 hover:text-purple-300"
                         style={{
                             paddingLeft: scaled.px(24),
                             paddingRight: scaled.px(24),
@@ -466,8 +506,8 @@ export const ShopScreen: React.FC<ShopScreenProps> = ({
                         Start Level {currentLevel + 1}
                     </Button>
                     <Button
-                        onClick={handleResetGame}
-                        className="bg-gray-800 hover:bg-gray-700 text-white border border-white transition-all hover:border-yellow-400 hover:text-yellow-300"
+                        onClick={() => handleResetGame(false)}
+                        className="bg-gray-800 hover:bg-gray-700 text-white border border-white hover:border-yellow-400 hover:text-yellow-300"
                         style={{
                             paddingLeft: scaled.px(24),
                             paddingRight: scaled.px(24),

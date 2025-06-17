@@ -1,10 +1,13 @@
 import React from 'react';
+import { GameSessionData } from '../utils/localStorage';
 
 interface GameMenuProps {
   onStartGame: (mode: 'main') => void; 
+  onContinueGame: () => void;
+  savedSession: GameSessionData | null;
 }
 
-export const GameMenu: React.FC<GameMenuProps> = ({ onStartGame }) => {
+export const GameMenu: React.FC<GameMenuProps> = ({ onStartGame, onContinueGame, savedSession }) => {
   return (
     <div style={{
       fontFamily: 'Arial, sans-serif',
@@ -59,6 +62,17 @@ export const GameMenu: React.FC<GameMenuProps> = ({ onStartGame }) => {
                 Brick Blast Ultimate
               </a>
               <span style={{ fontSize: '20px', color: '#000000', marginLeft: '10px' }}>&lt;- new!</span>
+              {savedSession && (
+                <span style={{ fontSize: '20px', color: '#000000', marginLeft: '10px' }}>
+                    or <a 
+                        href="#" 
+                        onClick={(e) => { e.preventDefault(); onContinueGame(); }}
+                        style={{ color: '#0000FF', textDecoration: 'underline', fontWeight: 'bold' }}
+                    >
+                        Resume at Level {savedSession.level}
+                    </a>
+                </span>
+              )}
               <div style={{ textAlign: 'center', marginTop: '0px', padding: '0px', borderRadius: '5px' }}>
                 <p style={{ fontSize: '14px', lineHeight: '1.6', maxWidth: '600px', margin: '0 auto' }}>
                   Destroy all the bricks using your paddle and ball. Clear all levels to win!

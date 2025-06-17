@@ -422,3 +422,5 @@ export const POWER_UP_COLORS: { [key in PowerUpType | 'NONE']?: string } = {
     ALL_IN_ONE: '#FFFFFF',
     NONE: '#888888'
 };
+
+export const INITIAL_LIVES = 3;
