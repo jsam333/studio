@@ -48,12 +48,16 @@ const updatePaddleShrinkTimer = (
 const updateBonusGoldTimer = (
     refs: GameStateRefs,
     callbacks: GameLoopCallbacks,
-    elapsedTime: number
+    elapsedTime: number,
+    activeBrickCount: number
 ) => {
+    // Start the final countdown if bonus gold reached target OR if all bricks are cleared
     if (
-        refs.bonusGoldRef.current === BONUS_GOLD_TARGET &&
-        refs.initialBonusGoldDecrementCompleteRef.current && 
-        refs.bonusGoldTimerCountdownRef.current === null
+        refs.bonusGoldTimerCountdownRef.current === null &&
+        (
+            (refs.bonusGoldRef.current === BONUS_GOLD_TARGET && refs.initialBonusGoldDecrementCompleteRef.current) ||
+            activeBrickCount === 0
+        )
     ) {
         refs.bonusGoldTimerCountdownRef.current = BONUS_GOLD_TIMER_DURATION;
     }
@@ -369,7 +373,7 @@ export const gameUpdate = (
     }
 
     if (!isTestPreview) {
-        updateBonusGoldTimer(refs, callbacks, elapsedTime);
+        updateBonusGoldTimer(refs, callbacks, elapsedTime, activeBrickCount);
     }
 
     // Update bomb glows and trigger explosions BEFORE ball and laser updates

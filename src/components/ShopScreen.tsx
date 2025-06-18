@@ -243,7 +243,7 @@ export const ShopScreen: React.FC<ShopScreenProps> = ({
     startNextLevel();
   };
 
-  const canPreviewNextLevel = true;
+  const canPreviewNextLevel = highestLevelReachedByPlayer >= currentLevel + 1;
 
   // Scaled values helper
   const scaled = {
@@ -311,6 +311,14 @@ export const ShopScreen: React.FC<ShopScreenProps> = ({
                     >
                         Reroll Powerups ({POWER_UP_REROLL_COST} Gold)
                     </Button>
+                    <p
+                        style={{
+                            fontSize: scaled.fontSize(24),
+                            color: 'red'
+                        }}
+                    >
+                        Lives: {gameStateRefs.livesRef.current}
+                    </p>
                     <p
                         className="text-blue-300"
                         style={{
@@ -516,7 +524,7 @@ export const ShopScreen: React.FC<ShopScreenProps> = ({
                             minHeight: scaled.h(36)
                         }}
                     >
-                        Back to Menu
+                        Back to Menu (and save)
                     </Button>
                 </div>
 

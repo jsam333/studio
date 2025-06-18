@@ -284,7 +284,7 @@ export default function Home() {
                 <GameMenu 
                     onStartGame={(mode) => {
                         if (mode === 'main') startGame('main');
-                    }}
+                    }} 
                     savedSession={savedSession}
                     onContinueGame={continueGame}
                 />
