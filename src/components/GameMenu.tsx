@@ -81,7 +81,7 @@ export const GameMenu: React.FC<GameMenuProps> = ({ onStartGame, onContinueGame,
             </li>
           </ul>
         </nav>
-        <img src="/images/atari-breakout-998.webp" alt="Atari Breakout" style={{ marginTop: '10px', maxHeight: '150px' }}/>
+        <img src="/images/brick blast 2.png" alt="Brick Blast 2" style={{ marginTop: '10px', maxHeight: '150px' }}/>
       </div>
 
       <footer style={{ textAlign: 'center', marginTop: '5px', paddingTop: '5px', borderTop: '1px dashed #555555', fontSize: '12px', marginBottom: '0px' }}>

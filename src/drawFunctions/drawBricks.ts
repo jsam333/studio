@@ -37,10 +37,10 @@ export const drawBricks = (ctx: CanvasRenderingContext2D, bricks: Brick[][], col
                 } else if (brick.upgradeLevel === 3) {
                     baseFillStyle = BUILDER_BRICK_COLOR;
                 } else if (brick.upgradeLevel === 2) {
-                    baseFillStyle = REINFORCED_BRICK_COLOR;
+                    baseFillStyle = UPGRADED_BRICK_COLOR;
                 } else if (brick.upgradeLevel === 1) {
                     baseFillStyle = REINFORCED_BRICK_COLOR; 
-                } 
+                } // Level 0 (or undefined) uses default NORMAL_BRICK_COLOR 
 
                 let finalFillStyle = baseFillStyle;
 
