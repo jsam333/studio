@@ -434,14 +434,10 @@ export interface Hint {
 }
 
 export const HINTS: Hint[] = [
-  { id: 1, text: "The Widen Paddle power-up gets less effective the wider your paddle already is.", cost: 50 },
-  { id: 2, text: "Builder balls will upgrade any normal brick they hit, but won't affect special bricks or bombs.", cost: 100 },
-  { id: 3, text: "Some levels have hidden bricks that only appear after a certain number of other bricks are destroyed.", cost: 150 },
-  { id: 4, text: "The 'All-in-One' power-up grants a random selection of other power-ups you have unlocked.", cost: 200 },
-  { id: 5, text: "The laser paddle is great for clearing single tough bricks, but it can't damage bomb bricks.", cost: 250 },
-  { id: 6, text: "Homing balls will prioritize special bricks, then bomb bricks, then ball bricks.", cost: 300 },
-  { id: 7, text: "The bonus gold timer starts when bonus gold reaches 5, OR when all bricks are cleared.", cost: 350 },
-  { id: 8, text: "Recovery paddle charges can save balls that are very close to the sides of the paddle, not just below it.", cost: 400 },
-  { id: 9, text: "The spawn chance for power-ups decreases if there are already many power-ups on screen.", cost: 450 },
-  { id: 10, text: "Your resource meter fills when you move the paddle slowly and drains when you move it quickly. Use it for a last-chance save!", cost: 500 },
+  { id: 1, text: "Gain more gold for beating levels quickly. Up to 30 gold per level.", cost: 30 },
+  { id: 2, text: "Bricks that take more hits to destroy, also give more points.", cost: 60 },
+  { id: 3, text: "Levels 6 and above have a higher point requirement than the starting number of bricks, so be prepared.", cost: 200 },
+  { id: 4, text: "The rainbow power-up dropped from a special brick grants a random selection of 5 other power-ups you have.", cost: 400 },
+  { id: 5, text: "You can collect multiple powerups from their initial spawn in a level. Maybe all if you are quick!", cost: 600 },
+  { id: 6, text: "The spawn chance for power-ups decreases if there are already many power-ups on screen.", cost: 1000 },
 ];
