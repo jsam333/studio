@@ -271,7 +271,7 @@ export const POWER_UP_DESCRIPTIONS: { [key in PowerUpType | string]?: string } =
     REINFORCE_BRICK: "Reinforce 1 brick to take 3 hits to destroy.",
     REINFORCE_BRICK_L2: "Reinforce 2 bricks.",
     REINFORCE_BRICK_L3: "Reinforce 3 bricks.",
-    MAKE_SPECIAL: "Makes 1 brick special. Break it for a special powerup!",
+    MAKE_SPECIAL: "Makes 1 brick special. Break it for a variety powerup!",
     MAKE_SPECIAL_L2: "Turns 2 basic bricks into special bricks.",
     MAKE_SPECIAL_L3: "Turns 3 basic bricks into special bricks.",
     DOUBLE_BALL: "1 ball temporarily destroys 2 bricks per hit.",
