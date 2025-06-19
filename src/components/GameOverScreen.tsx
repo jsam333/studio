@@ -1,8 +1,8 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { Button } from './ui/button';
 import { PowerUpType } from '../interfaces';
 import { getBasePowerUpType, getPowerUpLevelFromString } from '../utils/powerUpHelpers';
-import { POWER_UP_IMAGE_PATHS, GOLD_COLOR, BASE_SHOP_WIDTH, BASE_SHOP_HEIGHT } from '../constants';
+import { POWER_UP_IMAGE_PATHS, GOLD_COLOR, BASE_SHOP_WIDTH, BASE_SHOP_HEIGHT, HINTS, Hint } from '../constants';
 import { ScrollArea } from './ui/scroll-area';
 import {
     Tooltip,
@@ -11,6 +11,7 @@ import {
     TooltipTrigger,
 } from './ui/tooltip';
 import { OwnedPowerUpsDisplay } from './OwnedPowerUpsDisplay';
+import { saveLifetimeGold, getLifetimeGold, getUnlockedHintIds, saveUnlockedHintIds } from '../utils/localStorage';
 
 interface GameOverScreenProps {
     won: boolean;
@@ -31,6 +32,9 @@ export const GameOverScreen: React.FC<GameOverScreenProps> = ({
 }) => {
     const powerUpsArray = Array.from(spawnablePowerUps);
     const [scaleFactor, setScaleFactor] = useState(1);
+    const [lifetimeGold, setLifetimeGold] = useState(0);
+    const goldUpdatedRef = useRef(false);
+    const [unlockedHintIds, setUnlockedHintIds] = useState<number[]>([]);
 
     const updateScaleFactor = useCallback(() => {
         const currentWidth = window.innerWidth;
@@ -39,6 +43,20 @@ export const GameOverScreen: React.FC<GameOverScreenProps> = ({
         const scaleY = currentHeight / BASE_SHOP_HEIGHT;
         setScaleFactor(Math.min(scaleX, scaleY));
     }, []);
+
+    useEffect(() => {
+        setUnlockedHintIds(getUnlockedHintIds());
+
+        if (!goldUpdatedRef.current) {
+            const currentLifetimeGold = getLifetimeGold();
+            const newLifetimeGold = currentLifetimeGold + totalGoldCollected;
+            saveLifetimeGold(newLifetimeGold);
+            setLifetimeGold(newLifetimeGold);
+            goldUpdatedRef.current = true;
+        } else {
+            setLifetimeGold(getLifetimeGold());
+        }
+    }, [totalGoldCollected]);
 
     useEffect(() => {
         updateScaleFactor();
@@ -62,6 +80,14 @@ export const GameOverScreen: React.FC<GameOverScreenProps> = ({
         footerButtonHeight: 48 * scaleFactor,
     };
 
+    const handleUnlockHint = (hint: Hint) => {
+        if (lifetimeGold >= hint.cost && !unlockedHintIds.includes(hint.id)) {
+            const newUnlockedIds = [...unlockedHintIds, hint.id];
+            saveUnlockedHintIds(newUnlockedIds);
+            setUnlockedHintIds(newUnlockedIds);
+        }
+    };
+
     return (
         <TooltipProvider>
             <div 
@@ -73,28 +99,71 @@ export const GameOverScreen: React.FC<GameOverScreenProps> = ({
                 <h1 
                     className="font-bold text-center"
                     style={{
-                        fontSize: scaled.fontSize(30),
-                        marginTop: scaled.my(20),
-                        marginBottom: scaled.mb(10)
+                        fontSize: scaled.fontSize(28),
+                        marginTop: scaled.my(8),
+                        marginBottom: scaled.mb(4)
                     }}
                 >
-                    {won ? 'You Won!' : `Lost to Level ${currentLevel}`}
+                    {won ? 'You Won!' : `Lost to Level ${currentLevel} :(`}
                 </h1>
                 
-                <div 
-                    className="text-center" 
-                    style={{ 
-                        color: GOLD_COLOR,
-                        fontSize: scaled.fontSize(20),
-                        marginBottom: scaled.mb(24)
+                <div
+                    className="flex justify-center items-center text-center"
+                    style={{
+                        gap: scaled.gap(16),
+                        fontSize: scaled.fontSize(18),
+                        marginBottom: scaled.mb(4),
                     }}
                 >
-                    Total Gold Collected: {totalGoldCollected}
+                    <span style={{ color: GOLD_COLOR }}>Total Gold Collected This Run: {totalGoldCollected}</span>
+                    <span style={{ color: '#E5C100' }}>Lifetime Gold: {lifetimeGold}</span>
+                </div>
+
+                <div className="flex-grow w-full px-4 overflow-hidden flex flex-col">
+                    <ScrollArea className="flex-grow p-2">
+                        <ul className="flex flex-col" style={{ gap: scaled.gap(8) }}>
+                            {HINTS.map((hint) => {
+                                const isUnlocked = unlockedHintIds.includes(hint.id);
+                                const canUnlock = lifetimeGold >= hint.cost;
+
+                                if (isUnlocked) {
+                                    return (
+                                        <li key={hint.id} className="flex items-center justify-between text-left border border-gray-600 rounded" style={{ padding: scaled.p(8) }}>
+                                            <span className="flex-grow" style={{ fontSize: scaled.fontSize(14), paddingRight: scaled.px(8) }}>{hint.text}</span>
+                                        </li>
+                                    );
+                                }
+                                
+                                if (canUnlock) {
+                                    return (
+                                        <li 
+                                            key={hint.id} 
+                                            className="flex items-center justify-start text-left border border-green-500 hover:border-green-400 rounded cursor-pointer" 
+                                            style={{ padding: scaled.p(8) }}
+                                            onClick={() => handleUnlockHint(hint)}
+                                        >
+                                            <span className="flex-grow text-green-400" style={{ fontSize: scaled.fontSize(14) }}>
+                                                Click to unlock hint #{hint.id}.
+                                            </span>
+                                        </li>
+                                    );
+                                }
+
+                                return (
+                                    <li key={hint.id} className="flex items-center justify-start text-left border border-white rounded opacity-70" style={{ padding: scaled.p(8) }}>
+                                        <span className="flex-grow" style={{ fontSize: scaled.fontSize(14) }}>
+                                            Hint #{hint.id}. Gain {hint.cost} lifetime gold to unlock.
+                                        </span>
+                                    </li>
+                                );
+                            })}
+                        </ul>
+                    </ScrollArea>
                 </div>
 
                 <div 
                     className="flex justify-around mt-auto w-full"
-                    style={{ maxWidth: scaled.w(448) }}
+                    style={{ maxWidth: scaled.w(448), paddingTop: scaled.py(8) }}
                 >
                     <Button 
                         onClick={onRestart} 

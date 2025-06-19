@@ -68,6 +68,28 @@ export const getHighestLevel = (): number => {
   return loadData<number>(KEY_HIGHEST_LEVEL) || 0;
 };
 
+// Lifetime Gold specific functions
+const KEY_LIFETIME_GOLD = 'lifetimeGold';
+
+export const saveLifetimeGold = (gold: number): void => {
+  saveData(KEY_LIFETIME_GOLD, gold);
+};
+
+export const getLifetimeGold = (): number => {
+  return loadData<number>(KEY_LIFETIME_GOLD) || 0;
+};
+
+// Hints specific functions
+const KEY_UNLOCKED_HINTS = 'unlockedHints';
+
+export const getUnlockedHintIds = (): number[] => {
+  return loadData<number[]>(KEY_UNLOCKED_HINTS) || [];
+};
+
+export const saveUnlockedHintIds = (ids: number[]): void => {
+  saveData(KEY_UNLOCKED_HINTS, ids);
+};
+
 // Custom Level Designs
 const KEY_SAVED_LEVEL_NAMES = 'savedLevelNames';
 const LEVEL_DATA_PREFIX = 'levelData_';
