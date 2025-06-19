@@ -159,10 +159,20 @@ export const ShopScreen: React.FC<ShopScreenProps> = ({
       setNextLevelInfo(stats);
 
       // Calculate time to beat
-      const baseDelay = 5000; 
-      const incrementPerLevel = 900;
-      let startDelayForNextLevel = baseDelay + (nextLevelVal - 1) * incrementPerLevel;
-      const maxDelayForLevel20 = baseDelay + (20 - 1) * incrementPerLevel;
+      let startDelayForNextLevel: number;
+      if (nextLevelVal <= 5) {
+          const baseDelay_1_5 = 5000;
+          const incrementPerLevel_1_5 = 2000;
+          startDelayForNextLevel = baseDelay_1_5 + (nextLevelVal - 1) * incrementPerLevel_1_5;
+      } else {
+          const baseDelay_1_5 = 5000;
+          const incrementPerLevel_1_5 = 2000;
+          const delayAtLevel5 = baseDelay_1_5 + (5 - 1) * incrementPerLevel_1_5;
+          const incrementPerLevel_6_plus = 900;
+          startDelayForNextLevel = delayAtLevel5 + (nextLevelVal - 5) * incrementPerLevel_6_plus;
+      }
+
+      const maxDelayForLevel20 = 5000 + (5 - 1) * 2000 + (20 - 5) * 900;
       if (startDelayForNextLevel > maxDelayForLevel20 && nextLevelVal > 20) {
         startDelayForNextLevel = maxDelayForLevel20;
       }

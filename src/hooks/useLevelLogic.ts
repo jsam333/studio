@@ -188,11 +188,24 @@ export function useLevelLogic({
         clearBonusGoldTimers();
 
         const currentLevel = currentLevelRef.current;
-        const baseDelay = 5000;
-        const incrementPerLevel = 900;
-        let startDelay = baseDelay + (currentLevel - 1) * incrementPerLevel;
+        let startDelay: number;
 
-        const maxDelayForLevel20 = baseDelay + (20 - 1) * incrementPerLevel;
+        if (currentLevel <= 5) {
+            // Levels 1-5: Start at 5s, increment by 2s each level
+            const baseDelay_1_5 = 5000; // 5 seconds
+            const incrementPerLevel_1_5 = 2000; // 2 seconds
+            startDelay = baseDelay_1_5 + (currentLevel - 1) * incrementPerLevel_1_5;
+        } else {
+            // Level 6 and above: Start from Level 5's delay and add 0.9s for each subsequent level
+            const baseDelay_1_5 = 5000;
+            const incrementPerLevel_1_5 = 2000;
+            const delayAtLevel5 = baseDelay_1_5 + (5 - 1) * incrementPerLevel_1_5; // Delay at level 5 is 13s
+
+            const incrementPerLevel_6_plus = 900; // 0.9 seconds
+            startDelay = delayAtLevel5 + (currentLevel - 5) * incrementPerLevel_6_plus;
+        }
+
+        const maxDelayForLevel20 = 5000 + (5 - 1) * 2000 + (20 - 5) * 900; // Lvl5 delay + 15 levels * 0.9s
         if (startDelay > maxDelayForLevel20 && currentLevel > 20) {
             startDelay = maxDelayForLevel20;
         }
