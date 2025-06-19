@@ -424,3 +424,5 @@ export const POWER_UP_COLORS: { [key in PowerUpType | 'NONE']?: string } = {
 };
 
 export const INITIAL_LIVES = 3;
+
+export const MAX_LEVEL_NAME_LENGTH = 15;

@@ -8,7 +8,7 @@ import {
     INITIAL_TEST_POWER_UP_SPAWN_CHANCE, MIN_BALL_SPEED_Y,
     FIELD_MAX_HEIGHT_OFFSET, FIELD_MAX_WIDTH_OFFSET, FIELD_SHRINK_ACCELERATION_FACTOR,
     TARGET_TOTAL_BRICK_GRID_HEIGHT,
-    INITIAL_LIVES,
+    INITIAL_LIVES, MAX_LEVEL_NAME_LENGTH,
 } from '../constants'; 
 import { Ball, PowerUp, Laser, PowerUpType, GameState, GameMode, GameStateRefs as IGameStateRefs, GameLoopCallbacks, PointsField, Particle, HomingTrail, SavedLevelData, Brick, PaddleTarget } from '../interfaces';
 import { initialBallState, initializeBricks as initializeBricksLogic } from '../gameLogic';
