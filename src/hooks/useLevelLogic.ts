@@ -195,14 +195,20 @@ export function useLevelLogic({
             const baseDelay_1_5 = 5000; // 5 seconds
             const incrementPerLevel_1_5 = 2000; // 2 seconds
             startDelay = baseDelay_1_5 + (currentLevel - 1) * incrementPerLevel_1_5;
-        } else {
-            // Level 6 and above: Start from Level 5's delay and add 0.9s for each subsequent level
+        } else { // Level 6 and above
             const baseDelay_1_5 = 5000;
             const incrementPerLevel_1_5 = 2000;
-            const delayAtLevel5 = baseDelay_1_5 + (5 - 1) * incrementPerLevel_1_5; // Delay at level 5 is 13s
-
-            const incrementPerLevel_6_plus = 900; // 0.9 seconds
-            startDelay = delayAtLevel5 + (currentLevel - 5) * incrementPerLevel_6_plus;
+            const delayAtLevel5 = baseDelay_1_5 + (5 - 1) * incrementPerLevel_1_5; // 13000ms
+            
+            if (currentLevel === 6) {
+                startDelay = delayAtLevel5; // 13000ms
+            } else if (currentLevel === 7) {
+                startDelay = delayAtLevel5 + 400; // 13400ms
+            } else { // Level 8+
+                const delayAtLevel7 = delayAtLevel5 + 400;
+                const incrementPerLevel_8_plus = 800; // 0.8 seconds
+                startDelay = delayAtLevel7 + (currentLevel - 7) * incrementPerLevel_8_plus;
+            }
         }
 
         const maxDelayForLevel20 = 5000 + (5 - 1) * 2000 + (20 - 5) * 900; // Lvl5 delay + 15 levels * 0.9s

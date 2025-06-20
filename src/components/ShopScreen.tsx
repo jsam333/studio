@@ -165,18 +165,22 @@ export const ShopScreen: React.FC<ShopScreenProps> = ({
           const baseDelay_1_5 = 5000;
           const incrementPerLevel_1_5 = 2000;
           startDelayForNextLevel = baseDelay_1_5 + (nextLevelVal - 1) * incrementPerLevel_1_5;
-      } else {
+      } else { // Level 6 and above
           const baseDelay_1_5 = 5000;
           const incrementPerLevel_1_5 = 2000;
           const delayAtLevel5 = baseDelay_1_5 + (5 - 1) * incrementPerLevel_1_5;
-          const incrementPerLevel_6_plus = 900;
-          startDelayForNextLevel = delayAtLevel5 + (nextLevelVal - 5) * incrementPerLevel_6_plus;
+          
+          if (nextLevelVal === 6) {
+              startDelayForNextLevel = delayAtLevel5;
+          } else if (nextLevelVal === 7) {
+              startDelayForNextLevel = delayAtLevel5 + 400;
+          } else { // Level 8+
+              const delayAtLevel7 = delayAtLevel5 + 400;
+              const incrementPerLevel_8_plus = 800;
+              startDelayForNextLevel = delayAtLevel7 + (nextLevelVal - 7) * incrementPerLevel_8_plus;
+          }
       }
 
-      const maxDelayForLevel20 = 5000 + (5 - 1) * 2000 + (20 - 5) * 900;
-      if (startDelayForNextLevel > maxDelayForLevel20 && nextLevelVal > 20) {
-        startDelayForNextLevel = maxDelayForLevel20;
-      }
       const totalTimeToBeat = startDelayForNextLevel + 17500; // 17500ms includes bonus gold timer and final countdown
       setNextLevelBeatTime(totalTimeToBeat);
 
