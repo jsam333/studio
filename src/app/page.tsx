@@ -359,7 +359,7 @@ export default function Home() {
                         }}
                     >
                         {/* Parent Div for Sliders - gap is already 0px */}
-                        <div style={{display: 'flex', flexDirection: 'column', flex: 1.0, gap: '0px' }}>
+                        <div style={{display: 'flex', flexDirection: 'column', flex: 1.05, gap: '0px' }}>
                             {/* Power-up Spawn Chance Control Group */}
                             <div style={{display: 'flex', flexDirection: 'column', alignItems: 'center', margin: '0px', padding: '0px', paddingTop: '1px'}}>
                                 <label htmlFor="powerUpSpawnChance" style={{ marginBottom: '0px', fontSize: '0.75rem', lineHeight: '1' }}>
@@ -508,8 +508,8 @@ export default function Home() {
                                 flex: 2.5
                             }}
                         >
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '0px' }}>
-                                <label htmlFor="levelName" style={{ fontSize: '0.75rem', whiteSpace: 'nowrap', width: '90px', textAlign: 'left' }}>Level Name:</label>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '2px' }}>
+                                <label htmlFor="levelName" style={{ fontSize: '0.75rem', whiteSpace: 'nowrap', width: '75px', textAlign: 'left' }}>Level Name:</label>
                                 <input 
                                     type="text" 
                                     id="levelName" 
@@ -527,8 +527,8 @@ export default function Home() {
                                     Save
                                 </Button>
                             </div>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '0px' }}>
-                                <label htmlFor="loadLevelSelect" style={{ fontSize: '0.75rem', whiteSpace: 'nowrap', width: '90px', textAlign: 'left' }}>Load Level:</label>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '2px' }}>
+                                <label htmlFor="loadLevelSelect" style={{ fontSize: '0.75rem', whiteSpace: 'nowrap', width: '75px', textAlign: 'left' }}>Load Level:</label>
                                 <select 
                                     id="loadLevelSelect"
                                     value={selectedLevelToLoad}

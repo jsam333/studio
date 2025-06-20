@@ -6,7 +6,7 @@ export const drawEndMessage = (
     state: GameState, 
     finalScore: number
 ) => {
-    ctx.font = "48px Arial";
+    ctx.font = "48px Inter, Arial, sans-serif";
     ctx.fillStyle = "#ffffff";
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
@@ -18,6 +18,6 @@ export const drawEndMessage = (
     }
     ctx.fillText(message, BOARD_WIDTH / 2, BOARD_HEIGHT / 2 - 40);
 
-    ctx.font = "24px Arial";
+    ctx.font = "24px Inter, Arial, sans-serif";
     ctx.fillText(`Final Score: ${finalScore}`, BOARD_WIDTH / 2, BOARD_HEIGHT / 2 + 20);
 };

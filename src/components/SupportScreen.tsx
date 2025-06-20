@@ -7,7 +7,7 @@ interface SupportScreenProps {
 export const SupportScreen: React.FC<SupportScreenProps> = ({ onBack }) => {
   return (
     <div style={{
-      fontFamily: 'Arial, sans-serif',
+      fontFamily: 'var(--font-inter), Arial, sans-serif',
       color: '#000000',
       backgroundImage: 'url(/images/bbubg2.png)',
       backgroundRepeat: 'repeat',

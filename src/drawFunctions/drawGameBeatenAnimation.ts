@@ -6,7 +6,7 @@ const SHAKE_DURATION = 500; // ms
 export const drawGameBeatenAnimation = (ctx: CanvasRenderingContext2D, elapsedTime: number) => {
     ctx.save();
     
-    ctx.font = `bold 48px Arial`;
+    ctx.font = `bold 48px Inter, Arial, sans-serif`;
     ctx.fillStyle = "#ffffff"; // Changed to white
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";

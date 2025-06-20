@@ -10,7 +10,7 @@ export const drawGameInfo = (
     lives: number,
     bonusGoldTimerCountdown: number | null
 ) => {
-  ctx.font = "16px Arial";
+  ctx.font = "16px Inter, Arial, sans-serif";
   ctx.textBaseline = 'top';
   const yPos = 10;
   const xStart = 8;

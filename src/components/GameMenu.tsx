@@ -11,7 +11,7 @@ interface GameMenuProps {
 export const GameMenu: React.FC<GameMenuProps> = ({ onStartGame, onContinueGame, savedSession, onShowSupport }) => {
   return (
     <div style={{
-      fontFamily: 'Arial, sans-serif',
+      fontFamily: 'var(--font-inter), Arial, sans-serif',
       color: '#000000',
       padding: '20px 20px 0px 20px', // Reduced bottom padding to 0
       backgroundImage: 'url(/images/bbubg2.png)',
@@ -25,7 +25,7 @@ export const GameMenu: React.FC<GameMenuProps> = ({ onStartGame, onContinueGame,
       </header>
       
       <div style={{ display: 'flex', justifyContent: 'space-around', alignItems: 'flex-start', maxWidth: '1000px', margin: '0 auto' }}>
-        <nav style={{ textAlign: 'left', marginTop: '10px', padding: '15px', borderRadius: '5px', maxWidth: '600px' }}>
+        <nav style={{ textAlign: 'left', marginTop: '10px', padding: '15px', borderRadius: '5px', maxWidth: '700px' }}>
           <ul style={{ listStyleType: 'none', padding: '0', margin: '0' }}>
             <li style={{ marginBottom: '0px' }}>
               <a 
@@ -75,7 +75,7 @@ export const GameMenu: React.FC<GameMenuProps> = ({ onStartGame, onContinueGame,
                 </span>
               )}
               <div style={{ textAlign: 'left', marginTop: '0px', padding: '0px', borderRadius: '5px' }}>
-                <p style={{ fontSize: '14px', lineHeight: '1.6', maxWidth: '600px', margin: '0' }}>
+                <p style={{ fontSize: '14px', lineHeight: '1.6', maxWidth: '700px', margin: '0' }}>
                   The main game. Destroy all the bricks using your paddle and ball. Clear all levels to win!
                 </p>
                 <p style={{ fontSize: '14px', lineHeight: '1.6', maxWidth: '600px', margin: '0' }}>
