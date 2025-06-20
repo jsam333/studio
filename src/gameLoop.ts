@@ -564,7 +564,9 @@ export const gameUpdate = (
         previousBallCount > 0 &&
         refs.gameOverStateRef.current === 'menu' 
     ) {
-        console.log("Test preview: All balls lost, setting state to 'lost' to trigger reset.");
-        callbacks.setGameOverState('lost');
+        if (callbacks.triggerTestLevelReset) {
+            console.log("Test preview: All balls lost, triggering direct test level reset.");
+            callbacks.triggerTestLevelReset();
+        }
     }
 };

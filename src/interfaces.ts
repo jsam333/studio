@@ -249,6 +249,7 @@ export interface GameStateRefs extends GameStateRefsBase {
     drawEndMessage: (context: CanvasRenderingContext2D, state: GameState, finalScore: number) => void;
     resetLevelCallback: (mode: GameMode | null, resetScoreAndGold: boolean) => void;
     resetBonusGoldCallback: () => void;
+    triggerTestLevelReset?: () => void;
 }
 
 export interface GameLoopCallbacks {

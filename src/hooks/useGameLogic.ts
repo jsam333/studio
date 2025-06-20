@@ -1148,9 +1148,11 @@ export function useGameLogic() {
         resetLevelCallback,
         drawEndMessage: drawEndMessageCallback,
         resetBonusGoldCallback,
+        triggerTestLevelReset,
     }), [
         updateScoreCallback, setGameOverState, schedulePaddleShrink, executePaddleShrink,
-        scheduleFieldShrink, resetLevelCallback, drawEndMessageCallback, resetBonusGoldCallback
+        scheduleFieldShrink, resetLevelCallback, drawEndMessageCallback, resetBonusGoldCallback,
+        triggerTestLevelReset
     ]);
 
     // Save and Load Logic
