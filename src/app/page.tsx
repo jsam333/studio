@@ -13,6 +13,7 @@ import { useIsMobile } from '../hooks/use-mobile';
 import { GameMenu } from '../components/GameMenu';
 import { GameView } from '../components/GameView';
 import { Button } from '../components/ui/button';
+import { SupportScreen } from '../components/SupportScreen';
 
 const SIDEBAR_WIDTH_PX = 192; 
 const MAX_BRICK_GRID_HEIGHT = BOARD_HEIGHT - BRICK_OFFSET_TOP - PADDLE_HEIGHT - 30; // 30 for some spacing
@@ -33,6 +34,7 @@ export default function Home() {
     const testLastTimeRef = useRef<number>(0);
     const isMobile = useIsMobile();
     const [isInitialTestSetupDone, setIsInitialTestSetupDone] = useState(false);
+    const [currentScreen, setCurrentScreen] = useState<'menu' | 'support'>('menu');
 
     const {
         gameOverState,
@@ -181,7 +183,7 @@ export default function Home() {
     }, [gameStateRefs, gameLoopCallbacks, drawEndMessageCallback]); 
 
     useEffect(() => {
-        const isTestPreviewActive = activeGameMode === 'test' && gameOverState === 'menu';
+        const isTestPreviewActive = activeGameMode === 'test' && gameOverState === 'menu' && currentScreen === 'menu';
         const isMainGameActive = gameOverState === 'playing' || gameOverState === 'shop' || gameOverState === 'lost' || gameOverState === 'won' || gameOverState === 'level_cleared' || gameOverState === 'life_lost_animation' || gameOverState === 'game_beaten_animation';
 
         let cleanupCanvas: () => void = () => {};
@@ -271,7 +273,7 @@ export default function Home() {
             if (testAnimationFrameIdRef.current) cancelAnimationFrame(testAnimationFrameIdRef.current);
             window.removeEventListener('keydown', handleKeyDownGlobal);
         };
-    }, [gameOverState, activeGameMode, showSidebar, handleResetGame, launchStuckBalls, gameStateRefs, isMobile, drawEndMessageCallback, gameLoopCallbacks]);
+    }, [gameOverState, activeGameMode, showSidebar, handleResetGame, launchStuckBalls, gameStateRefs, isMobile, drawEndMessageCallback, gameLoopCallbacks, currentScreen]);
 
     return (
         <div style={{
@@ -280,18 +282,23 @@ export default function Home() {
              alignItems: 'center', 
              minHeight: '100vh', 
         }}>
-            { (gameOverState === 'menu' || activeGameMode === 'test') && (
+            { (gameOverState === 'menu' && currentScreen === 'menu') && (
                 <GameMenu 
                     onStartGame={(mode) => {
                         if (mode === 'main') startGame('main');
                     }} 
                     savedSession={savedSession}
                     onContinueGame={continueGame}
+                    onShowSupport={() => setCurrentScreen('support')}
                 />
             )}
 
+            { (gameOverState === 'menu' && currentScreen === 'support') && (
+                <SupportScreen onBack={() => setCurrentScreen('menu')} />
+            )}
+
             {/* Condition to keep test view mounted during menu, lost, or won states if test mode is active */}
-            {activeGameMode === 'test' && (gameOverState === 'menu' || gameOverState === 'lost' || gameOverState === 'won') && (
+            {activeGameMode === 'test' && (gameOverState === 'menu' && currentScreen === 'menu') && (
                 <div style={{ marginTop: '0px', display: 'flex', flexDirection: 'column', alignItems: 'center' }}> 
                     {/* Test Window Controls - Removed */}
                     {/* <h3 style={{ color: 'white', textAlign: 'center', margin: '10px 0', fontSize: '1.25rem' }}>Test Window Controls</h3> */}
