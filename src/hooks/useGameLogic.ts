@@ -68,6 +68,7 @@ export function useGameLogic() {
     const levelCompletionProcessedRef = useRef<boolean>(false);
     const levelClearedTimeRef = useRef<number | null>(null);
     const lifeLostAnimationTimeRef = useRef<number | null>(null);
+    const gameBeatenAnimationTimeRef = useRef<number | null>(null);
     const paddleVisualEffectActiveRef = useRef<boolean>(false);
     const paddleVisualEffectStartTimeRef = useRef<number | null>(null);
     const testPowerUpLevelsRef = useRef<Record<PowerUpType, number>>({ ...initialTestPowerUpLevels });
@@ -459,6 +460,7 @@ export function useGameLogic() {
             testPreviewInitialLaunchDoneRef.current = false; 
             paddleVisualEffectActiveRef.current = false;
             paddleVisualEffectStartTimeRef.current = null;
+            gameBeatenAnimationTimeRef.current = null;
             
             gameModeRef.current = mode; 
             setActiveGameMode(mode); 
@@ -584,6 +586,7 @@ export function useGameLogic() {
             levelCompletionProcessedRef.current = false;
             paddleVisualEffectActiveRef.current = false;
             paddleVisualEffectStartTimeRef.current = null;
+            gameBeatenAnimationTimeRef.current = null;
             setGameOverState('playing');
         } else if (gameOverState !== 'playing') {
             paddleShrinkCountdownRef.current = null;
@@ -594,6 +597,7 @@ export function useGameLogic() {
             homingTrailsRef.current = []; 
             paddleVisualEffectActiveRef.current = false;
             paddleVisualEffectStartTimeRef.current = null;
+            gameBeatenAnimationTimeRef.current = null;
             if (gameSpeedFactorRef.current !== BASE_BALL_SPEED_FACTOR) {
                  gameSpeedFactorRef.current = BASE_BALL_SPEED_FACTOR;
             }
@@ -630,6 +634,7 @@ export function useGameLogic() {
             levelCompletionProcessedRef.current = false;
             paddleVisualEffectActiveRef.current = false;
             paddleVisualEffectStartTimeRef.current = null;
+            gameBeatenAnimationTimeRef.current = null;
             setGameOverState('playing');
         } else if (gameOverState === 'life_lost_animation') {
             livesRef.current--; // Decrement final life to 0
@@ -645,6 +650,7 @@ export function useGameLogic() {
             homingTrailsRef.current = []; 
             paddleVisualEffectActiveRef.current = false;
             paddleVisualEffectStartTimeRef.current = null;
+            gameBeatenAnimationTimeRef.current = null;
             if (gameSpeedFactorRef.current !== BASE_BALL_SPEED_FACTOR) {
                  gameSpeedFactorRef.current = BASE_BALL_SPEED_FACTOR;
             }
@@ -744,6 +750,7 @@ export function useGameLogic() {
         levelCompletionProcessedRef.current = false;
         paddleVisualEffectActiveRef.current = false;
         paddleVisualEffectStartTimeRef.current = null;
+        gameBeatenAnimationTimeRef.current = null;
         resourceMeterRef.current = 0;
         prevPaddleXRef.current = (BOARD_WIDTH - INITIAL_PADDLE_WIDTH) / 2;
         
@@ -920,9 +927,11 @@ export function useGameLogic() {
             homingTrailsRef.current = []; 
             paddleTargetsRef.current = [];
             levelCompletionProcessedRef.current = false;
+            levelClearedTimeRef.current = null;
             testPreviewInitialLaunchDoneRef.current = false; 
             paddleVisualEffectActiveRef.current = false;
             paddleVisualEffectStartTimeRef.current = null;
+            gameBeatenAnimationTimeRef.current = null;
             resourceMeterRef.current = 0;
             prevPaddleXRef.current = (BOARD_WIDTH - INITIAL_PADDLE_WIDTH) / 2;
             setTestPowerUpSpawnChanceWithReset(INITIAL_TEST_POWER_UP_SPAWN_CHANCE); 
@@ -985,6 +994,7 @@ export function useGameLogic() {
         paddleTargetsRef.current = [];
         paddleVisualEffectActiveRef.current = false;
         paddleVisualEffectStartTimeRef.current = null;
+        gameBeatenAnimationTimeRef.current = null;
         resourceMeterRef.current = 0;
         prevPaddleXRef.current = (BOARD_WIDTH - INITIAL_PADDLE_WIDTH) / 2;
         resetLevel(mode, resetScoreAndGold);
@@ -1036,6 +1046,7 @@ export function useGameLogic() {
         levelCompletionProcessedRef,
         levelClearedTimeRef,
         lifeLostAnimationTimeRef,
+        gameBeatenAnimationTimeRef,
         paddleVisualEffectActiveRef, 
         paddleVisualEffectStartTimeRef,
         laserIntervalRef, 
@@ -1081,6 +1092,7 @@ export function useGameLogic() {
         levelCompletionProcessedRef,
         levelClearedTimeRef,
         lifeLostAnimationTimeRef,
+        gameBeatenAnimationTimeRef,
         paddleVisualEffectActiveRef, 
         paddleVisualEffectStartTimeRef,
         laserIntervalRef,

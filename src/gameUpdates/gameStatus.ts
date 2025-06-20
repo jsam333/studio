@@ -1,9 +1,6 @@
 // src/gameUpdates/gameStatus.ts
 import { GameStateRefs, GameLoopCallbacks, GameState } from '../interfaces';
-
-// Define minimum bonus gold here or import from constants if moved
-const MINIMUM_BONUS_GOLD = 5;
-const FINAL_LEVEL = 20; // Define the final level number
+import { MINIMUM_BONUS_GOLD, FINAL_LEVEL } from '../constants';
 
 // Helper to clear bonus timers (to avoid duplication)
 const clearBonusTimers = (refs: GameStateRefs) => {
@@ -58,8 +55,8 @@ export const checkGameStatus = (
              const currentMode = refs.gameModeRef.current;
              if (currentMode === 'main') {
                  if (refs.currentLevelRef.current === FINAL_LEVEL) {
-                     nextState = 'won';
-                     console.log(`Final Level (${FINAL_LEVEL}) complete! You Win! Final Score: ${refs.scoreRef.current}`);
+                     nextState = 'game_beaten_animation';
+                     console.log(`Final Level (${FINAL_LEVEL}) complete! Starting victory animation.`);
                  } else {
                      nextState = 'level_cleared';
                      const bonusEarned = Math.max(MINIMUM_BONUS_GOLD, refs.bonusGoldRef.current);

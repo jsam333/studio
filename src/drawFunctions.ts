@@ -11,4 +11,5 @@ export * from './drawFunctions/drawPointsFields';
 export * from './drawFunctions/drawHomingTrails';
 export * from './drawFunctions/drawResourceMeter';
 export * from './drawFunctions/drawLevelClearedMessage';
+export * from './drawFunctions/drawGameBeatenAnimation';
 export * from './drawFunctions/drawUtils'; // Export utils in case they are needed elsewhere, though primarily for internal use.

@@ -175,7 +175,7 @@ export interface PointsField {
     ballsPassed: number; 
 }
 
-export type GameState = 'menu' | 'playing' | 'won' | 'lost' | 'shop' | 'level_reset' | 'level_cleared' | 'life_lost_animation';
+export type GameState = 'menu' | 'playing' | 'won' | 'lost' | 'shop' | 'level_reset' | 'level_cleared' | 'life_lost_animation' | 'game_beaten_animation';
 export type GameMode = 'main' | 'test';
 
 export interface GameStateRefsBase {
@@ -230,6 +230,7 @@ export interface GameStateRefsBase {
     laserIntervalRef: React.MutableRefObject<number | null>;
     levelClearedTimeRef: React.MutableRefObject<number | null>;
     lifeLostAnimationTimeRef: React.MutableRefObject<number | null>;
+    gameBeatenAnimationTimeRef: React.MutableRefObject<number | null>;
     homingTrailsRef: React.MutableRefObject<HomingTrail[]>;
     paddleTargetsRef: React.MutableRefObject<PaddleTarget[]>;
     soundSystemRef: React.MutableRefObject<SoundSystem | null>;
@@ -245,6 +246,9 @@ export interface GameStateRefs extends GameStateRefsBase {
     animationFrameIdRef?: React.MutableRefObject<number | null>;
     lastTimeRef?: React.MutableRefObject<number>;
     currentLevelRef: React.MutableRefObject<number>;
+    drawEndMessage: (context: CanvasRenderingContext2D, state: GameState, finalScore: number) => void;
+    resetLevelCallback: (mode: GameMode | null, resetScoreAndGold: boolean) => void;
+    resetBonusGoldCallback: () => void;
 }
 
 export interface GameLoopCallbacks {

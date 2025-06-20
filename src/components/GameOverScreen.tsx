@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { Button } from './ui/button';
 import { PowerUpType } from '../interfaces';
 import { getBasePowerUpType, getPowerUpLevelFromString } from '../utils/powerUpHelpers';
-import { POWER_UP_IMAGE_PATHS, GOLD_COLOR, BASE_SHOP_WIDTH, BASE_SHOP_HEIGHT, HINTS, Hint } from '../constants';
+import { POWER_UP_IMAGE_PATHS, GOLD_COLOR, BASE_SHOP_WIDTH, BASE_SHOP_HEIGHT, HINTS, Hint, FINAL_LEVEL } from '../constants';
 import { ScrollArea } from './ui/scroll-area';
 import {
     Tooltip,
@@ -88,6 +88,10 @@ export const GameOverScreen: React.FC<GameOverScreenProps> = ({
         }
     };
 
+    const victoryMessage = won ? 
+        (currentLevel === FINAL_LEVEL ? `You Won! You beat level ${FINAL_LEVEL}!` : 'You Won!') : 
+        `Lost to Level ${currentLevel} :(`;
+
     return (
         <TooltipProvider>
             <div 
@@ -104,7 +108,7 @@ export const GameOverScreen: React.FC<GameOverScreenProps> = ({
                         marginBottom: scaled.mb(4)
                     }}
                 >
-                    {won ? 'You Won!' : `Lost to Level ${currentLevel} :(`}
+                    {victoryMessage}
                 </h1>
                 
                 <div

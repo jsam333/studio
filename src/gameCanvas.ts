@@ -718,20 +718,7 @@ export const setupGameCanvas = ({
 
     const handleKeyDown = (event: KeyboardEvent) => {
         if (event.key === 'c' && gameStateRefs.gameOverStateRef.current === 'playing') {
-            console.log("Debug: 'C' key pressed, clearing bricks..."); 
-            const bricks = gameStateRefs.bricksRef.current;
-            let bricksCleared = 0;
-            for (let c = 0; c < bricks.length; c++) {
-                if (bricks[c]) {
-                    for (let r = 0; r < bricks[c].length; r++) {
-                        if (bricks[c][r] && bricks[c][r].status === 1) {
-                            bricks[c][r].status = 0;
-                            bricksCleared++;
-                        }
-                    }
-                }
-            }
-            console.log(`Debug: Cleared ${bricksCleared} bricks.`); 
+            // Brick clearing logic removed. The point gain is handled in page.tsx.
         }
     };
 

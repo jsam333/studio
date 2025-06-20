@@ -28,7 +28,8 @@ import {
     drawPointsFields, drawParticles,
     drawHomingTrails, // Added drawHomingTrails
     drawResourceMeter,
-    drawLevelClearedMessage
+    drawLevelClearedMessage,
+    drawGameBeatenAnimation
 } from './drawFunctions';
 
 const updatePaddleShrinkTimer = (
@@ -221,6 +222,66 @@ export const gameUpdate = (
     const gameMode = refs.gameModeRef.current;
     const isTestPreview = gameMode === 'test' && currentGameState === 'menu';
 
+    if (currentGameState === 'game_beaten_animation') {
+        const currentTime = Date.now();
+
+        if (!refs.gameBeatenAnimationTimeRef.current) {
+            refs.gameBeatenAnimationTimeRef.current = currentTime;
+            refs.soundSystemRef.current?.playGameBeatenSound();
+
+            // Clear all balls and powerups for the final animation
+            refs.ballsRef.current = [];
+            refs.stuckBallsRef.current = [];
+            refs.powerUpsRef.current = [];
+            refs.lasersRef.current = [];
+
+            // Burst all remaining bricks
+            const bricks = refs.bricksRef.current;
+            const columns = refs.brickColumnsRef.current;
+            const rows = refs.brickRowsRef.current;
+
+            for (let c = 0; c < columns; c++) {
+                if (bricks[c]) {
+                    for (let r = 0; r < bricks[c].length; r++) {
+                        if (bricks[c][r] && bricks[c][r].status === 1) {
+                            bricks[c][r].status = 0;
+                        }
+                    }
+                }
+            }
+        }
+
+        const elapsedTimeForAnimation = currentTime - (refs.gameBeatenAnimationTimeRef.current || currentTime);
+
+        // Spawn fireworks periodically
+        if (elapsedTimeForAnimation % 250 < 20) { // Approx every 1/4 second
+            createRainbowParticleExplosion(
+                refs.particlesRef.current,
+                Math.random() * BOARD_WIDTH, // random x
+                Math.random() * (BOARD_HEIGHT / 2), // random y in top half
+                0, 0 // it's a point explosion
+            );
+        }
+
+
+        updateParticles(refs, currentTime, elapsedTime);
+
+        ctx.clearRect(0, 0, BOARD_WIDTH, BOARD_HEIGHT);
+
+        // Draw remaining elements like particles
+        drawParticles(ctx, refs.particlesRef.current);
+        
+        // Draw the main animation text
+        drawGameBeatenAnimation(ctx, elapsedTimeForAnimation);
+        
+        // Transition to 'won' state after a delay
+        if (elapsedTimeForAnimation >= 2000) { // 2 second animation
+            refs.gameBeatenAnimationTimeRef.current = null;
+            callbacks.setGameOverState('won');
+        }
+        return;
+    }
+
     if (currentGameState === 'level_cleared') {
         const currentTime = Date.now();
 
@@ -288,7 +349,6 @@ export const gameUpdate = (
 
         // Reverted duration back to original value
         if (currentTime - (refs.levelClearedTimeRef.current || 0) >= 400) { 
-            refs.levelClearedTimeRef.current = null;
             callbacks.setGameOverState('shop');
         }
         return;

@@ -197,6 +197,19 @@ export class SoundSystem {
         this.playSound('levelClear2', 0.8, 500, 0.1, 'sine', 1800, 0.15);
     }
 
+    playGameBeatenSound() {
+        // A series of rising, triumphant notes
+        this.playSound('gameBeaten1', 0.8, 523.25, 0.15, 'triangle', 659.25, 0); // C5 to E5
+        this.playSound('gameBeaten2', 0.8, 659.25, 0.15, 'triangle', 783.99, 0.15); // E5 to G5
+        this.playSound('gameBeaten3', 0.9, 783.99, 0.3, 'triangle', 1046.50, 0.3); // G5 to C6
+
+        // Play it again after a delay
+        const secondPlayDelay = 1.0; // 1-second delay for the second playthrough
+        this.playSound('gameBeaten4', 0.8, 523.25, 0.15, 'triangle', 659.25, secondPlayDelay); 
+        this.playSound('gameBeaten5', 0.8, 659.25, 0.15, 'triangle', 783.99, secondPlayDelay + 0.15);
+        this.playSound('gameBeaten6', 0.9, 783.99, 0.3, 'triangle', 1046.50, secondPlayDelay + 0.3);
+    }
+
     stopAllSounds(): void {
         if (this.audioContext) {
             this.activeSounds.forEach((instances) => {

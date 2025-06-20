@@ -11,7 +11,8 @@ import {
     BASE_SHOP_HEIGHT,
     POWER_UP_REROLL_COST,
     BOARD_WIDTH,
-    BOARD_HEIGHT
+    BOARD_HEIGHT,
+    FINAL_LEVEL
 } from '../constants';
 import { shuffleArray } from '../utils/helpers';
 import { calculateBaseSpawnChance } from '../gameUpdates/gameLoopUtils';
@@ -252,6 +253,10 @@ export const ShopScreen: React.FC<ShopScreenProps> = ({
     }
     startNextLevel();
   };
+
+  const startNextLevelButtonText = currentLevel + 1 === FINAL_LEVEL 
+      ? `Start Level ${FINAL_LEVEL}, the final level!` 
+      : `Start Level ${currentLevel + 1}`;
 
   const canPreviewNextLevel = highestLevelReachedByPlayer >= currentLevel + 1;
 
@@ -521,7 +526,7 @@ export const ShopScreen: React.FC<ShopScreenProps> = ({
                             minHeight: scaled.h(36)
                         }}
                     >
-                        Start Level {currentLevel + 1}
+                        {startNextLevelButtonText}
                     </Button>
                     <Button
                         onClick={() => handleResetGame(false)}
