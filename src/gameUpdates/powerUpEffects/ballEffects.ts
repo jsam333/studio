@@ -4,7 +4,7 @@ import { createNewBall } from '../gameLoopUtils';
 import {
     BOARD_HEIGHT, PADDLE_HEIGHT, BALL_SIZE, BASE_BALL_SPEED_FACTOR,
     SPLITTING_BALL_DURATION, BIG_BALL_DURATION, BUILDER_BALL_DURATION,
-    BLACK_BALL_DURATION, PIERCE_BALL_HITS
+    DOUBLE_BALL_DURATION, PIERCE_BALL_HITS
 } from '../../constants';
 
 export const applyBallEffects = (
@@ -25,11 +25,19 @@ export const applyBallEffects = (
         case 'HOMING_BALL':
         case 'HOMING_BALL_L2':
         case 'HOMING_BALL_L3': {
+            let numToAffectHoming = 2;
+            if (type === 'HOMING_BALL_L2') {
+                numToAffectHoming = 4;
+            } else if (type === 'HOMING_BALL_L3') {
+                numToAffectHoming = 6;
+            }
             const eligibleBalls = refs.ballsRef.current.filter(b => !b.isHoming);
-            const ballsToModify = eligibleBalls.slice(0, numToAffect);
+            const ballsToModify = eligibleBalls.slice(0, numToAffectHoming);
             ballsToModify.forEach(ball => {
                 ball.isHoming = true;
-                 // Note: Homing duration TBD
+                // Note: Homing duration TBD
+                ball.isGlowEffectActive = true;
+                ball.glowEffectStartTime = currentTime;
             });
             break;
         }
@@ -40,7 +48,10 @@ export const applyBallEffects = (
             const ballsToModify = eligibleBalls.slice(0, numToAffect);
             ballsToModify.forEach(ball => {
                 ball.isSplitting = true;
-                ball.splittingEndTime = currentTime + SPLITTING_BALL_DURATION; // Duration might vary by level later
+                ball.splitsRemaining = 3;
+                ball.splittingEndTime = currentTime + SPLITTING_BALL_DURATION; 
+                ball.isGlowEffectActive = true;
+                ball.glowEffectStartTime = currentTime;
             });
             break;
         }
@@ -51,14 +62,15 @@ export const applyBallEffects = (
             const ballsToModify = eligibleBalls.slice(0, numToAffect);
             ballsToModify.forEach(ball => {
                 ball.isBig = true;
-                ball.bigEndTime = currentTime + BIG_BALL_DURATION; // Duration might vary by level later
+                ball.bigEndTime = currentTime + BIG_BALL_DURATION;
+                ball.isPopEffectActive = true; // Activate pop effect
+                ball.popEffectStartTime = currentTime; // Set start time for pop effect
             });
             break;
         }
         case 'MULTI_BALL':
         case 'MULTI_BALL_L2':
         case 'MULTI_BALL_L3': {
-            // Spawning logic remains the same (spawns 1, 2, or 3 *new* balls)
             let numberOfBallsToSpawn = 1;
             if (type === 'MULTI_BALL_L2') {
                 numberOfBallsToSpawn = 2;
@@ -79,32 +91,44 @@ export const applyBallEffects = (
         case 'BUILDER_BALL':
         case 'BUILDER_BALL_L2':
         case 'BUILDER_BALL_L3': {
-            const eligibleBalls = refs.ballsRef.current.filter(
-                b => !b.isBlack && !b.isBlue && (!b.pierceHitsRemaining || b.pierceHitsRemaining <= 0)
-            );
-            const ballsToModify = eligibleBalls.slice(0, numToAffect);
-            ballsToModify.forEach(ball => {
-                ball.isBlue = true;
-                ball.blueEndTime = currentTime + BUILDER_BALL_DURATION; // Duration might vary by level later
-                // Remove conflicting effects
-                ball.isBlack = false; ball.blackEndTime = undefined;
-                ball.pierceHitsRemaining = 0;
-            });
+            let numberOfBallsToSpawn = 1;
+            if (type === 'BUILDER_BALL_L2') {
+                numberOfBallsToSpawn = 2;
+            } else if (type === 'BUILDER_BALL_L3') {
+                numberOfBallsToSpawn = 3;
+            }
+            for (let i = 0; i < numberOfBallsToSpawn; i++) {
+                let sx = (Math.random() - 0.5) * 6;
+                let sy = -3 - Math.random() * 2;
+                const newBall = createNewBall(
+                    refs.paddleXRef.current + refs.paddleWidthRef.current / 2 + (Math.random() - 0.5) * 10,
+                    BOARD_HEIGHT - PADDLE_HEIGHT - BALL_SIZE - 5,
+                    sx, sy, BASE_BALL_SPEED_FACTOR
+                );
+                newBall.isBlue = true;
+                newBall.blueEndTime = currentTime + BUILDER_BALL_DURATION;
+                newBall.isDouble = false; 
+                newBall.doubleEndTime = undefined;
+                newBall.pierceHitsRemaining = 0;
+                newBall.isGlowEffectActive = true;
+                newBall.glowEffectStartTime = currentTime;
+                refs.ballsRef.current.push(newBall);
+            }
             break;
         }
-        case 'BLACK_BALL':
-        case 'BLACK_BALL_L2':
-        case 'BLACK_BALL_L3': {
+        case 'DOUBLE_BALL':
+        case 'DOUBLE_BALL_L2':
+        case 'DOUBLE_BALL_L3': {
             const eligibleBalls = refs.ballsRef.current.filter(
-                b => !b.isBlack && !b.isBlue && (!b.pierceHitsRemaining || b.pierceHitsRemaining <= 0)
+                b => !b.isDouble && !b.isBlue
             );
             const ballsToModify = eligibleBalls.slice(0, numToAffect);
             ballsToModify.forEach(ball => {
-                ball.isBlack = true;
-                ball.blackEndTime = currentTime + BLACK_BALL_DURATION; // Duration might vary by level later
-                 // Remove conflicting effects
+                ball.isDouble = true;
+                ball.doubleEndTime = currentTime + DOUBLE_BALL_DURATION; 
                 ball.isBlue = false; ball.blueEndTime = undefined;
-                ball.pierceHitsRemaining = 0;
+                ball.isGlowEffectActive = true;
+                ball.glowEffectStartTime = currentTime;
             });
             break;
         }
@@ -112,20 +136,18 @@ export const applyBallEffects = (
         case 'PIERCE_BALL_L2':
         case 'PIERCE_BALL_L3': {
             const eligibleBalls = refs.ballsRef.current.filter(
-                b => !b.isBlack && !b.isBlue && (!b.pierceHitsRemaining || b.pierceHitsRemaining <= 0)
+                b => !b.isBlue && (!b.pierceHitsRemaining || b.pierceHitsRemaining <= 0)
             );
             const ballsToModify = eligibleBalls.slice(0, numToAffect);
             ballsToModify.forEach(ball => {
-                 // Apply pierce effect (hits might vary by level later)
                 ball.pierceHitsRemaining = PIERCE_BALL_HITS;
-                 // Remove conflicting effects
                 ball.isBlue = false; ball.blueEndTime = undefined;
-                ball.isBlack = false; ball.blackEndTime = undefined;
+                ball.isGlowEffectActive = true;
+                ball.glowEffectStartTime = currentTime;
             });
             break;
         }
         default:
-            // console.log(`Ball effect not handled for type: ${type}`); // Optional: log unhandled types
             break;
     }
 };

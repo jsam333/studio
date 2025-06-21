@@ -1,5 +1,5 @@
 import type {Metadata} from 'next';
-import {Geist, Geist_Mono} from 'next/font/google';
+import {Geist, Geist_Mono, Inter} from 'next/font/google';
 import './globals.css';
 
 const geistSans = Geist({
@@ -9,6 +9,11 @@ const geistSans = Geist({
 
 const geistMono = Geist_Mono({
   variable: '--font-geist-mono',
+  subsets: ['latin'],
+});
+
+const inter = Inter({
+  variable: '--font-inter',
   subsets: ['latin'],
 });
 
@@ -24,7 +29,7 @@ export default function RootLayout({
 }>) {
   return (
     // Apply font classNames directly to the html tag
-    <html lang="en" className={`${geistSans.variable} ${geistMono.variable}`}>
+    <html lang="en" className={`${geistSans.variable} ${geistMono.variable} ${inter.variable}`}>
       {/* Keep suppressHydrationWarning for now, might be removable later */}
       <body suppressHydrationWarning={true}>
         {/* Remove font variables from here, apply antialiased */}

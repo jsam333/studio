@@ -1,10 +1,8 @@
+// src/gameUpdates/powerUpEffects/paddleEffects.ts
 import { PowerUpType } from '../../interfaces';
 import { GameStateRefs, GameLoopCallbacks } from '../../interfaces';
 import {
     PADDLE_WIDEN_INCREMENT, MAX_PADDLE_WIDTH, BOARD_WIDTH
-    // Removed non-existent constants:
-    // LASER_SHOTS_INCREMENT_L1, LASER_SHOTS_INCREMENT_L2, LASER_SHOTS_INCREMENT_L3,
-    // STICKY_PADDLE_CHARGES_L1, STICKY_PADDLE_CHARGES_L2, STICKY_PADDLE_CHARGES_L3
 } from '../../constants';
 
 
@@ -43,20 +41,30 @@ export const applyPaddleEffects = (
                 refs.paddleXRef.current = newPaddleX;
                 refs.widenLevelRef.current += multiplier;
                 callbacks.schedulePaddleShrink();
+
+                // Trigger visual effect
+                if (refs.paddleVisualEffectActiveRef && refs.paddleVisualEffectStartTimeRef) {
+                    refs.paddleVisualEffectActiveRef.current = true;
+                    refs.paddleVisualEffectStartTimeRef.current = currentTime;
+                }
             } else if (originalWidth >= MAX_PADDLE_WIDTH) {
                  callbacks.schedulePaddleShrink();
+                 // Optionally trigger visual effect even if at max width, if desired
+                 // if (refs.paddleVisualEffectActiveRef && refs.paddleVisualEffectStartTimeRef) {
+                 //     refs.paddleVisualEffectActiveRef.current = true;
+                 //     refs.paddleVisualEffectStartTimeRef.current = currentTime;
+                 // }
             }
             break;
         }
         case 'LASER_PADDLE':
         case 'LASER_PADDLE_L2':
         case 'LASER_PADDLE_L3': {
-            // Add 2, 4, or 6 shots based on level (updated)
-            let shotsToAdd = 2; // Level 1 gives 2 shots
+            let shotsToAdd = 2; 
             if (type === 'LASER_PADDLE_L2') {
-                shotsToAdd = 4; // Level 2 gives 4 shots
+                shotsToAdd = 4; 
             } else if (type === 'LASER_PADDLE_L3') {
-                shotsToAdd = 6; // Level 3 gives 6 shots
+                shotsToAdd = 6; 
             }
              refs.laserShotsRef.current += shotsToAdd;
             break;
@@ -64,12 +72,11 @@ export const applyPaddleEffects = (
         case 'RECOVERY_PADDLE':
         case 'RECOVERY_PADDLE_L2':
         case 'RECOVERY_PADDLE_L3': {
-             // Updated logic: Add 2, 4, or 6 charges based on level
-             let chargesToAdd = 2; // L1 = 2 charges
+             let chargesToAdd = 2; 
              if (type === 'RECOVERY_PADDLE_L2') {
-                 chargesToAdd = 4; // L2 = 4 charges
+                 chargesToAdd = 4; 
              } else if (type === 'RECOVERY_PADDLE_L3') {
-                 chargesToAdd = 6; // L3 = 6 charges
+                 chargesToAdd = 6; 
              }
              refs.stickyPaddleChargesRef.current += chargesToAdd;
             break;

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { Button } from './ui/button';
 import { PowerUpType, GameStateRefs, Brick } from '../interfaces';
 import {
@@ -8,7 +8,11 @@ import {
     POWER_UP_DESCRIPTIONS,
     POWER_UP_IMAGE_PATHS,
     BASE_SHOP_WIDTH,
-    BASE_SHOP_HEIGHT
+    BASE_SHOP_HEIGHT,
+    POWER_UP_REROLL_COST,
+    BOARD_WIDTH,
+    BOARD_HEIGHT,
+    FINAL_LEVEL
 } from '../constants';
 import { shuffleArray } from '../utils/helpers';
 import { calculateBaseSpawnChance } from '../gameUpdates/gameLoopUtils';
@@ -22,53 +26,31 @@ import {
     addPowerUpToLocalStorage,
     getPowerUpsFromLocalStorage,
     saveHighestLevel,
-    getHighestLevel
+    getHighestLevel,
+    saveGameSession
 } from '../utils/localStorage';
-import BrickPreview from './BrickPreview';
+import LevelPreview from './LevelPreview';
 import { getBrickConfiguration, getLevelStats } from '../hooks/useLevelLogic';
 import { initializeBricks } from '../gameLogic';
+import {
+    MAX_LEVEL,
+    getCurrentLevel,
+    getPowerUpTypeForLevel,
+    getBasePowerUpType,
+    getPowerUpLevelFromString
+} from '../utils/powerUpHelpers';
+import { OwnedPowerUpsDisplay } from './OwnedPowerUpsDisplay';
 
 const SHOP_ITEMS_COUNT = 5;
-const MAX_LEVEL = 3;
 
 interface NextLevelInfo {
     totalBricks: number;
     targetScore: number;
 }
 
-const getCurrentLevel = (ownedPowerUps: Set<PowerUpType>, baseType: PowerUpType): number => {
-    for (let level = MAX_LEVEL; level >= 1; level--) {
-        const type = getPowerUpTypeForLevel(baseType, level);
-        if (type && ownedPowerUps.has(type)) return level;
-    }
-    return 0;
-};
-
-const getPowerUpTypeForLevel = (baseType: PowerUpType, level: number): PowerUpType | null => {
-    if (level < 1 || level > MAX_LEVEL) return null;
-    if (level === 1) return baseType;
-    return `${baseType}_L${level}` as PowerUpType;
-};
-
-const getBasePowerUpType = (powerUp: PowerUpType): PowerUpType => {
-    const L_INDEX = powerUp.indexOf('_L');
-    if (L_INDEX !== -1) {
-        return powerUp.substring(0, L_INDEX) as PowerUpType;
-    }
-    return powerUp;
-};
-
-const getPowerUpLevelFromString = (powerUp: PowerUpType): number => {
-    const match = powerUp.match(/_L(\d)$/);
-    if (match && match[1]) {
-        return parseInt(match[1], 10);
-    }
-    return 1;
-};
-
 const UPGRADABLE_POWER_UPS: PowerUpType[] = [
     'MULTI_BALL', 'WIDEN_PADDLE', 'LASER_PADDLE', 'RECOVERY_PADDLE',
-    'REGEN_BRICK', 'SAFETY_NET', 'REINFORCE_BRICK', 'MAKE_SPECIAL', 'BLACK_BALL',
+    'REGEN_BRICK', 'SAFETY_NET', 'REINFORCE_BRICK', 'MAKE_SPECIAL', 'DOUBLE_BALL',
     'PIERCE_BALL', 'UPGRADE_BRICK', 'BUILDER_BALL', 'BIG_BALL', 'SPLITTING_BALL',
     'COLLECTION_FIELD', 'HOMING_BALL', 'BOMB_BRICK',
     'BALL_BRICK', 'POINTS_FIELD'
@@ -79,7 +61,8 @@ interface ShopScreenProps {
   currentLevel: number;
   addSpawnablePowerUp: (powerUp: PowerUpType) => void;
   startNextLevel: () => void;
-  handleResetGame: () => void;
+  handleResetGame: (clearSession?: boolean) => void;
+  initialShopItems?: PowerUpType[] | null;
 }
 
 export const ShopScreen: React.FC<ShopScreenProps> = ({
@@ -87,19 +70,32 @@ export const ShopScreen: React.FC<ShopScreenProps> = ({
   currentLevel,
   addSpawnablePowerUp,
   startNextLevel,
-  handleResetGame
+  handleResetGame,
+  initialShopItems,
 }) => {
-  const [shopItems, setShopItems] = useState<PowerUpType[]>([]);
+  const [shopItems, setShopItems] = useState<PowerUpType[]>(initialShopItems || []);
   const [purchasedInSession, setPurchasedInSession] = useState<Map<PowerUpType, boolean>>(new Map());
   const [goldDisplay, setGoldDisplay] = useState(gameStateRefs.goldRef.current);
   const [currentSpawnChance, setCurrentSpawnChance] = useState(0);
   const [displaySpawnablePowerUps, setDisplaySpawnablePowerUps] = useState<PowerUpType[]>([]);
   const [knownPowerUps, setKnownPowerUps] = useState<string[]>([]);
-  const [nextLevelBricksPreview, setNextLevelBricksPreview] = useState<Brick[][] | null>(null);
   const [nextLevelInfo, setNextLevelInfo] = useState<NextLevelInfo | null>(null);
   const [nextLevelBeatTime, setNextLevelBeatTime] = useState<number | null>(null);
   const [highestLevelReachedByPlayer, setHighestLevelReachedByPlayer] = useState<number>(0);
   const [scaleFactor, setScaleFactor] = useState(1);
+  const hasSavedOnLoadRef = useRef(false);
+
+  const saveCurrentSession = useCallback((itemsToSave: PowerUpType[]) => {
+    const sessionData = {
+        level: gameStateRefs.currentLevelRef.current,
+        gold: gameStateRefs.goldRef.current,
+        spawnablePowerUps: Array.from(gameStateRefs.spawnablePowerUpsRef.current),
+        shopItems: itemsToSave,
+        lives: gameStateRefs.livesRef.current,
+        totalGoldSpentOnPowerUps: gameStateRefs.totalGoldSpentOnPowerUpsRef.current,
+    };
+    saveGameSession(sessionData);
+  }, [gameStateRefs]);
 
   const updateScaleFactor = useCallback(() => {
     const currentWidth = window.innerWidth;
@@ -115,49 +111,80 @@ export const ShopScreen: React.FC<ShopScreenProps> = ({
     return () => window.removeEventListener('resize', updateScaleFactor);
   }, [updateScaleFactor]);
 
-  useEffect(() => {
+  const generateShopItems = useCallback(() => {
     const ownedPowerUps = gameStateRefs.spawnablePowerUpsRef.current;
     let potentialShopPool = ALL_TOGGLEABLE_POWER_UPS.filter(p => p !== 'ALL_IN_ONE');
     potentialShopPool = shuffleArray(potentialShopPool);
     const currentShopSelection = potentialShopPool.slice(0, SHOP_ITEMS_COUNT);
     setShopItems(currentShopSelection);
-    setPurchasedInSession(new Map());
+    setPurchasedInSession(new Map()); // Reset purchases when items reroll
+    return currentShopSelection;
+  }, [gameStateRefs.spawnablePowerUpsRef]);
+
+  useEffect(() => {
+    if (hasSavedOnLoadRef.current) return;
+
+    let itemsToSave: PowerUpType[];
+    if (initialShopItems && initialShopItems.length > 0) {
+      itemsToSave = initialShopItems;
+      setShopItems(initialShopItems);
+    } else {
+      itemsToSave = generateShopItems();
+    }
+
+    saveCurrentSession(itemsToSave);
+
+    hasSavedOnLoadRef.current = true;
+  }, [initialShopItems, generateShopItems, gameStateRefs, saveCurrentSession]);
+
+  useEffect(() => {
     setGoldDisplay(gameStateRefs.goldRef.current);
-    const chance = calculateBaseSpawnChance(ownedPowerUps, 'main');
+    const chance = calculateBaseSpawnChance(gameStateRefs.spawnablePowerUpsRef.current, 'main');
     setCurrentSpawnChance(chance);
-    setDisplaySpawnablePowerUps(Array.from(ownedPowerUps).sort());
+    setDisplaySpawnablePowerUps(Array.from(gameStateRefs.spawnablePowerUpsRef.current).sort());
     setKnownPowerUps(getPowerUpsFromLocalStorage());
     setHighestLevelReachedByPlayer(getHighestLevel());
-  }, [gameStateRefs.goldRef, gameStateRefs.spawnablePowerUpsRef]);
+  }, [
+      gameStateRefs.goldRef, 
+      gameStateRefs.spawnablePowerUpsRef, 
+      generateShopItems, 
+      initialShopItems
+    ]);
 
   useEffect(() => {
     const nextLevelVal = currentLevel + 1;
     const gameMode = gameStateRefs.gameModeRef.current;
 
     if (highestLevelReachedByPlayer >= nextLevelVal) {
-      const config = getBrickConfiguration(nextLevelVal, gameMode);
-      if (config) {
-        const bricks = initializeBricks(config.brickColumns, config.brickRows, config.brickHeight, nextLevelVal, gameMode);
-        setNextLevelBricksPreview(bricks);
-      } else {
-        setNextLevelBricksPreview(null);
-      }
       const stats = getLevelStats(nextLevelVal, gameMode);
       setNextLevelInfo(stats);
 
       // Calculate time to beat
-      const baseDelay = 5000; 
-      const incrementPerLevel = 900;
-      let startDelayForNextLevel = baseDelay + (nextLevelVal - 1) * incrementPerLevel;
-      const maxDelayForLevel20 = baseDelay + (20 - 1) * incrementPerLevel;
-      if (startDelayForNextLevel > maxDelayForLevel20 && nextLevelVal > 20) {
-        startDelayForNextLevel = maxDelayForLevel20;
+      let startDelayForNextLevel: number;
+      if (nextLevelVal <= 5) {
+          const baseDelay_1_5 = 5000;
+          const incrementPerLevel_1_5 = 2000;
+          startDelayForNextLevel = baseDelay_1_5 + (nextLevelVal - 1) * incrementPerLevel_1_5;
+      } else { // Level 6 and above
+          const baseDelay_1_5 = 5000;
+          const incrementPerLevel_1_5 = 2000;
+          const delayAtLevel5 = baseDelay_1_5 + (5 - 1) * incrementPerLevel_1_5;
+          
+          if (nextLevelVal === 6) {
+              startDelayForNextLevel = delayAtLevel5;
+          } else if (nextLevelVal === 7) {
+              startDelayForNextLevel = delayAtLevel5 + 400;
+          } else { // Level 8+
+              const delayAtLevel7 = delayAtLevel5 + 400;
+              const incrementPerLevel_8_plus = 800;
+              startDelayForNextLevel = delayAtLevel7 + (nextLevelVal - 7) * incrementPerLevel_8_plus;
+          }
       }
+
       const totalTimeToBeat = startDelayForNextLevel + 17500; // 17500ms includes bonus gold timer and final countdown
       setNextLevelBeatTime(totalTimeToBeat);
 
     } else {
-      setNextLevelBricksPreview(null);
       setNextLevelInfo(null);
       setNextLevelBeatTime(null);
     }
@@ -188,7 +215,9 @@ export const ShopScreen: React.FC<ShopScreenProps> = ({
 
     if (gameStateRefs.goldRef.current < cost) return;
 
+    gameStateRefs.soundSystemRef.current?.playShopPurchaseSound();
     gameStateRefs.goldRef.current -= cost;
+    gameStateRefs.totalGoldSpentOnPowerUpsRef.current += cost;
     setGoldDisplay(gameStateRefs.goldRef.current);
     addSpawnablePowerUp(actualItemToAdd);
 
@@ -204,6 +233,20 @@ export const ShopScreen: React.FC<ShopScreenProps> = ({
     const newChance = calculateBaseSpawnChance(gameStateRefs.spawnablePowerUpsRef.current, 'main');
     setCurrentSpawnChance(newChance);
     setDisplaySpawnablePowerUps(Array.from(gameStateRefs.spawnablePowerUpsRef.current).sort());
+    
+    saveCurrentSession(shopItems);
+  };
+
+  const handleReroll = () => {
+    if (gameStateRefs.goldRef.current >= POWER_UP_REROLL_COST) {
+        gameStateRefs.goldRef.current -= POWER_UP_REROLL_COST;
+        setGoldDisplay(gameStateRefs.goldRef.current);
+        const newShopItems = generateShopItems(); 
+        saveCurrentSession(newShopItems);
+    } else {
+        // Optionally, provide feedback that the player doesn't have enough gold
+        console.log("Not enough gold to reroll.");
+    }
   };
 
   const handleStartNextLevel = () => {
@@ -215,7 +258,11 @@ export const ShopScreen: React.FC<ShopScreenProps> = ({
     startNextLevel();
   };
 
-  const canPreviewNextLevel = highestLevelReachedByPlayer >= (currentLevel + 1);
+  const startNextLevelButtonText = currentLevel + 1 === FINAL_LEVEL 
+      ? `Start Level ${FINAL_LEVEL}, the final level!` 
+      : `Start Level ${currentLevel + 1}`;
+
+  const canPreviewNextLevel = highestLevelReachedByPlayer >= currentLevel + 1;
 
   // Scaled values helper
   const scaled = {
@@ -230,7 +277,7 @@ export const ShopScreen: React.FC<ShopScreenProps> = ({
     mb: (base: number) => base * scaleFactor,
     mx: (base: number) => base * scaleFactor,
     iconSizeMd: 32 * scaleFactor,
-    buttonHeightMd: 96 * scaleFactor, // For shop item buttons
+    buttonHeightMd: 100 * scaleFactor, // For shop item buttons
     footerButtonHeight: 48 * scaleFactor, // For Start Level / Back to Menu buttons
     imageSizeMd: 40 * scaleFactor,
   };
@@ -243,82 +290,23 @@ export const ShopScreen: React.FC<ShopScreenProps> = ({
         >
             {/* Scrollable Content Area */}
             <div className="flex-grow overflow-auto"> 
-                {/* Owned PowerUps Display */}
-                <div
-                    className="w-full mb-4 mx-auto"
-                    style={{ maxWidth: scaled.w(672), marginBottom: scaled.mb(16) }}
-                >
-                    {displaySpawnablePowerUps.length > 0 ? (
-                        <div
-                            className="flex flex-wrap justify-center bg-black bg-opacity-20 rounded"
-                            style={{ gap: scaled.gap(8), padding: scaled.p(8) }}
-                        >
-                            {displaySpawnablePowerUps.map(powerUp => {
-                                const baseType = getBasePowerUpType(powerUp);
-                                const imagePath = POWER_UP_IMAGE_PATHS[baseType];
-                                const displayName = powerUp.replace(/_/g, ' ');
-                                const level = getPowerUpLevelFromString(powerUp);
-                                return (
-                                    <Tooltip key={powerUp}>
-                                        <TooltipTrigger asChild>
-                                            <div
-                                                className="border border-gray-500 rounded bg-gray-700 flex flex-col items-center"
-                                                style={{ padding: scaled.p(4) }}
-                                            >
-                                                {imagePath ? (
-                                                    <img
-                                                        src={imagePath}
-                                                        alt={displayName}
-                                                        className="object-contain"
-                                                        style={{ width: scaled.iconSizeMd, height: scaled.iconSizeMd }}
-                                                    />
-                                                ) : (
-                                                    <div
-                                                        className="bg-gray-400 flex items-center justify-center text-white font-bold rounded"
-                                                        aria-label={displayName}
-                                                        style={{
-                                                            width: scaled.iconSizeMd,
-                                                            height: scaled.iconSizeMd,
-                                                            fontSize: scaled.fontSize(12)
-                                                        }}
-                                                    >{baseType.substring(0,1)}</div>
-                                                )}
-                                                {level > 1 && (
-                                                    <span
-                                                        className="font-bold"
-                                                        style={{ fontSize: scaled.fontSize(12), marginTop: scaled.px(2) }}
-                                                    >L{level}</span>
-                                                )}
-                                            </div>
-                                        </TooltipTrigger>
-                                        <TooltipContent style={{fontSize: scaled.fontSize(12)}}>
-                                            <p>{displayName}</p>
-                                        </TooltipContent>
-                                    </Tooltip>
-                                );
-                            })}
-                        </div>
-                    ) : (
-                        <div
-                            className="text-center text-gray-400 italic bg-black bg-opacity-20 rounded"
-                            style={{ padding: scaled.p(8), fontSize: scaled.fontSize(14) }}
-                        >No power-ups active.</div>
-                    )}
-                </div>
+                <OwnedPowerUpsDisplay spawnablePowerUps={new Set(displaySpawnablePowerUps)} scaled={scaled} />
 
                 <h1
                     className="font-bold text-center"
                     style={{
                         fontSize: scaled.fontSize(30),
-                        marginBlock: scaled.my(20)
+                        marginTop: scaled.my(4),
+                        marginBottom: scaled.my(4)
                     }}
-                >Buy Something!</h1>
+                >
+                    Buy Something!</h1>
 
                 <div
-                    className="flex flex-row items-center justify-center mb-6"
+                    className="flex flex-row items-center justify-center"
                     style={{
                         gap: scaled.gap(12),
-                        marginBottom: scaled.mb(24)
+                        marginBottom: scaled.mb(6)
                     }}
                 >
                     <p
@@ -328,6 +316,27 @@ export const ShopScreen: React.FC<ShopScreenProps> = ({
                         }}
                     >
                         Gold: {goldDisplay}
+                    </p>
+                    <Button
+                        onClick={handleReroll}
+                        disabled={goldDisplay < POWER_UP_REROLL_COST}
+                        className="text-white bg-gray-800 hover:bg-gray-700 border border-white disabled:opacity-50"
+                        style={{
+                            fontSize: scaled.fontSize(14),
+                            padding: `${scaled.py(4)}px ${scaled.px(8)}px`,
+                            height: scaled.footerButtonHeight,
+                            minHeight: scaled.h(36)
+                        }}
+                    >
+                        Reroll Powerups ({POWER_UP_REROLL_COST} Gold)
+                    </Button>
+                    <p
+                        style={{
+                            fontSize: scaled.fontSize(24),
+                            color: 'red'
+                        }}
+                    >
+                        Lives: {gameStateRefs.livesRef.current}
                     </p>
                     <p
                         className="text-blue-300"
@@ -342,11 +351,10 @@ export const ShopScreen: React.FC<ShopScreenProps> = ({
                 <div
                     className="grid grid-cols-5 mx-auto" 
                     style={{
-                        gap: scaled.gap(12),
-                        marginBottom: scaled.mb(32),
+                        gap: scaled.gap(3),
                         width: '100%',
-                        maxWidth: scaled.w(576),
-                        minWidth: scaled.w(480),
+                        maxWidth: scaled.w(750),
+                        minWidth: scaled.w(624),
                     }}
                 >
                     {shopItems.length > 0 ? (
@@ -425,70 +433,71 @@ export const ShopScreen: React.FC<ShopScreenProps> = ({
                             const showLevelIndicator = UPGRADABLE_POWER_UPS.includes(item) && levelToShowOnButton > 1;
 
                             return (
-                                <Tooltip key={itemKey}>
-                                    <TooltipTrigger asChild>
-                                        <Button
-                                            onClick={() => handlePurchase(itemToPurchaseOnClick)}
-                                            disabled={isDisabled}
-                                            className={`text-white flex flex-col justify-center items-center border border-white ${buttonBgColor}`}
-                                            style={{
-                                                paddingTop: scaled.py(8),
-                                                paddingBottom: scaled.py(8),
-                                                paddingLeft: scaled.px(4),
-                                                paddingRight: scaled.px(4),
-                                                fontSize: scaled.fontSize(12),
-                                                height: scaled.buttonHeightMd,
-                                            }}
-                                        >
-                                            {/* Icon */}
-                                            {imagePath ? (
-                                                <img
-                                                    src={imagePath}
-                                                    alt={displayName}
-                                                    className="object-contain"
-                                                    style={{
-                                                        width: scaled.imageSizeMd,
-                                                        height: scaled.imageSizeMd,
-                                                    }}
-                                                />
-                                            ) : (
-                                                <div
-                                                    className="rounded-md bg-gray-400 flex items-center justify-center text-white font-bold"
-                                                    aria-label={displayName}
-                                                    style={{
-                                                        width: scaled.imageSizeMd,
-                                                        height: scaled.imageSizeMd,
-                                                    }}
-                                                >?</div>
-                                            )}
+                                <div key={itemKey} className="flex flex-col h-full bg-gray-800 rounded-lg border border-gray-600 overflow-hidden">
+                                    <Button
+                                        onClick={() => handlePurchase(itemToPurchaseOnClick)}
+                                        disabled={isDisabled}
+                                        className={`text-white flex flex-col justify-center items-center ${buttonBgColor} rounded-none border-b border-gray-600`}
+                                        style={{
+                                            paddingTop: scaled.py(4),
+                                            paddingBottom: scaled.py(4),
+                                            paddingLeft: scaled.px(4),
+                                            paddingRight: scaled.px(4),
+                                            fontSize: scaled.fontSize(12),
+                                            height: scaled.buttonHeightMd,
+                                        }}
+                                    >
+                                        {/* Icon */}
+                                        {imagePath ? (
+                                            <img
+                                                src={imagePath}
+                                                alt={displayName}
+                                                className="object-contain"
+                                                style={{
+                                                    width: scaled.imageSizeMd,
+                                                    height: scaled.imageSizeMd,
+                                                }}
+                                            />
+                                        ) : (
+                                            <div
+                                                className="rounded-md bg-gray-400 flex items-center justify-center text-white font-bold"
+                                                aria-label={displayName}
+                                                style={{
+                                                    width: scaled.imageSizeMd,
+                                                    height: scaled.imageSizeMd,
+                                                }}
+                                            >?</div>
+                                        )}
 
-                                            {/* Text block wrapper */}
-                                            <div style={{ marginTop: 0 }} className="flex flex-col items-center">
-                                                {showLevelIndicator && (
-                                                    <span
-                                                        className="font-bold block"
-                                                        style={{ fontSize: scaled.fontSize(12) }}
-                                                    >
-                                                        L{levelToShowOnButton}
-                                                    </span>
-                                                )}
-                                                <span 
-                                                    className="block"
+                                        {/* Text block wrapper */}
+                                        <div style={{ marginTop: 0 }} className="flex flex-col items-center">
+                                            {showLevelIndicator && (
+                                                <span
+                                                    className="font-bold block"
                                                     style={{ fontSize: scaled.fontSize(12) }}
                                                 >
-                                                    {buttonText}
+                                                    L{levelToShowOnButton}
                                                 </span>
-                                            </div>
-                                        </Button>
-                                    </TooltipTrigger>
-                                    <TooltipContent style={{fontSize: scaled.fontSize(12)}}>
+                                            )}
+                                            <span 
+                                                className="block"
+                                                style={{ fontSize: scaled.fontSize(12) }}
+                                            >
+                                                {buttonText}
+                                            </span>
+                                        </div>
+                                    </Button>
+                                    <div 
+                                        className="px-1 py-1 flex-grow flex items-center justify-center text-center bg-black bg-opacity-25"
+                                        style={{fontSize: scaled.fontSize(12), height: scaled.h(78)}}
+                                    >
                                         {isKnown ? (
-                                            <p>{displayName} - {description}</p>
+                                            <p><span className="font-bold">{displayName}:</span> {description}</p>
                                         ) : (
                                             <p>???</p>
                                         )}
-                                    </TooltipContent>
-                                </Tooltip>
+                                    </div>
+                                </div>
                             );
                         })
                     ) : (
@@ -505,14 +514,14 @@ export const ShopScreen: React.FC<ShopScreenProps> = ({
                     paddingRight: scaled.px(16),
                     paddingTop: scaled.py(8),
                     paddingBottom: scaled.py(8),
-                    height: scaled.h(120),
-                    minHeight: scaled.h(100)
+                    height: scaled.h(155),
+                    minHeight: scaled.h(145)
                 }}
             >
                 <div className="flex flex-col" style={{gap: scaled.gap(8)}}>
                     <Button
                         onClick={handleStartNextLevel}
-                        className="text-white bg-gray-800 hover:bg-gray-700 border border-purple-600 flex justify-center items-center"
+                        className="bg-gray-800 hover:bg-gray-700 text-white border border-white hover:border-purple-400 hover:text-purple-300"
                         style={{
                             paddingLeft: scaled.px(24),
                             paddingRight: scaled.px(24),
@@ -521,11 +530,11 @@ export const ShopScreen: React.FC<ShopScreenProps> = ({
                             minHeight: scaled.h(36)
                         }}
                     >
-                        Start Level {currentLevel + 1}
+                        {startNextLevelButtonText}
                     </Button>
                     <Button
-                        onClick={handleResetGame}
-                        className="text-white bg-gray-800 hover:bg-gray-700 border border-yellow-600 flex justify-center items-center"
+                        onClick={() => handleResetGame(false)}
+                        className="bg-gray-800 hover:bg-gray-700 text-white border border-white hover:border-yellow-400 hover:text-yellow-300"
                         style={{
                             paddingLeft: scaled.px(24),
                             paddingRight: scaled.px(24),
@@ -534,7 +543,7 @@ export const ShopScreen: React.FC<ShopScreenProps> = ({
                             minHeight: scaled.h(36)
                         }}
                     >
-                        Back to Menu
+                        Back to Menu (and save)
                     </Button>
                 </div>
 
@@ -555,12 +564,12 @@ export const ShopScreen: React.FC<ShopScreenProps> = ({
                     </div>
                 )}
 
-                {canPreviewNextLevel && nextLevelBricksPreview && (
+                {canPreviewNextLevel && (
                     <div style={{ flexShrink: 0 }}> 
-                        <BrickPreview
-                            bricks={nextLevelBricksPreview}
-                            previewWidth={scaled.w(293)} 
-                            previewHeight={scaled.h(50)}
+                        <LevelPreview
+                            level={currentLevel + 1}
+                            previewWidth={scaled.w(220)}
+                            previewHeight={scaled.w(220) * (BOARD_HEIGHT / BOARD_WIDTH)}
                         />
                     </div>
                 )}

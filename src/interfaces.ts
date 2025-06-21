@@ -6,12 +6,49 @@ export interface Brick {
   y: number;
   width: number;
   height: number;
-  status: number;
+  status: number; // 0: inactive, 1: active, 2: destroying (flashing/fading), 3: bomb_glowing
   strength: number;
   isSpecial: boolean;
   upgradeLevel?: number;
   isBomb?: boolean;
-  holdsBall?: boolean; // Added for the new power-up
+  holdsBall?: boolean; 
+  isFlashing?: boolean; // For destruction white flash
+  fadeOutAlpha?: number; 
+  flashStartTime?: number; 
+  isRegenVisualEffectActive?: boolean; 
+  regenVisualEffectStartTime?: number; 
+  isDarkFlashActive?: boolean; 
+  darkFlashStartTime?: number; 
+  isSpecialFlashActive?: boolean; // For MAKE_SPECIAL light flash effect
+  specialFlashStartTime?: number; // For MAKE_SPECIAL light flash effect
+  isBombGlowActive?: boolean;
+  bombGlowStartTime?: number;
+  disappearTime?: number;
+  isShining?: boolean;
+  shineStartTime?: number;
+}
+
+export interface Particle {
+    id: number;
+    x: number;
+    y: number;
+    speedX: number;
+    speedY: number;
+    size: number;
+    color: string;
+    alpha: number;
+    lifespan: number; // in milliseconds
+    createdAt: number;
+}
+
+export interface HomingTrail {
+  id: number;
+  startX: number;
+  startY: number;
+  endX: number;
+  endY: number;
+  color: string;
+  createdAt: number;
 }
 
 export type PowerUpType =
@@ -22,8 +59,8 @@ export type PowerUpType =
     'SAFETY_NET' | 'SAFETY_NET_L2' | 'SAFETY_NET_L3' |
     'REINFORCE_BRICK' | 'REINFORCE_BRICK_L2' | 'REINFORCE_BRICK_L3' |
     'MAKE_SPECIAL' | 'MAKE_SPECIAL_L2' | 'MAKE_SPECIAL_L3' |
-    'BLACK_BALL' | 'BLACK_BALL_L2' | 'BLACK_BALL_L3' |
-    'ALL_IN_ONE' | // ALL_IN_ONE remains single level
+    'DOUBLE_BALL' | 'DOUBLE_BALL_L2' | 'DOUBLE_BALL_L3' |
+    'ALL_IN_ONE' | 
     'PIERCE_BALL' | 'PIERCE_BALL_L2' | 'PIERCE_BALL_L3' |
     'UPGRADE_BRICK' | 'UPGRADE_BRICK_L2' | 'UPGRADE_BRICK_L3' |
     'BUILDER_BALL' | 'BUILDER_BALL_L2' | 'BUILDER_BALL_L3' |
@@ -34,17 +71,20 @@ export type PowerUpType =
     'BOMB_BRICK' | 'BOMB_BRICK_L2' | 'BOMB_BRICK_L3' |
     'RECOVERY_PADDLE' | 'RECOVERY_PADDLE_L2' | 'RECOVERY_PADDLE_L3' |
     'BALL_BRICK' | 'BALL_BRICK_L2' | 'BALL_BRICK_L3' |
-    'POINTS_FIELD' | 'POINTS_FIELD_L2' | 'POINTS_FIELD_L3' | // Added POINTS_FIELD levels
+    'POINTS_FIELD' | 'POINTS_FIELD_L2' | 'POINTS_FIELD_L3' | 
     'NONE';
 
 export interface PowerUp {
   x: number;
   y: number;
   type: PowerUpType;
-  status: 'falling' | 'collected';
+  status: 'falling' | 'collected' | 'animatingToPaddle'; // Added 'animatingToPaddle'
   id: number;
   timeCreated?: number;
   speedY?: number;
+  animationStartTime?: number; // For animation towards paddle
+  startX?: number;             // Start X for animation
+  startY?: number;             // Start Y for animation
 }
 
 export interface Ball {
@@ -53,9 +93,9 @@ export interface Ball {
   speedX: number;
   speedY: number;
   id: number;
-  isBlack?: boolean;
-  blackEndTime?: number;
-  blackPausedDuration?: number;
+  isDouble?: boolean;
+  doubleEndTime?: number;
+  doublePausedDuration?: number;
   isBlue?: boolean;
   blueEndTime?: number;
   bluePausedDuration?: number;
@@ -65,20 +105,33 @@ export interface Ball {
   isSplitting?: boolean;
   splittingEndTime?: number;
   splittingPausedDuration?: number;
+  splitsRemaining?: number;
   isHoming?: boolean;
-  stuckOffset?: number; // For top sticking
-  stuckSide?: 'left' | 'right' | null; // For side sticking
-  stuckSideOffset?: number; // Vertical offset for side sticking
-  lastFramePointsFieldIds: Set<number>; // Added to track field entries
+  stuckOffset?: number; 
+  stuckSide?: 'left' | 'right' | null; 
+  stuckSideOffset?: number; 
+  lastFramePointsFieldIds: Set<number>; 
 
-  // Properties for zipping animation during sticky recovery
   isZipping?: boolean;
   zipTargetX?: number;
   zipTargetY?: number;
   zipStartTime?: number;
   initialZipX?: number; 
   initialZipY?: number;
-  targetStuckSideValue?: 'left' | 'right'; // The side it will stick to after zipping
+  targetStuckSideValue?: 'left' | 'right'; 
+
+  // For individual ball glow effect
+  isGlowEffectActive?: boolean;
+  glowEffectStartTime?: number;
+
+  // For big ball pop effect
+  isPopEffectActive?: boolean;
+  popEffectStartTime?: number;
+
+  // For homing speed boost
+  originalSpeedX?: number;
+  originalSpeedY?: number;
+  isHomingSpeedActive?: boolean;
 }
 
 export type SpawnMarker = 'PENDING' | 'SPAWN_SPECIAL' | 'SPAWN_BALL' | 'NONE';
@@ -100,6 +153,7 @@ export interface CollisionResult {
   pierceOccurred: boolean;
   builderHitOccurred: boolean;
   brickHit: boolean;
+  hitUnderside?: boolean;
 }
 
 export interface Laser {
@@ -117,19 +171,21 @@ export interface PointsField {
     y: number;
     width: number;
     height: number;
-    createdAt: number; // Added createdAt timestamp
-    ballsPassed: number; // Added to track balls passed through
+    createdAt: number; 
+    ballsPassed: number; 
 }
 
-// Add 'level_reset' to GameState
-export type GameState = 'menu' | 'playing' | 'won' | 'lost' | 'shop' | 'level_reset';
+export type GameState = 'menu' | 'playing' | 'won' | 'lost' | 'shop' | 'level_reset' | 'level_cleared' | 'life_lost_animation' | 'game_beaten_animation';
 export type GameMode = 'main' | 'test';
 
 export interface GameStateRefsBase {
     paddleXRef: React.MutableRefObject<number>;
+    prevPaddleXRef: React.MutableRefObject<number>; // To calculate paddle velocity
+    resourceMeterRef: React.MutableRefObject<number>; // For the new resource meter
     ballsRef: React.MutableRefObject<Ball[]>;
     bricksRef: React.MutableRefObject<Brick[][]>;
     powerUpsRef: React.MutableRefObject<PowerUp[]>;
+    particlesRef: React.MutableRefObject<Particle[]>; 
     scoreRef: React.MutableRefObject<number>;
     targetScoreRef: React.MutableRefObject<number>;
     totalBricksRef: React.MutableRefObject<number>;
@@ -151,15 +207,37 @@ export interface GameStateRefsBase {
     enabledPowerUpsRef: React.MutableRefObject<Set<PowerUpType>>;
     isGameStartedRef: React.MutableRefObject<boolean>;
     bonusCountdownStartedRef: React.MutableRefObject<boolean>;
-    brickColumnsRef: React.MutableRefObject<number>;
-    brickRowsRef: React.MutableRefObject<number>;
+    brickColumnsRef: React.MutableRefObject<number>; 
+    brickRowsRef: React.MutableRefObject<number>; 
     gameModeRef: React.MutableRefObject<GameMode | null>;
     livesRef: React.MutableRefObject<number>;
     bonusGoldTimerCountdownRef: React.MutableRefObject<number | null>;
-    // *** ADDED: Flag for initial bonus gold decrement completion ***
     initialBonusGoldDecrementCompleteRef: React.MutableRefObject<boolean>;
-    pointsFieldsRef: React.MutableRefObject<PointsField[]>; // Added pointsFieldsRef
-    levelCompletionProcessedRef: React.MutableRefObject<boolean>; // *** ADDED LINE ***
+    pointsFieldsRef: React.MutableRefObject<PointsField[]>;
+    levelCompletionProcessedRef: React.MutableRefObject<boolean>;
+    testPowerUpSpawnChanceRef: React.MutableRefObject<number>;
+    testBrickColumnsRef: React.MutableRefObject<number>; 
+    testBrickRowsRef: React.MutableRefObject<number>; 
+    testBrickGridHeightRef?: React.MutableRefObject<number>;
+    testPowerUpLevelsRef?: React.MutableRefObject<Record<PowerUpType, number>>;
+    isPaintModeActiveRef?: React.MutableRefObject<boolean>;
+    isUpgradePaintModeActiveRef?: React.MutableRefObject<boolean>;
+    isReinforcePaintModeActiveRef?: React.MutableRefObject<boolean>;
+    isBombPaintModeActiveRef?: React.MutableRefObject<boolean>;
+    isBallBrickPaintModeActiveRef?: React.MutableRefObject<boolean>;
+    paddleVisualEffectActiveRef?: React.MutableRefObject<boolean>; 
+    paddleVisualEffectStartTimeRef?: React.MutableRefObject<number | null>; 
+    laserIntervalRef: React.MutableRefObject<number | null>;
+    levelClearedTimeRef: React.MutableRefObject<number | null>;
+    lifeLostAnimationTimeRef: React.MutableRefObject<number | null>;
+    gameBeatenAnimationTimeRef: React.MutableRefObject<number | null>;
+    homingTrailsRef: React.MutableRefObject<HomingTrail[]>;
+    paddleTargetsRef: React.MutableRefObject<PaddleTarget[]>;
+    soundSystemRef: React.MutableRefObject<SoundSystem | null>;
+    isRemoveBrickPaintModeActiveRef?: React.MutableRefObject<boolean>;
+    isAddBrickPaintModeActiveRef?: React.MutableRefObject<boolean>;
+    totalGoldSpentOnPowerUpsRef: React.MutableRefObject<number>;
+    levelGoldEarnedRef: React.MutableRefObject<number>;
 }
 
 export interface GameStateRefs extends GameStateRefsBase {
@@ -168,6 +246,10 @@ export interface GameStateRefs extends GameStateRefsBase {
     animationFrameIdRef?: React.MutableRefObject<number | null>;
     lastTimeRef?: React.MutableRefObject<number>;
     currentLevelRef: React.MutableRefObject<number>;
+    drawEndMessage: (context: CanvasRenderingContext2D, state: GameState, finalScore: number) => void;
+    resetLevelCallback: (mode: GameMode | null, resetScoreAndGold: boolean) => void;
+    resetBonusGoldCallback: () => void;
+    triggerTestLevelReset?: () => void;
 }
 
 export interface GameLoopCallbacks {
@@ -179,4 +261,28 @@ export interface GameLoopCallbacks {
     drawEndMessage: (context: CanvasRenderingContext2D, state: GameState, finalScore: number) => void;
     resetLevelCallback: (mode: GameMode | null, resetScoreAndGold: boolean) => void;
     resetBonusGoldCallback: () => void;
+}
+
+export interface SavedLevelData {
+  name: string;
+  brickColumns: number;
+  brickRows: number;
+  brickGridHeight: number;
+  bricks: Brick[][];
+  enabledPowerUps: PowerUpType[];
+  powerUpLevels: Record<PowerUpType, number>;
+  powerUpSpawnChance: number;
+  initialLaserCharges: number;
+  initialRecoveryCharges: number;
+  initialSafetyNets: number;
+}
+
+export interface PaddleTarget {
+  id: number;
+  x: number;
+  y: number; // This will be PADDLE_Y
+  startTime: number;
+  totalDuration: number;
+  initialRadius: number;
+  isHit: boolean; // To mark it for removal after the ball hits
 }

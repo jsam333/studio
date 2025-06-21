@@ -1,9 +1,6 @@
 // src/gameUpdates/gameStatus.ts
 import { GameStateRefs, GameLoopCallbacks, GameState } from '../interfaces';
-
-// Define minimum bonus gold here or import from constants if moved
-const MINIMUM_BONUS_GOLD = 5;
-const FINAL_LEVEL = 20; // Define the final level number
+import { MINIMUM_BONUS_GOLD, FINAL_LEVEL } from '../constants';
 
 // Helper to clear bonus timers (to avoid duplication)
 const clearBonusTimers = (refs: GameStateRefs) => {
@@ -31,11 +28,16 @@ export const checkGameStatus = (
 
     // Check for loss condition (all balls gone)
     if (refs.ballsRef.current.length === 0 && refs.stuckBallsRef.current.length === 0 && previousBallCount > 0 && refs.isGameStartedRef.current) {
-        if (refs.livesRef.current > 1) {
-            nextState = 'level_reset';
-        } else {
-            nextState = 'lost';
-            console.log("Game Over! Ran out of lives.");
+        if (refs.gameModeRef.current === 'test') { // Check if in test mode
+            nextState = 'lost'; // Directly go to 'lost' state for test mode
+            console.log("Test mode: All balls lost.");
+        } else { // Main game mode logic
+            if (refs.livesRef.current > 1) {
+                nextState = 'level_reset';
+            } else {
+                nextState = 'life_lost_animation';
+                console.log("Final life lost, starting animation.");
+            }
         }
     }
 
@@ -53,12 +55,13 @@ export const checkGameStatus = (
              const currentMode = refs.gameModeRef.current;
              if (currentMode === 'main') {
                  if (refs.currentLevelRef.current === FINAL_LEVEL) {
-                     nextState = 'won';
-                     console.log(`Final Level (${FINAL_LEVEL}) complete! You Win! Final Score: ${refs.scoreRef.current}`);
+                     nextState = 'game_beaten_animation';
+                     console.log(`Final Level (${FINAL_LEVEL}) complete! Starting victory animation.`);
                  } else {
-                     nextState = 'shop';
+                     nextState = 'level_cleared';
                      const bonusEarned = Math.max(MINIMUM_BONUS_GOLD, refs.bonusGoldRef.current);
                      refs.goldRef.current += bonusEarned;
+                     refs.levelGoldEarnedRef.current = bonusEarned;
                      console.log(`Level ${refs.currentLevelRef.current} complete! Score: ${refs.scoreRef.current}. Awarded ${bonusEarned} bonus gold. Total gold: ${refs.goldRef.current}`);
                  }
              } else {

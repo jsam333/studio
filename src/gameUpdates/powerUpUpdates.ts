@@ -1,16 +1,18 @@
-
 // src/gameUpdates/powerUpUpdates.ts
 import { PowerUp, PowerUpType } from '../interfaces';
-import { GameStateRefs } from '../interfaces'; // Corrected import path/type if needed
-import { BASE_POWER_UP_SPEED, BOARD_HEIGHT, PADDLE_HEIGHT, POWER_UP_SIZE, PADDLE_Y } from '../constants'; // Reverted to BASE_POWER_UP_SPEED, Added PADDLE_Y
+import { GameStateRefs } from '../interfaces';
+import { BASE_POWER_UP_SPEED, BOARD_HEIGHT, PADDLE_HEIGHT, POWER_UP_SIZE, PADDLE_Y } from '../constants';
+
+const POWER_UP_ANIMATION_DURATION_MS = 75; // Changed to 75
 
 export const updatePowerUps = (
     refs: GameStateRefs,
-    gameSpeedFactor: number, // Keep parameter for signature consistency, but don't use it for speed calculation
+    gameSpeedFactor: number, 
     newlySpawnedPowerUps: PowerUp[],
-    collectedPowerUpTypes: PowerUpType[], // Pass this array to add collected types
-    deltaTime: number // Add deltaTime parameter
-): void => { // Return void as we modify the array in place
+    collectedPowerUpTypes: PowerUpType[],
+    deltaTime: number 
+): void => {
+    const currentTime = Date.now();
     const currentPowerUpSpeed = BASE_POWER_UP_SPEED;
     const currentFieldHeight = refs.collectionFieldHeightRef.current;
     const currentFieldWidthOffset = refs.collectionFieldWidthOffsetRef.current;
@@ -21,57 +23,84 @@ export const updatePowerUps = (
     const fieldLeftX = currentPaddleX - currentFieldWidthOffset;
     const fieldRightX = currentPaddleX + currentPaddleWidth + currentFieldWidthOffset;
 
+    const targetAnimX = currentPaddleX + (currentPaddleWidth / 2) - (POWER_UP_SIZE / 2);
+    const targetAnimY = paddleTopY;
+
     const powerUpsToRemoveIndices = new Set<number>();
 
-    // Iterate through existing power-ups to update and mark for removal
     for (let i = 0; i < refs.powerUpsRef.current.length; i++) {
         const pu = refs.powerUpsRef.current[i];
-        
+        let remove = false;
+
+        if (pu.status === 'collected') {
+            // This case handles power-ups already marked as collected in a previous frame (e.g., by animation completion)
+            // The sound should play when it *becomes* collected.
+            collectedPowerUpTypes.push(pu.type);
+            powerUpsToRemoveIndices.add(i);
+            continue; 
+        }
+
         if (pu.status === 'falling') {
             const movement = currentPowerUpSpeed * deltaTime;
             const nextY = pu.y + movement;
-            let collected = false;
-            let remove = false;
+            let collectedByPaddle = false;
+            let collectedByField = false;
 
             const puBottom = nextY + POWER_UP_SIZE;
             const puRight = pu.x + POWER_UP_SIZE;
 
-            // Check collision with paddle area
             if (puBottom >= paddleTopY &&
                 nextY < paddleTopY + PADDLE_HEIGHT && 
                 puRight > currentPaddleX &&
                 pu.x < currentPaddleX + currentPaddleWidth) {
-                collected = true;
+                collectedByPaddle = true;
             }
 
-            // Check collision with collection field
-            if (!collected && (currentFieldHeight > 0 || currentFieldWidthOffset > 0)) {
+            if (!collectedByPaddle && (currentFieldHeight > 0 || currentFieldWidthOffset > 0)) {
                 if (puRight > fieldLeftX &&
                     pu.x < fieldRightX && 
                     puBottom > fieldTopY && 
                     nextY < paddleTopY) {
-                    collected = true;
+                    collectedByField = true;
                 }
             }
 
-            if (collected) {
-                remove = true;
-                collectedPowerUpTypes.push(pu.type);
-            } else if (nextY >= BOARD_HEIGHT) { // Fell off screen
-                remove = true;
+            if (collectedByPaddle) {
+                pu.status = 'collected'; 
+                refs.soundSystemRef.current?.playPowerUpSound(); // Play sound on direct paddle collection
+            } else if (collectedByField) {
+                pu.status = 'animatingToPaddle';
+                pu.animationStartTime = currentTime;
+                pu.startX = pu.x;
+                pu.startY = pu.y;
+                // Sound will play when animation finishes and status becomes 'collected'
+            } else if (nextY >= BOARD_HEIGHT) { 
+                remove = true; 
             }
 
             if (remove) {
                 powerUpsToRemoveIndices.add(i);
-            } else {
-                // Update position if not removed
+            } else if (pu.status === 'falling') { 
                 pu.y = nextY;
             }
+        } else if (pu.status === 'animatingToPaddle') {
+            const elapsedTime = currentTime - (pu.animationStartTime || currentTime);
+            const animationProgress = Math.min(1, elapsedTime / POWER_UP_ANIMATION_DURATION_MS);
+
+            if (pu.startX !== undefined && pu.startY !== undefined) {
+                pu.x = pu.startX + (targetAnimX - pu.startX) * animationProgress;
+                pu.y = pu.startY + (targetAnimY - pu.startY) * animationProgress;
+            }
+
+            if (animationProgress >= 1) {
+                pu.status = 'collected'; 
+                refs.soundSystemRef.current?.playPowerUpSound(); // Play sound when collection animation finishes
+                pu.x = targetAnimX; // Ensure final position
+                pu.y = targetAnimY;
+            }
         }
-        // Add logic here if power-ups can expire or have other statuses that cause removal
     }
 
-    // Remove marked power-ups by iterating backwards
     if (powerUpsToRemoveIndices.size > 0) {
          let writeIndex = 0;
          for (let readIndex = 0; readIndex < refs.powerUpsRef.current.length; readIndex++) {
@@ -82,12 +111,10 @@ export const updatePowerUps = (
                   writeIndex++;
              }
          }
-         refs.powerUpsRef.current.length = writeIndex; // Truncate the array
+         refs.powerUpsRef.current.length = writeIndex;
     }
 
-    // Add newly spawned power-ups
     if (newlySpawnedPowerUps.length > 0) {
         refs.powerUpsRef.current.push(...newlySpawnedPowerUps);
     }
-    // The function now modifies refs.powerUpsRef.current directly
 };

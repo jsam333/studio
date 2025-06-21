@@ -1,3 +1,14 @@
+import { SavedLevelData } from '../interfaces';
+
+export interface GameSessionData {
+  level: number;
+  gold: number;
+  spawnablePowerUps: string[];
+  shopItems: string[];
+  lives: number;
+  totalGoldSpentOnPowerUps: number;
+}
+
 export const saveData = <T>(key: string, data: T): void => {
   try {
     const jsonData = JSON.stringify(data);
@@ -55,4 +66,73 @@ export const saveHighestLevel = (level: number): void => {
 
 export const getHighestLevel = (): number => {
   return loadData<number>(KEY_HIGHEST_LEVEL) || 0;
+};
+
+// Lifetime Gold specific functions
+const KEY_LIFETIME_GOLD = 'lifetimeGold';
+
+export const saveLifetimeGold = (gold: number): void => {
+  saveData(KEY_LIFETIME_GOLD, gold);
+};
+
+export const getLifetimeGold = (): number => {
+  return loadData<number>(KEY_LIFETIME_GOLD) || 0;
+};
+
+// Hints specific functions
+const KEY_UNLOCKED_HINTS = 'unlockedHints';
+
+export const getUnlockedHintIds = (): number[] => {
+  return loadData<number[]>(KEY_UNLOCKED_HINTS) || [];
+};
+
+export const saveUnlockedHintIds = (ids: number[]): void => {
+  saveData(KEY_UNLOCKED_HINTS, ids);
+};
+
+// Custom Level Designs
+const KEY_SAVED_LEVEL_NAMES = 'savedLevelNames';
+const LEVEL_DATA_PREFIX = 'levelData_';
+
+export const getSavedLevelNames = (): string[] => {
+  return loadData<string[]>(KEY_SAVED_LEVEL_NAMES) || [];
+};
+
+export const saveLevelData = (levelName: string, data: any): boolean => {
+  if (!levelName.trim()) {
+    console.error("Level name cannot be empty.");
+    return false;
+  }
+  const names = getSavedLevelNames();
+  if (!names.includes(levelName)) {
+    names.push(levelName);
+    saveData(KEY_SAVED_LEVEL_NAMES, names);
+  }
+  saveData(`${LEVEL_DATA_PREFIX}${levelName}`, data);
+  return true;
+};
+
+export const loadLevelData = (levelName: string): any | null => {
+  return loadData<any>(`${LEVEL_DATA_PREFIX}${levelName}`);
+};
+
+export const deleteLevelData = (levelName: string): void => {
+  const names = getSavedLevelNames();
+  const updatedNames = names.filter(name => name !== levelName);
+  saveData(KEY_SAVED_LEVEL_NAMES, updatedNames);
+  removeData(`${LEVEL_DATA_PREFIX}${levelName}`);
+};
+
+const KEY_GAME_SESSION = 'brickBlastGameSession';
+
+export const saveGameSession = (data: GameSessionData): void => {
+  saveData(KEY_GAME_SESSION, data);
+};
+
+export const loadGameSession = (): GameSessionData | null => {
+  return loadData<GameSessionData>(KEY_GAME_SESSION);
+};
+
+export const removeGameSession = (): void => {
+  removeData(KEY_GAME_SESSION);
 };

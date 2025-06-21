@@ -1,15 +1,235 @@
 // src/gameUpdates/ballUpdates.ts
-import { Ball, Brick, PowerUpSpawnEvent } from '../interfaces'; // Removed PowerUp, PointsField as they are not directly used here
+import { Ball, Brick, PowerUpSpawnEvent, Particle, HomingTrail, PaddleTarget } from '../interfaces'; // Added PaddleTarget
 import { GameStateRefs, GameLoopCallbacks } from '../interfaces';
 import { checkBrickCollision } from '../gameLogic';
 import { createNewBall, findClosestBrick } from './gameLoopUtils';
 import {
     BOARD_WIDTH, BOARD_HEIGHT, PADDLE_Y, BALL_SIZE, MAX_BALL_SPEED_X, SAFETY_NET_HEIGHT,
-    BIG_BALL_SIZE_INCREASE, BRICK_WIDTH, BRICK_HEIGHT, PADDLE_HEIGHT, BASE_BALL_SPEED_FACTOR,
+    BIG_BALL_SIZE_INCREASE, PADDLE_HEIGHT, BASE_BALL_SPEED_FACTOR,
     PADDLE_SIDE_SAVE_THRESHOLD,
-    POINTS_FIELD_DURATION, // Though not directly used, it was in the original import list
-    ZIP_TO_PADDLE_DURATION // Added for zip animation
+    POINTS_FIELD_DURATION, 
+    ZIP_TO_PADDLE_DURATION,
+    PARTICLE_LIFESPAN, 
+    PARTICLE_SPEED_FACTOR,
+    POWER_UP_COLORS, // Added POWER_UP_COLORS
+    SPLITTING_BALL_PARTICLE_SIZE,
+    HOMING_TRAIL_DURATION,
+    INITIAL_BALL_SPEED_Y, // Added for default split speed
+    TARGET_FPS,
+    RESOURCE_SAVE_COST,
+    RESOURCE_SAVE_PARTICLE_COUNT,
+    RESOURCE_SAVE_PARTICLE_COLOR,
+    RESOURCE_SAVE_PARTICLE_LIFESPAN_MS,
+    RESOURCE_SAVE_PARTICLE_SPEED_MIN,
+    RESOURCE_SAVE_PARTICLE_SPEED_MAX,
+    RESOURCE_SAVE_PARTICLE_SIZE
 } from '../constants';
+
+const predictPaddleCollisionX = (
+    ball: Ball,
+    speedX: number,
+    durationMs: number,
+    gameSpeedFactor: number,
+    currentBallSize: number
+): number => {
+    let remainingMs = durationMs;
+    let currentX = ball.x;
+    let currentSpeedX_pxPerFrame = speedX * gameSpeedFactor;
+
+    if (Math.abs(currentSpeedX_pxPerFrame) < 0.001) {
+        return currentX; // Not moving horizontally
+    }
+
+    const timeStep = 1000 / TARGET_FPS;
+
+    while (remainingMs > 0.001) {
+        const speed_px_per_ms = currentSpeedX_pxPerFrame / timeStep;
+        
+        let timeToWallMs: number;
+
+        if (speed_px_per_ms > 0) {
+            const distanceToWall = (BOARD_WIDTH - currentBallSize) - currentX;
+            timeToWallMs = distanceToWall / speed_px_per_ms;
+        } else {
+            const distanceToWall = currentX - currentBallSize;
+            timeToWallMs = distanceToWall / -speed_px_per_ms; // Ensure time is positive
+        }
+
+        if (timeToWallMs > 0 && timeToWallMs < remainingMs) {
+            currentX += speed_px_per_ms * timeToWallMs;
+            currentSpeedX_pxPerFrame *= -1; // Bounce
+            remainingMs -= timeToWallMs;
+        } else {
+            currentX += speed_px_per_ms * remainingMs;
+            remainingMs = 0;
+        }
+    }
+    return currentX;
+};
+
+const attemptToCreatePaddleTarget = (
+    ball: Ball,
+    newSpeedX: number,
+    newSpeedY: number,
+    refs: GameStateRefs,
+    currentTime: number,
+    gameSpeedFactor: number,
+    bricks: Brick[][],
+    columns: number,
+    rows: number
+): { finalSpeedY: number; newTarget: PaddleTarget } | null => {
+    const currentBallSize = ball.isBig ? BALL_SIZE + BIG_BALL_SIZE_INCREASE : BALL_SIZE;
+
+    if (newSpeedY <= 0) return null;
+
+    // --- Trajectory interception check ---
+    let willBeIntercepted = false;
+    const simBall = { 
+        x: ball.x, 
+        y: ball.y, 
+        speedX: newSpeedX * gameSpeedFactor, 
+        speedY: newSpeedY * gameSpeedFactor 
+    };
+    const simBallSize = ball.isBig ? BALL_SIZE + BIG_BALL_SIZE_INCREASE : BALL_SIZE;
+    const timeStep = 1 / (Math.abs(simBall.speedY) || 1);
+
+    while (simBall.y < PADDLE_Y) {
+        simBall.x += simBall.speedX * timeStep;
+        simBall.y += simBall.speedY * timeStep;
+
+        if (simBall.x > BOARD_WIDTH - simBallSize || simBall.x < simBallSize) {
+            simBall.speedX = -simBall.speedX;
+        }
+        
+        for (let c = 0; c < columns; c++) {
+            if (willBeIntercepted) break;
+            if (!bricks[c]) continue;
+            for (let r = 0; r < rows; r++) {
+                if (willBeIntercepted) break;
+                const brick = bricks[c][r];
+                if (brick && brick.status === 1) {
+                    if (
+                        simBall.x + simBallSize > brick.x &&
+                        simBall.x - simBallSize < brick.x + brick.width &&
+                        simBall.y + simBallSize > brick.y &&
+                        simBall.y - simBallSize < brick.y + brick.height
+                    ) {
+                        const brickCenterY = brick.y + brick.height / 2;
+                        const vecY = simBall.y - brickCenterY;
+                        if (vecY < 0) {
+                             willBeIntercepted = true;
+                        }
+                    }
+                }
+            }
+        }
+        if (willBeIntercepted) break;
+    }
+    
+    if (willBeIntercepted) {
+        return null; 
+    }
+    // --- End of interception check ---
+
+    const paddleTop = PADDLE_Y - currentBallSize;
+    const deltaY = paddleTop - ball.y;
+
+    const initialActualSpeedY = newSpeedY * gameSpeedFactor;
+    if (initialActualSpeedY <= 0) return null;
+
+    const initialPixelsPerMs = initialActualSpeedY / (1000 / TARGET_FPS);
+    if (initialPixelsPerMs <= 0) return null;
+
+    let totalDurationMs = deltaY / initialPixelsPerMs;
+    
+    // --- Conflict Detection and Speed Adjustment ---
+    /*
+    if ((refs.ballsRef.current.length + refs.stuckBallsRef.current.length) <= 10) {
+        let stillHasConflicts = true;
+        let safetyBreak = 0;
+
+        while (stillHasConflicts && safetyBreak < 10) {
+            safetyBreak++;
+            stillHasConflicts = false;
+
+            const conflictingTargetsInWindow: PaddleTarget[] = [];
+            const newImpactTime = currentTime + totalDurationMs;
+
+            for (const target of refs.paddleTargetsRef.current) {
+                if (target.isHit) continue;
+
+                const existingImpactTime = target.startTime + target.totalDuration;
+                const timeDifference = Math.abs(newImpactTime - existingImpactTime);
+                
+                if (timeDifference < 200) {
+                    conflictingTargetsInWindow.push(target);
+                }
+            }
+
+            if (conflictingTargetsInWindow.length >= 2) {
+                stillHasConflicts = true; 
+                
+                const latestConflictingImpactTime = Math.max(
+                    ...conflictingTargetsInWindow.map(t => t.startTime + t.totalDuration)
+                );
+                const earliestConflictingImpactTime = Math.min(
+                    ...conflictingTargetsInWindow.map(t => t.startTime + t.totalDuration)
+                );
+
+                const slowDownImpactTime = latestConflictingImpactTime + 200;
+                const slowDownDuration = slowDownImpactTime - currentTime;
+
+                const speedUpImpactTime = earliestConflictingImpactTime - 200;
+                const speedUpDuration = speedUpImpactTime - currentTime;
+
+                const originalSpeed = deltaY / totalDurationMs;
+
+                let slowDownSpeedChange = Infinity;
+                if (slowDownDuration > 50) {
+                    const newSlowDownSpeed = deltaY / slowDownDuration;
+                    slowDownSpeedChange = Math.abs(newSlowDownSpeed - originalSpeed);
+                }
+
+                let speedUpSpeedChange = Infinity;
+                if (speedUpDuration > 50) {
+                    const newSpeedUpSpeed = deltaY / speedUpDuration;
+                    speedUpSpeedChange = Math.abs(newSpeedUpSpeed - originalSpeed);
+                }
+                
+                if (speedUpSpeedChange < slowDownSpeedChange) {
+                    totalDurationMs = speedUpDuration;
+                } else {
+                    totalDurationMs = slowDownDuration;
+                }
+            }
+        }
+    }
+    */
+    
+    // After the loop, calculate the final speed based on the final deconflicted duration
+    const finalPixelsPerMs = deltaY / totalDurationMs;
+    const finalActualSpeedY = finalPixelsPerMs * (1000 / TARGET_FPS);
+    const finalSpeedY = finalActualSpeedY / gameSpeedFactor;
+    // --- End of Conflict Detection ---
+
+    if (totalDurationMs > 50 && totalDurationMs < 4000) { 
+        const predictedX = predictPaddleCollisionX(ball, newSpeedX, totalDurationMs, gameSpeedFactor, currentBallSize);
+
+        const newTarget: PaddleTarget = {
+            id: Date.now() + Math.random(),
+            x: predictedX,
+            y: PADDLE_Y,
+            startTime: currentTime,
+            totalDuration: totalDurationMs,
+            initialRadius: 15,
+            isHit: false,
+        };
+        
+        return { finalSpeedY, newTarget };
+    }
+
+    return null;
+};
 
 export const updateBalls = (
     refs: GameStateRefs,
@@ -19,36 +239,42 @@ export const updateBalls = (
     gameSpeedFactor: number,
     deltaTime: number,
     columns: number,
-    rows: number
+    rows: number,
+    elapsedTime: number
 ): void => {
     const currentMaxBallSpeedX = MAX_BALL_SPEED_X * gameSpeedFactor;
     let ballsToAdd: Ball[] = [];
     let ballsToRemoveIds = new Set<number>();
 
-    // Update positions of already stuck balls (e.g., to follow paddle movement if stuck to paddle edges)
+    if (refs.homingTrailsRef) {
+        refs.homingTrailsRef.current = refs.homingTrailsRef.current.filter(
+            trail => currentTime - trail.createdAt < HOMING_TRAIL_DURATION
+        );
+    }
+
     refs.stuckBallsRef.current.forEach(stuckBall => {
         const currentBallSize = stuckBall.isBig ? BALL_SIZE + BIG_BALL_SIZE_INCREASE : BALL_SIZE;
         if (stuckBall.stuckSide) {
-            const sideOffset = currentBallSize; // Ball radius
+            const sideOffset = currentBallSize;
             stuckBall.x = stuckBall.stuckSide === 'left'
                 ? refs.paddleXRef.current - sideOffset
                 : refs.paddleXRef.current + refs.paddleWidthRef.current + sideOffset;
             stuckBall.y = PADDLE_Y + PADDLE_HEIGHT / 2 + (stuckBall.stuckSideOffset ?? -PADDLE_HEIGHT / 2);
-        } else { // Stuck on top (though this logic might be deprecated if top-sticking is fully removed)
+        } else {
             const offset = stuckBall.stuckOffset ?? refs.paddleWidthRef.current / 2;
             stuckBall.x = refs.paddleXRef.current + offset;
             stuckBall.y = PADDLE_Y - currentBallSize;
         }
     });
 
-    if (refs.isGameStartedRef.current) {
+    const isTestModePreview = refs.gameModeRef.current === 'test' && refs.gameOverStateRef.current === 'menu';
+
+    if (refs.isGameStartedRef.current || isTestModePreview) {
         for (let i = 0; i < refs.ballsRef.current.length; i++) {
             const ball = refs.ballsRef.current[i];
-            let processNormalUpdate = true; // Flag to determine if normal physics update should occur
-
+            let processNormalUpdate = true;
             const currentBallSize = ball.isBig ? BALL_SIZE + BIG_BALL_SIZE_INCREASE : BALL_SIZE;
 
-            // --- Handle Zipping Animation for Sticky Recovery --- 
             if (ball.isZipping) {
                 if (ball.zipStartTime && ball.initialZipX !== undefined && ball.initialZipY !== undefined && ball.zipTargetX !== undefined && ball.zipTargetY !== undefined) {
                     const elapsedZipTime = currentTime - ball.zipStartTime;
@@ -56,58 +282,133 @@ export const updateBalls = (
                         const progress = elapsedZipTime / ZIP_TO_PADDLE_DURATION;
                         ball.x = ball.initialZipX + (ball.zipTargetX - ball.initialZipX) * progress;
                         ball.y = ball.initialZipY + (ball.zipTargetY - ball.initialZipY) * progress;
-                        processNormalUpdate = false; // Skip normal physics while zipping
+                        processNormalUpdate = false;
                     } else {
-                        // Animation finished, stick the ball
                         ball.x = ball.zipTargetX;
                         ball.y = ball.zipTargetY;
                         ball.isZipping = false;
                         ball.stuckSide = ball.targetStuckSideValue;
-                        ball.stuckSideOffset = -PADDLE_HEIGHT / 2; // Standard vertical offset for side stuck balls
+                        ball.stuckSideOffset = -PADDLE_HEIGHT / 2;
                         ball.speedX = 0;
                         ball.speedY = 0;
-                        ball.stuckOffset = undefined; // Clear top stuck offset
-
-                        // Transfer to stuckBallsRef and mark for removal from active balls
+                        ball.stuckOffset = undefined;
                         refs.stuckBallsRef.current.push(ball);
                         ballsToRemoveIds.add(ball.id);
                         processNormalUpdate = false;
                     }
                 } else {
-                    // Invalid zip state, revert to normal or stuck (should not happen)
-                    ball.isZipping = false; 
+                    ball.isZipping = false;
                 }
             }
 
             if (processNormalUpdate) {
-                 // Deactivate timed power-ups if they've expired
-                if (ball.stuckOffset === undefined && !ball.stuckSide) { // Only if not stuck
-                    if (ball.isBlack && ball.blackEndTime && currentTime >= ball.blackEndTime) { ball.isBlack = false; ball.blackEndTime = undefined; }
+                if (ball.stuckOffset === undefined && !ball.stuckSide) {
+                    if (ball.isDouble && ball.doubleEndTime && currentTime >= ball.doubleEndTime) { ball.isDouble = false; ball.doubleEndTime = undefined; }
                     if (ball.isBlue && ball.blueEndTime && currentTime >= ball.blueEndTime) { ball.isBlue = false; ball.blueEndTime = undefined; }
                     if (ball.isBig && ball.bigEndTime && currentTime >= ball.bigEndTime) { ball.isBig = false; ball.bigEndTime = undefined; }
-                    if (ball.isSplitting && ball.splittingEndTime && currentTime >= ball.splittingEndTime) { ball.isSplitting = false; ball.splittingEndTime = undefined; }
+                    if (ball.isSplitting && ball.splittingEndTime && currentTime >= ball.splittingEndTime) { 
+                        ball.isSplitting = false; 
+                        ball.splittingEndTime = undefined; 
+                        ball.splitsRemaining = undefined;
+                    }
                 }
 
                 let currentSpeedX = ball.speedX;
                 let currentSpeedY = ball.speedY;
 
-                // Brick Collisions
-                const brickCollisionResult = checkBrickCollision(ball, refs.bricksRef.current, columns, rows, deltaTime);
+                const brickCollisionResult = checkBrickCollision(ball, refs.bricksRef.current, columns, rows, deltaTime, refs, currentTime);
                 if (brickCollisionResult.collision) {
+                    // Store the speeds *before* homing deactivation, for splitting logic if it was homing
+                    const speedXBeforeHomingDeactivation = brickCollisionResult.newSpeedX;
+                    const speedYBeforeHomingDeactivation = brickCollisionResult.newSpeedY;
+
                     currentSpeedX = brickCollisionResult.newSpeedX;
                     currentSpeedY = brickCollisionResult.newSpeedY;
-                    if (brickCollisionResult.pierceOccurred) { /* Speed unchanged */ }
-                    else if (ball.isSplitting && brickCollisionResult.brickHit) {
-                        const newBall = createNewBall(ball.x, ball.y, -brickCollisionResult.newSpeedX, -brickCollisionResult.newSpeedY, 1.0);
-                        const speedMagnitude = Math.sqrt(brickCollisionResult.newSpeedX**2 + brickCollisionResult.newSpeedY**2);
-                        if (speedMagnitude > 0) {
-                            newBall.x -= (brickCollisionResult.newSpeedX / speedMagnitude) * 2 * currentBallSize;
-                            newBall.y -= (brickCollisionResult.newSpeedY / speedMagnitude) * 2 * currentBallSize;
+
+                    if (ball.isHomingSpeedActive && ball.originalSpeedX !== undefined && ball.originalSpeedY !== undefined) {
+                        const currentMagnitude = Math.sqrt(currentSpeedX * currentSpeedX + currentSpeedY * currentSpeedY);
+                        const originalMagnitude = Math.sqrt(ball.originalSpeedX * ball.originalSpeedX + ball.originalSpeedY * ball.originalSpeedY);
+
+                        if (currentMagnitude > 0 && originalMagnitude > 0) {
+                            const factor = originalMagnitude / currentMagnitude;
+                            currentSpeedX *= factor;
+                            currentSpeedY *= factor;
+                        }
+                        else if (currentMagnitude === 0 && originalMagnitude > 0) {
+                            currentSpeedX = ball.originalSpeedX; 
+                            currentSpeedY = ball.originalSpeedY > 0 ? -ball.originalSpeedY : ball.originalSpeedY;
+                        }
+                        // After this block, currentSpeedX and currentSpeedY are now the 1x speeds.
+                        ball.isHomingSpeedActive = false;
+                        ball.originalSpeedX = undefined;
+                        ball.originalSpeedY = undefined;
+                    }
+
+                    if (brickCollisionResult.pierceOccurred) { /* Speed unchanged by pierce itself, homing deactivation handled above */ }
+                    else if (ball.isSplitting && ball.splitsRemaining && ball.splitsRemaining > 0 && brickCollisionResult.brickHit) {
+                        ball.splitsRemaining--;
+                        // Use currentSpeedX and currentSpeedY which are now corrected (1x) if ball was homing.
+                        // If the ball was not homing, these are simply brickCollisionResult.newSpeedX/Y.
+                        let newBallBaseSpeedX = -currentSpeedX / gameSpeedFactor;
+                        let newBallBaseSpeedY = -currentSpeedY / gameSpeedFactor;
+
+                        // If the parent ball stopped (e.g. hit a special brick that stops it), give new ball a default speed
+                        if (newBallBaseSpeedX === 0 && newBallBaseSpeedY === 0) {
+                            newBallBaseSpeedX = (Math.random() - 0.5) * 2; // Small random horizontal
+                            newBallBaseSpeedY = -INITIAL_BALL_SPEED_Y; // Default upward speed
+                        }
+                        
+                        const newBall = createNewBall(ball.x, ball.y, newBallBaseSpeedX, newBallBaseSpeedY, BASE_BALL_SPEED_FACTOR);
+                        
+                        // Calculate offset based on the new ball's actual initial direction (after potential default speed)
+                        const newBallActualSpeedX = newBall.speedX; // This is base * speedFactor
+                        const newBallActualSpeedY = newBall.speedY;
+                        const speedMagnitudeForOffset = Math.sqrt(newBallActualSpeedX**2 + newBallActualSpeedY**2);
+
+                        if (speedMagnitudeForOffset > 0) {
+                            newBall.x -= (newBallActualSpeedX / speedMagnitudeForOffset) * 2 * currentBallSize;
+                            newBall.y -= (newBallActualSpeedY / speedMagnitudeForOffset) * 2 * currentBallSize;
                         }
                         ballsToAdd.push(newBall);
+                        
+                        const numParticles = 5;
+                        // Particle speed should also be based on the new ball's (1x) speed
+                        const particleSpeedBase = Math.sqrt(newBallActualSpeedX**2 + newBallActualSpeedY**2) * (PARTICLE_SPEED_FACTOR || 0.8);
+                        const finalParticleColor = '#FFFFFF';
+                        for (let k = 0; k < numParticles; k++) {
+                            const angleOffset = (Math.random() - 0.5) * (Math.PI / 4);
+                            const newAngle = Math.atan2(newBallActualSpeedY, newBallActualSpeedX) + angleOffset;
+                            const particleSpeed = particleSpeedBase * (0.8 + Math.random() * 0.4);
+                            const particle: Particle = {
+                                id: Date.now() + Math.random(),
+                                x: ball.x, y: ball.y,
+                                speedX: Math.cos(newAngle) * particleSpeed,
+                                speedY: Math.sin(newAngle) * particleSpeed,
+                                lifespan: (PARTICLE_LIFESPAN || 300) * (0.8 + Math.random() * 0.4),
+                                color: finalParticleColor,
+                                size: SPLITTING_BALL_PARTICLE_SIZE || 2,
+                                createdAt: currentTime, alpha: 1
+                            };
+                            refs.particlesRef.current.push(particle);
+                        }
+                        if (ball.splitsRemaining <= 0) {
+                            ball.isSplitting = false;
+                            ball.splitsRemaining = undefined;
+                            ball.splittingEndTime = undefined;
+                        }
                     }
                     if (brickCollisionResult.pointsAwarded > 0) { callbacks.updateScoreCallback(brickCollisionResult.pointsAwarded); }
                     spawnRequests.push(...brickCollisionResult.spawnEvents);
+
+                    /*
+                    if (brickCollisionResult.hitUnderside) {
+                        const targetResult = attemptToCreatePaddleTarget(ball, currentSpeedX, currentSpeedY, refs, currentTime, gameSpeedFactor, refs.bricksRef.current, columns, rows);
+                        if (targetResult) {
+                            currentSpeedY = targetResult.finalSpeedY;
+                            refs.paddleTargetsRef.current.push(targetResult.newTarget);
+                        }
+                    }
+                    */
                 }
 
                 const effectiveSpeedX = currentSpeedX * deltaTime;
@@ -117,75 +418,194 @@ export const updateBalls = (
                 const paddleLeft = refs.paddleXRef.current;
                 const paddleRight = paddleLeft + refs.paddleWidthRef.current;
 
-                // Wall Collisions
-                if (nextX > BOARD_WIDTH - currentBallSize || nextX < currentBallSize) {
-                    const overshoot = nextX > BOARD_WIDTH - currentBallSize ? (nextX - (BOARD_WIDTH - currentBallSize)) : (currentBallSize - nextX);
+                if (nextX > BOARD_WIDTH - currentBallSize) {
+                    const overshoot = nextX - (BOARD_WIDTH - currentBallSize);
                     currentSpeedX = -currentSpeedX;
-                    nextX = (nextX > BOARD_WIDTH - currentBallSize) ? (BOARD_WIDTH - currentBallSize) - overshoot : currentBallSize + overshoot;
+                    nextX = BOARD_WIDTH - currentBallSize - overshoot;
+                    refs.soundSystemRef.current?.playPaddleHitSound();
+                } else if (nextX < currentBallSize) {
+                    const overshoot = currentBallSize - nextX;
+                    currentSpeedX = -currentSpeedX;
+                    nextX = currentBallSize + overshoot;
+                    refs.soundSystemRef.current?.playPaddleHitSound();
                 }
+
                 if (nextY < currentBallSize) {
                     const overshoot = currentBallSize - nextY;
                     currentSpeedY = -currentSpeedY;
                     nextY = currentBallSize + overshoot;
-                }
-                // Bottom of Screen / Paddle Interactions
-                else if (nextY + currentBallSize > BOARD_HEIGHT) { // Ball is at or below paddle level / going off screen
-                    const isNearLeft = Math.abs(nextX - paddleLeft) < PADDLE_SIDE_SAVE_THRESHOLD;
-                    const isNearRight = Math.abs(nextX - paddleRight) < PADDLE_SIDE_SAVE_THRESHOLD;
+                    refs.soundSystemRef.current?.playPaddleHitSound(); // Play sound on top wall hit
 
-                    if (refs.stickyPaddleChargesRef.current > 0 && !ball.isBig && (isNearLeft || isNearRight)) {
+                    /*
+                    const targetResult = attemptToCreatePaddleTarget(ball, currentSpeedX, currentSpeedY, refs, currentTime, gameSpeedFactor, refs.bricksRef.current, columns, rows);
+                    if (targetResult) {
+                        currentSpeedY = targetResult.finalSpeedY;
+                        refs.paddleTargetsRef.current.push(targetResult.newTarget);
+                    }
+                    */
+                }
+                else if (nextY + currentBallSize > BOARD_HEIGHT) {
+                    let stickToSide: 'left' | 'right' | null = null;
+                    const paddleCenterX = paddleLeft + refs.paddleWidthRef.current / 2;
+                    if (nextX < paddleCenterX) {
+                        if (Math.abs(nextX - paddleLeft) < PADDLE_SIDE_SAVE_THRESHOLD) stickToSide = 'left';
+                    } else {
+                        if (Math.abs(nextX - paddleRight) < PADDLE_SIDE_SAVE_THRESHOLD) stickToSide = 'right';
+                    }
+                    if (refs.stickyPaddleChargesRef.current > 0 && !ball.isBig && stickToSide) {
                         refs.stickyPaddleChargesRef.current--;
                         ball.isZipping = true;
                         ball.zipStartTime = currentTime;
-                        ball.initialZipX = ball.x; // Current position before zip
-                        ball.initialZipY = ball.y;
-                        ball.targetStuckSideValue = isNearLeft ? 'left' : 'right';
+                        ball.initialZipX = ball.x; ball.initialZipY = ball.y;
+                        ball.targetStuckSideValue = stickToSide;
                         const sideOffset = currentBallSize;
-                        ball.zipTargetX = ball.targetStuckSideValue === 'left' ? paddleLeft - sideOffset : paddleRight + sideOffset;
-                        ball.zipTargetY = PADDLE_Y + PADDLE_HEIGHT / 2 - PADDLE_HEIGHT / 2; // Simplified: PADDLE_Y
-                        
-                        ball.speedX = 0; ball.speedY = 0; // Stop normal movement
-                        // Pause timed effects for the zipping ball
-                        if (ball.isHoming) { ball.isHoming = false; }
-                        if (ball.isBlack && ball.blackEndTime) { ball.blackPausedDuration = ball.blackEndTime - currentTime; ball.blackEndTime = undefined; }
+                        ball.zipTargetX = stickToSide === 'left' ? paddleLeft - sideOffset : paddleRight + sideOffset;
+                        ball.zipTargetY = PADDLE_Y;
+                        ball.speedX = 0; ball.speedY = 0;
+                        if (ball.isHoming) ball.isHoming = false;
+                        if (ball.isHomingSpeedActive) {
+                            ball.isHomingSpeedActive = false;
+                            ball.originalSpeedX = undefined; ball.originalSpeedY = undefined;
+                        }
+                        if (ball.isDouble && ball.doubleEndTime) { ball.doublePausedDuration = ball.doubleEndTime - currentTime; ball.doubleEndTime = undefined; }
                         if (ball.isBlue && ball.blueEndTime) { ball.bluePausedDuration = ball.blueEndTime - currentTime; ball.blueEndTime = undefined; }
                         if (ball.isSplitting && ball.splittingEndTime) { ball.splittingPausedDuration = ball.splittingEndTime - currentTime; ball.splittingEndTime = undefined; }
-                        
-                        processNormalUpdate = false; // Ball is now zipping, not moving normally or being removed yet
+                        processNormalUpdate = false;
                     } else if (refs.safetyNetCountRef.current > 0) {
+                        refs.soundSystemRef.current?.playSafetyNetHitSound();
                         currentSpeedY = -Math.abs(currentSpeedY);
                         ball.y = BOARD_HEIGHT - currentBallSize - refs.safetyNetCountRef.current * SAFETY_NET_HEIGHT;
                         refs.safetyNetCountRef.current--;
-                        nextY = ball.y + currentSpeedY * deltaTime; // Recalculate nextY after bounce
+                        nextY = ball.y + currentSpeedY * deltaTime;
                     } else {
                         ballsToRemoveIds.add(ball.id);
                         processNormalUpdate = false;
                     }
                 }
-                // Paddle Top Collision (Always Bounce)
+                else if (currentSpeedY > 0 && ball.y + currentBallSize > PADDLE_Y) {
+                    // This is the new Resource Save check
+                    if (refs.resourceMeterRef.current >= RESOURCE_SAVE_COST) {
+                        const paddleLeft = refs.paddleXRef.current;
+                        const paddleRight = paddleLeft + refs.paddleWidthRef.current;
+                        
+                        // Check if the ball's X position is within the paddle's range
+                        if(ball.x > paddleLeft && ball.x < paddleRight) {
+                            // Consume resource
+                            refs.resourceMeterRef.current -= RESOURCE_SAVE_COST;
+                            
+                            // Reverse ball direction and apply paddle physics
+                            currentSpeedY = -Math.abs(currentSpeedY); // Ensure it goes up
+                            const deltaX = ball.x - (paddleLeft + refs.paddleWidthRef.current / 2);
+                            currentSpeedX = Math.max(-currentMaxBallSpeedX, Math.min(currentMaxBallSpeedX, currentSpeedX + (deltaX * 0.1)));
+
+                            // Correct position to be just above the paddle
+                            ball.y = PADDLE_Y - currentBallSize - 0.1; // Place it just above
+                            
+                            // Play sound
+                            refs.soundSystemRef.current?.playPaddleHitSound();
+
+                            /*
+                            // Create particle explosion
+                            for (let k = 0; k < RESOURCE_SAVE_PARTICLE_COUNT; k++) {
+                                const angle = Math.random() * 2 * Math.PI; // Full circle explosion
+                                const speed = RESOURCE_SAVE_PARTICLE_SPEED_MIN + Math.random() * (RESOURCE_SAVE_PARTICLE_SPEED_MAX - RESOURCE_SAVE_PARTICLE_SPEED_MIN);
+                                const particle: Particle = {
+                                    id: Date.now() + Math.random(),
+                                    x: ball.x, y: ball.y + currentBallSize, // Start from below the ball
+                                    speedX: Math.cos(angle) * speed,
+                                    speedY: Math.sin(angle) * speed,
+                                    lifespan: RESOURCE_SAVE_PARTICLE_LIFESPAN_MS,
+                                    color: RESOURCE_SAVE_PARTICLE_COLOR,
+                                    size: RESOURCE_SAVE_PARTICLE_SIZE,
+                                    createdAt: currentTime, alpha: 1
+                                };
+                                refs.particlesRef.current.push(particle);
+                            }
+                            */
+
+                            // Big Ball effect on resource save
+                            if (ball.isBig) {
+                                ballsToAdd.push(createNewBall(ball.x, PADDLE_Y - BALL_SIZE - 5, (Math.random() - 0.5) * 6, -3 - Math.random() * 2, BASE_BALL_SPEED_FACTOR));
+                            }
+                            
+                            // Recalculate nextY for this frame after the save
+                            nextY = ball.y + currentSpeedY * deltaTime;
+                        }
+                    }
+                }
                 else if (currentSpeedY > 0 && ball.y + currentBallSize <= PADDLE_Y && nextY + currentBallSize > PADDLE_Y) {
                     const timeToPaddleY = (PADDLE_Y - (ball.y + currentBallSize)) / effectiveSpeedY;
                     const collisionX = ball.x + effectiveSpeedX * timeToPaddleY;
                     if (collisionX + currentBallSize > paddleLeft && collisionX - currentBallSize < paddleRight) {
-                        ball.y = PADDLE_Y - currentBallSize;
-                        currentSpeedY = -Math.abs(currentSpeedY);
-                        let deltaX = collisionX - (paddleLeft + refs.paddleWidthRef.current / 2);
-                        currentSpeedX = Math.max(-currentMaxBallSpeedX, Math.min(currentMaxBallSpeedX, currentSpeedX + (deltaX * 0.1)));
+                        refs.soundSystemRef.current?.playPaddleHitSound(); // Play paddle hit sound
+
+                        let hitTarget = false;
+                        if (refs.paddleTargetsRef) {
+                            const paddleCollisionPointX = collisionX;
+                            refs.paddleTargetsRef.current.forEach(target => {
+                                const hitRadius = target.initialRadius * 0.5; // Ball must hit within 50% of the original target radius
+                                if (!target.isHit && Math.abs(paddleCollisionPointX - target.x) < hitRadius) {
+                                    target.isHit = true;
+                                    hitTarget = true;
+                                }
+                            });
+                        }
+                        
+                        const paddleImpactX = collisionX;
+                        const paddleImpactY = PADDLE_Y - currentBallSize;
+                        ball.y = paddleImpactY;
+                        const incomingSpeedX = currentSpeedX;
+                        const incomingSpeedY = currentSpeedY;
+                        currentSpeedY = -Math.abs(incomingSpeedY);
+
                         if (ball.isHoming) {
                             const closestBrick = findClosestBrick(ball, refs.bricksRef.current, columns, rows);
                             if (closestBrick) {
-                                const targetX = closestBrick.x + BRICK_WIDTH / 2;
-                                const targetY = closestBrick.y + BRICK_HEIGHT / 2;
-                                const dX = targetX - ball.x, dY = targetY - ball.y;
-                                const mag = Math.sqrt(dX**2 + dY**2);
-                                const speedMag = Math.sqrt(currentSpeedX**2 + currentSpeedY**2);
-                                if (mag > 0) {
-                                    currentSpeedX = (dX / mag) * speedMag;
-                                    currentSpeedY = (dY / mag) * speedMag;
-                                    currentSpeedY = -Math.abs(currentSpeedY);
+                                const targetX = closestBrick.x + closestBrick.width / 2;
+                                const targetY = closestBrick.y + closestBrick.height / 2;
+                                if (refs.homingTrailsRef) {
+                                    refs.homingTrailsRef.current.push({
+                                        id: Date.now() + Math.random(),
+                                        startX: paddleImpactX, startY: paddleImpactY,
+                                        endX: targetX, endY: targetY,
+                                        color: POWER_UP_COLORS.HOMING_BALL || '#DAA520',
+                                        createdAt: currentTime,
+                                    });
+                                }
+                                const dX = targetX - ball.x;
+                                const dY = targetY - ball.y;
+                                if (dY !== 0) {
+                                    ball.originalSpeedX = incomingSpeedX;
+                                    ball.originalSpeedY = -Math.abs(incomingSpeedY);
+                                    ball.isHomingSpeedActive = true;
+
+                                    let newSpeedX = (dX / dY) * currentSpeedY;
+                                    let newSpeedY = currentSpeedY;
+
+                                    const baseMagnitude = Math.sqrt(ball.originalSpeedX * ball.originalSpeedX + ball.originalSpeedY * ball.originalSpeedY);
+                                    const targetMagnitude = baseMagnitude * 3;
+
+                                    const homingDirectionMagnitude = Math.sqrt(newSpeedX * newSpeedX + newSpeedY * newSpeedY);
+                                    
+                                    if (homingDirectionMagnitude > 0) {
+                                        const factor = targetMagnitude / homingDirectionMagnitude;
+                                        currentSpeedX = newSpeedX * factor;
+                                        currentSpeedY = newSpeedY * factor;
+                                    } else {
+                                        currentSpeedX = ball.originalSpeedX * 3;
+                                        currentSpeedY = ball.originalSpeedY * 3; 
+                                    }
+
+                                    currentSpeedX = Math.max(-currentMaxBallSpeedX * 3, Math.min(currentMaxBallSpeedX * 3, currentSpeedX));
+                                    currentSpeedY = Math.max(-MAX_BALL_SPEED_X * 3, Math.min(MAX_BALL_SPEED_X * 3, currentSpeedY)); 
+                                } else {
+                                    currentSpeedX = incomingSpeedX;
                                 }
                             }
                             ball.isHoming = false;
+                        } else {
+                            let deltaX = collisionX - (paddleLeft + refs.paddleWidthRef.current / 2);
+                            currentSpeedX = Math.max(-currentMaxBallSpeedX, Math.min(currentMaxBallSpeedX, incomingSpeedX + (deltaX * 0.1)));
                         }
                         if (ball.isBig) {
                             ballsToAdd.push(createNewBall(collisionX, PADDLE_Y - BALL_SIZE - 5, (Math.random() - 0.5) * 6, -3 - Math.random() * 2, BASE_BALL_SPEED_FACTOR));
@@ -196,29 +616,22 @@ export const updateBalls = (
                     }
                 }
 
-                // Apply updated position and speed if normal update proceeded
                 if (processNormalUpdate) {
                     ball.x = nextX;
                     ball.y = nextY;
                     ball.speedX = currentSpeedX;
                     ball.speedY = currentSpeedY;
                 }
-            } // End if(processNormalUpdate)
-        } // End for loop over active balls
-    } // End if (isGameStartedRef)
+            }
+        }
+    }
 
-    // Remove points fields that have expired (Original logic seems to be for POINTS_FIELD_DURATION only)
     if (refs.pointsFieldsRef.current && refs.pointsFieldsRef.current.length > 0) {
         refs.pointsFieldsRef.current = refs.pointsFieldsRef.current.filter(field => {
-            // The condition from gameLoop.ts for points field removal is:
-            // currentTime - field.createdAt > POINTS_FIELD_DURATION || field.ballsPassed >= POINTS_FIELD_MAX_BALLS
-            // This file, ballUpdates.ts, might not be the place to manage PointsField removal based on ballsPassed.
-            // For now, sticking to the original time-based removal as found in this file previously.
             return currentTime - field.createdAt < POINTS_FIELD_DURATION;
         });
     }
 
-    // Efficiently remove balls marked for deletion from active balls list
     if (ballsToRemoveIds.size > 0) {
         let writeIndex = 0;
         for (let readIndex = 0; readIndex < refs.ballsRef.current.length; readIndex++) {
@@ -232,8 +645,7 @@ export const updateBalls = (
         refs.ballsRef.current.length = writeIndex;
     }
 
-    // Add newly created balls to the active list
     if (ballsToAdd.length > 0) {
-         refs.ballsRef.current.push(...ballsToAdd);
+        refs.ballsRef.current.push(...ballsToAdd);
     }
 };

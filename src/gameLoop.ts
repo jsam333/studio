@@ -1,6 +1,6 @@
 // src/gameLoop.ts
 import React from 'react';
-import { Ball, PowerUp, Laser, PowerUpType, PowerUpSpawnEvent, GameMode, Brick, GameState, PointsField } from './interfaces';
+import { Ball, PowerUp, Laser, PowerUpType, PowerUpSpawnEvent, GameMode, Brick, GameState, PointsField, Particle, HomingTrail, PaddleTarget } from './interfaces'; // Added PaddleTarget and HomingTrail
 import { GameStateRefs, GameLoopCallbacks } from './interfaces';
 import { updateLasers } from './gameUpdates/laserUpdates';
 import { updateBalls } from './gameUpdates/ballUpdates';
@@ -8,14 +8,30 @@ import { updatePowerUps } from './gameUpdates/powerUpUpdates';
 import { applyPowerUpEffects } from './gameUpdates/powerUpEffects';
 import { checkGameStatus } from './gameUpdates/gameStatus';
 import { handleSpawnEvents } from './gameUpdates/gameLoopUtils';
+import { updateParticles, createRainbowParticleExplosion } from './gameUpdates/particleUpdates'; 
+import { updateResourceMeter } from './gameUpdates/resourceMeterUpdates';
+import { updateBombGlowsAndTriggerExplosions } from './gameLogic'; // Corrected import path
 import {
     BOARD_WIDTH, BOARD_HEIGHT, BASE_BALL_SPEED_FACTOR, POWER_UP_COLORS,
     TARGET_FPS, BONUS_GOLD_TARGET, BONUS_GOLD_TIMER_DURATION,
-    BALL_SIZE, BIG_BALL_SIZE_INCREASE, POINTS_FIELD_DURATION, POINTS_FIELD_MAX_BALLS
-} from './constants'; // Added POINTS_FIELD_MAX_BALLS
-import { drawPaddle, drawBalls, drawBricks, drawGameInfo, drawPowerUps, drawLasers, drawSafetyNet, drawCollectionFieldRect, drawPowerUpPreviews, drawPointsFields } from './drawFunctions';
+    BALL_SIZE, BIG_BALL_SIZE_INCREASE, POINTS_FIELD_DURATION, POINTS_FIELD_MAX_BALLS,
+    BRICK_FLASH_DURATION, BRICK_FADE_SPEED,
+    PADDLE_WIDEN_VISUAL_EFFECT_DURATION_MS, PADDLE_WIDEN_VISUAL_EFFECT_AMOUNT,
+    BRICK_REGEN_VISUAL_EFFECT_DURATION_MS, BRICK_DARK_FLASH_DURATION_MS,
+    BRICK_SPECIAL_FLASH_DURATION_MS, DOUBLE_BALL_VISUAL_EFFECT_DURATION_MS,
+    HOMING_TRAIL_DURATION // Added HOMING_TRAIL_DURATION
+} from './constants'; 
+import { 
+    drawPaddle, drawBalls, drawBricks, drawGameInfo, 
+    drawPowerUps, drawLasers, drawSafetyNet, 
+    drawPowerUpPreviews, 
+    drawPointsFields, drawParticles,
+    drawHomingTrails, // Added drawHomingTrails
+    drawResourceMeter,
+    drawLevelClearedMessage,
+    drawGameBeatenAnimation
+} from './drawFunctions';
 
-// Function to handle paddle shrink countdown
 const updatePaddleShrinkTimer = (
     refs: GameStateRefs,
     callbacks: GameLoopCallbacks,
@@ -30,16 +46,19 @@ const updatePaddleShrinkTimer = (
     }
 };
 
-// Function to handle Bonus Gold Timer
 const updateBonusGoldTimer = (
     refs: GameStateRefs,
     callbacks: GameLoopCallbacks,
-    elapsedTime: number
+    elapsedTime: number,
+    activeBrickCount: number
 ) => {
+    // Start the final countdown if bonus gold reached target OR if all bricks are cleared
     if (
-        refs.bonusGoldRef.current === BONUS_GOLD_TARGET &&
-        refs.initialBonusGoldDecrementCompleteRef.current && 
-        refs.bonusGoldTimerCountdownRef.current === null
+        refs.bonusGoldTimerCountdownRef.current === null &&
+        (
+            (refs.bonusGoldRef.current === BONUS_GOLD_TARGET && refs.initialBonusGoldDecrementCompleteRef.current) ||
+            activeBrickCount === 0
+        )
     ) {
         refs.bonusGoldTimerCountdownRef.current = BONUS_GOLD_TIMER_DURATION;
     }
@@ -52,18 +71,16 @@ const updateBonusGoldTimer = (
     }
 };
 
-// Function to update PointsFields (remove after duration or max balls)
 const updatePointsFields = (pointsFields: PointsField[], currentTime: number) => {
     if (!pointsFields) return;
     for (let i = pointsFields.length - 1; i >= 0; i--) {
         const field = pointsFields[i];
         if (currentTime - field.createdAt > POINTS_FIELD_DURATION || field.ballsPassed >= POINTS_FIELD_MAX_BALLS) {
-            pointsFields.splice(i, 1); // Remove the field if its duration has expired or max balls reached
+            pointsFields.splice(i, 1); 
         }
     }
 };
 
-// Function to check for ball collision with PointsFields (entry-only points)
 const checkPointsFieldCollisions = (
     balls: Ball[],
     pointsFields: PointsField[],
@@ -86,64 +103,386 @@ const checkPointsFieldCollisions = (
                 ballCenterY - ballRadius < field.y + field.height
             ) {
                 currentFrameInteractions.add(field.id);
-                // Check if this is a new entry
                 if (!ball.lastFramePointsFieldIds.has(field.id)) {
-                    updateScoreCallback(1); // Award 1 point on entry
-                    field.ballsPassed += 1; // Increment balls passed for this field
+                    updateScoreCallback(1); 
+                    field.ballsPassed += 1; 
                 }
             }
         });
-        // Update the ball's last frame interactions for the next cycle
         ball.lastFramePointsFieldIds = currentFrameInteractions;
     });
 };
 
+const updateBrickStateAndAnimations = (bricks: Brick[][], columns: number, rows: number, currentTime: number, scaledDeltaTime: number, activeBrickCount: number) => {
+    // Define the range for shine chance based on the number of active bricks.
+    const MIN_CHANCE = 0.00005; // Chance for a full grid of bricks.
+    const MAX_CHANCE = 0.0005;  // Chance for just one brick.
+    const MAX_BRICKS_FOR_SCALING = columns * rows;
 
-// --- Optimization: Reusable arrays --- 
+    // Calculate the dynamic chance using linear interpolation.
+    let shineChancePerFrame;
+    if (activeBrickCount <= 1) {
+        shineChancePerFrame = MAX_CHANCE;
+    } else if (activeBrickCount >= MAX_BRICKS_FOR_SCALING) {
+        shineChancePerFrame = MIN_CHANCE;
+    } else {
+        // Inverse linear interpolation: chance decreases as brick count increases.
+        const t = (activeBrickCount - 1) / (MAX_BRICKS_FOR_SCALING - 1);
+        shineChancePerFrame = MAX_CHANCE - t * (MAX_CHANCE - MIN_CHANCE);
+    }
+    
+    for (let c = 0; c < columns; c++) {
+        if (!bricks[c]) continue;
+        for (let r = 0; r < rows; r++) {
+            const brick = bricks[c][r];
+            if (brick) {
+                // Bomb glow is handled by updateBombGlowsAndTriggerExplosions, not here.
+                if (brick.status === 2) { // Destroying (non-bomb, or bomb post-glow)
+                    if (brick.isFlashing) {
+                        if (brick.flashStartTime === undefined) {
+                            brick.flashStartTime = currentTime;
+                        }
+                        if (currentTime - (brick.flashStartTime || 0) >= BRICK_FLASH_DURATION) {
+                            brick.isFlashing = false;
+                            brick.fadeOutAlpha = 1.0;
+                            delete brick.flashStartTime; 
+                        }
+                    } else if (brick.fadeOutAlpha !== undefined && brick.fadeOutAlpha > 0) {
+                        brick.fadeOutAlpha -= BRICK_FADE_SPEED * scaledDeltaTime;
+                        if (brick.fadeOutAlpha <= 0) {
+                            brick.fadeOutAlpha = 0;
+                            brick.status = 0; 
+                        }
+                    }
+                }
+
+                if (brick.isRegenVisualEffectActive && brick.regenVisualEffectStartTime) {
+                    if (currentTime - brick.regenVisualEffectStartTime >= BRICK_REGEN_VISUAL_EFFECT_DURATION_MS) {
+                        brick.isRegenVisualEffectActive = false;
+                        delete brick.regenVisualEffectStartTime;
+                    }
+                }
+
+                if (brick.isDarkFlashActive && brick.darkFlashStartTime) {
+                    if (currentTime - brick.darkFlashStartTime >= BRICK_DARK_FLASH_DURATION_MS) {
+                        brick.isDarkFlashActive = false;
+                        delete brick.darkFlashStartTime;
+                    }
+                }
+
+                if (brick.isSpecialFlashActive && brick.specialFlashStartTime) {
+                    if (currentTime - brick.specialFlashStartTime >= BRICK_SPECIAL_FLASH_DURATION_MS) {
+                        brick.isSpecialFlashActive = false;
+                        delete brick.specialFlashStartTime;
+                    }
+                }
+
+                // Randomly trigger shine effect using the dynamic chance.
+                if (brick.status === 1 && !brick.isShining && !brick.isFlashing && !brick.isRegenVisualEffectActive && !brick.isDarkFlashActive && !brick.isSpecialFlashActive && !brick.isBombGlowActive) {
+                    if (Math.random() < shineChancePerFrame) {
+                        brick.isShining = true;
+                        brick.shineStartTime = currentTime;
+                    }
+                }
+
+                // Reset shine effect after it's done
+                if (brick.isShining && brick.shineStartTime) {
+                    const SHINE_DURATION = 800; // ms, increased from 500
+                    if (currentTime - brick.shineStartTime > SHINE_DURATION) {
+                        brick.isShining = false;
+                        delete brick.shineStartTime;
+                    }
+                }
+            }
+        }
+    }
+};
+
+const updateBallGlowEffects = (balls: Ball[], currentTime: number) => {
+    balls.forEach(ball => {
+        if (ball.isGlowEffectActive && typeof ball.glowEffectStartTime === 'number') {
+            if (currentTime - ball.glowEffectStartTime >= DOUBLE_BALL_VISUAL_EFFECT_DURATION_MS) {
+                ball.isGlowEffectActive = false;
+                delete ball.glowEffectStartTime;
+            }
+        }
+    });
+};
+
 const collectedPowerUpTypesReusable: PowerUpType[] = [];
-const spawnRequestsReusable: PowerUpSpawnEvent[] = []; // Reusable array for spawn requests
+const spawnRequestsReusable: PowerUpSpawnEvent[] = [];
 
 export const gameUpdate = (
     ctx: CanvasRenderingContext2D,
     refs: GameStateRefs,
     callbacks: GameLoopCallbacks,
-    elapsedTime: number
+    elapsedTime: number 
 ) => {
     const currentGameState = refs.gameOverStateRef.current;
+    const gameMode = refs.gameModeRef.current;
+    const isTestPreview = gameMode === 'test' && currentGameState === 'menu';
 
-    if (currentGameState === 'won' || currentGameState === 'lost' || currentGameState === 'shop' || currentGameState === 'menu') {
+    if (currentGameState === 'game_beaten_animation') {
+        const currentTime = Date.now();
+
+        if (!refs.gameBeatenAnimationTimeRef.current) {
+            refs.gameBeatenAnimationTimeRef.current = currentTime;
+            refs.soundSystemRef.current?.playGameBeatenSound();
+
+            // Clear all balls and powerups for the final animation
+            refs.ballsRef.current = [];
+            refs.stuckBallsRef.current = [];
+            refs.powerUpsRef.current = [];
+            refs.lasersRef.current = [];
+
+            // Burst all remaining bricks
+            const bricks = refs.bricksRef.current;
+            const columns = refs.brickColumnsRef.current;
+            const rows = refs.brickRowsRef.current;
+
+            for (let c = 0; c < columns; c++) {
+                if (bricks[c]) {
+                    for (let r = 0; r < bricks[c].length; r++) {
+                        if (bricks[c][r] && bricks[c][r].status === 1) {
+                            bricks[c][r].status = 0;
+                        }
+                    }
+                }
+            }
+        }
+
+        const elapsedTimeForAnimation = currentTime - (refs.gameBeatenAnimationTimeRef.current || currentTime);
+
+        // Spawn fireworks periodically
+        if (elapsedTimeForAnimation % 250 < 20) { // Approx every 1/4 second
+            createRainbowParticleExplosion(
+                refs.particlesRef.current,
+                Math.random() * BOARD_WIDTH, // random x
+                Math.random() * (BOARD_HEIGHT / 2), // random y in top half
+                0, 0 // it's a point explosion
+            );
+        }
+
+
+        updateParticles(refs, currentTime, elapsedTime);
+
         ctx.clearRect(0, 0, BOARD_WIDTH, BOARD_HEIGHT);
-        callbacks.drawEndMessage(ctx, currentGameState, refs.scoreRef.current);
+
+        // Draw remaining elements like particles
+        drawParticles(ctx, refs.particlesRef.current);
+        
+        // Draw the main animation text
+        drawGameBeatenAnimation(ctx, elapsedTimeForAnimation);
+        
+        // Transition to 'won' state after a delay
+        if (elapsedTimeForAnimation >= 2000) { // 2 second animation
+            refs.gameBeatenAnimationTimeRef.current = null;
+            callbacks.setGameOverState('won');
+        }
+        return;
+    }
+
+    if (currentGameState === 'level_cleared') {
+        const currentTime = Date.now();
+
+        if (!refs.levelClearedTimeRef.current) {
+            refs.levelClearedTimeRef.current = currentTime;
+            refs.soundSystemRef.current?.playLevelClearedSound();
+
+            // Text particle effect for "Level Cleared!" text
+            const text = "Level Cleared!";
+            ctx.save();
+            ctx.font = "bold 30px Arial";
+            const textMetrics = ctx.measureText(text);
+            const textWidth = textMetrics.width;
+            
+            const centerY = BOARD_HEIGHT / 2;
+            const centerX = BOARD_WIDTH / 2;
+            const leftX = centerX - textWidth / 2;
+            const rightX = centerX + textWidth / 2;
+
+            // Left, center, and right bursts for the text
+            createRainbowParticleExplosion(refs.particlesRef.current, leftX, centerY, 0, 0);
+            createRainbowParticleExplosion(refs.particlesRef.current, centerX, centerY, 0, 0);
+            createRainbowParticleExplosion(refs.particlesRef.current, rightX, centerY, 0, 0);
+            ctx.restore();
+
+            // Burst all remaining bricks at once
+            const bricks = refs.bricksRef.current;
+            const rows = refs.brickRowsRef.current;
+            const columns = refs.brickColumnsRef.current;
+
+            for (let c = 0; c < columns; c++) {
+                if (!bricks[c]) continue;
+                for (let r = 0; r < rows; r++) {
+                    const brick = bricks[c]?.[r];
+                    if (brick && (brick.status === 1 || brick.status === 2)) {
+                        createRainbowParticleExplosion(refs.particlesRef.current, brick.x, brick.y, brick.width, brick.height);
+                        brick.status = 0; // Erase the brick immediately
+                    }
+                }
+            }
+        }
+
+        const elapsedTimeForMessage = currentTime - (refs.levelClearedTimeRef.current || currentTime);
+
+        // Update particles to make them animate
+        updateParticles(refs, currentTime, elapsedTime);
+
+        ctx.clearRect(0, 0, BOARD_WIDTH, BOARD_HEIGHT);
+        
+        // Draw the game state. Bricks are status 0, so they won't be drawn.
+        drawBricks(ctx, refs.bricksRef.current, refs.brickColumnsRef.current, refs.brickRowsRef.current, currentTime);
+        drawPaddle(ctx, refs.paddleXRef.current, refs.paddleWidthRef.current, refs.laserShotsRef.current, refs.stickyPaddleChargesRef.current, refs.collectionFieldHeightRef.current, refs.collectionFieldWidthOffsetRef.current);
+        drawPointsFields(ctx, refs.pointsFieldsRef.current);
+        drawGameInfo(ctx, refs.scoreRef.current, refs.targetScoreRef.current, refs.goldRef.current, refs.bonusGoldRef.current, gameMode === 'test', refs.livesRef.current, refs.bonusGoldTimerCountdownRef.current);
+        drawSafetyNet(ctx, refs.safetyNetCountRef.current);
+        drawBalls(ctx, refs.ballsRef.current, refs.stuckBallsRef.current, currentTime);
+        drawPowerUps(ctx, refs.powerUpsRef.current);
+        drawLasers(ctx, refs.lasersRef.current);
+        drawParticles(ctx, refs.particlesRef.current);
+        if (refs.homingTrailsRef?.current) {
+            drawHomingTrails(ctx, refs.homingTrailsRef.current, currentTime, HOMING_TRAIL_DURATION);
+        }
+        
+        drawLevelClearedMessage(ctx, elapsedTimeForMessage, refs.levelGoldEarnedRef.current);
+
+        // Reverted duration back to original value
+        if (currentTime - (refs.levelClearedTimeRef.current || 0) >= 400) { 
+            callbacks.setGameOverState('shop');
+        }
+        return;
+    }
+
+    if (currentGameState === 'life_lost_animation') {
+        const currentTime = Date.now();
+        if (refs.lifeLostAnimationTimeRef && !refs.lifeLostAnimationTimeRef.current) {
+            refs.lifeLostAnimationTimeRef.current = currentTime;
+        }
+
+        // Keep drawing the game state as it was
+        ctx.clearRect(0, 0, BOARD_WIDTH, BOARD_HEIGHT);
+        drawBricks(ctx, refs.bricksRef.current, refs.brickColumnsRef.current, refs.brickRowsRef.current, currentTime);
+        drawPaddle(ctx, refs.paddleXRef.current, refs.paddleWidthRef.current, refs.laserShotsRef.current, refs.stickyPaddleChargesRef.current, refs.collectionFieldHeightRef.current, refs.collectionFieldWidthOffsetRef.current);
+        drawPointsFields(ctx, refs.pointsFieldsRef.current);
+        drawGameInfo(ctx, refs.scoreRef.current, refs.targetScoreRef.current, refs.goldRef.current, refs.bonusGoldRef.current, gameMode === 'test', refs.livesRef.current, refs.bonusGoldTimerCountdownRef.current);
+        drawSafetyNet(ctx, refs.safetyNetCountRef.current);
+        drawBalls(ctx, refs.ballsRef.current, refs.stuckBallsRef.current, currentTime);
+        drawPowerUps(ctx, refs.powerUpsRef.current);
+        drawLasers(ctx, refs.lasersRef.current);
+        drawParticles(ctx, refs.particlesRef.current);
+        if (refs.homingTrailsRef?.current) {
+            drawHomingTrails(ctx, refs.homingTrailsRef.current, currentTime, HOMING_TRAIL_DURATION);
+        }
+
+        if (refs.lifeLostAnimationTimeRef && refs.lifeLostAnimationTimeRef.current && (currentTime - refs.lifeLostAnimationTimeRef.current >= 400)) {
+            refs.lifeLostAnimationTimeRef.current = null;
+            callbacks.setGameOverState('lost');
+        }
+        return;
+    }
+
+    if (!isTestPreview && (currentGameState === 'won' || currentGameState === 'lost' || currentGameState === 'shop' || currentGameState === 'menu')) {
+        ctx.clearRect(0, 0, BOARD_WIDTH, BOARD_HEIGHT);
+        if (currentGameState === 'won' || currentGameState === 'lost') {
+            callbacks.drawEndMessage(ctx, currentGameState, refs.scoreRef.current);
+        }
         return;
     }
 
     const currentTime = Date.now();
+    refs.lastTimeRef.current = currentTime; // Update lastTimeRef for trail duration calculation
     const gameSpeedFactor = refs.gameSpeedFactorRef.current;
     const targetFrameTime = 1000 / TARGET_FPS;
     const scaledDeltaTime = elapsedTime / targetFrameTime;
 
+    if (refs.paddleTargetsRef) {
+        refs.paddleTargetsRef.current = refs.paddleTargetsRef.current.filter(target => {
+            return !target.isHit && (currentTime - target.startTime <= target.totalDuration);
+        });
+    }
+
+    updateResourceMeter(refs, elapsedTime);
+
     spawnRequestsReusable.length = 0; 
-
     const previousBallCount = refs.ballsRef.current.length + refs.stuckBallsRef.current.length;
-
     const columns = refs.brickColumnsRef.current;
     const rows = refs.brickRowsRef.current;
-    const gameMode = refs.gameModeRef.current;
-    const isTestMode = gameMode === 'test';
 
-    // --- UPDATES ---
-    updatePaddleShrinkTimer(refs, callbacks, elapsedTime);
-    updateBonusGoldTimer(refs, callbacks, elapsedTime);
-    updateBalls(refs, callbacks, spawnRequestsReusable, currentTime, gameSpeedFactor, scaledDeltaTime, columns, rows); 
-    // Update PointsFields BEFORE collision checks to ensure fields are valid
+    // Count active bricks to adjust shine effect frequency.
+    let activeBrickCount = 0;
+    const bricks = refs.bricksRef.current;
+    for (let c = 0; c < columns; c++) {
+        if (!bricks[c]) continue;
+        for (let r = 0; r < rows; r++) {
+            const brick = bricks[c][r];
+            if (brick && brick.status === 1) {
+                activeBrickCount++;
+            }
+        }
+    }
+
+    updateBallGlowEffects(refs.ballsRef.current, currentTime);
+    updateBallGlowEffects(refs.stuckBallsRef.current, currentTime); 
+
+    updateBrickStateAndAnimations(refs.bricksRef.current, columns, rows, currentTime, scaledDeltaTime, activeBrickCount); 
+    updateParticles(refs, currentTime, elapsedTime); 
+    
+    if (refs.paddleShrinkCountdownRef?.current !== null) {
+        updatePaddleShrinkTimer(refs, callbacks, elapsedTime);
+    }
+
+    if (!isTestPreview) {
+        updateBonusGoldTimer(refs, callbacks, elapsedTime, activeBrickCount);
+    }
+
+    // Update bomb glows and trigger explosions BEFORE ball and laser updates
+    // as explosions might create spawn events or affect game state.
+    const pointsFromBombExplosions = updateBombGlowsAndTriggerExplosions(
+        refs.bricksRef.current, 
+        columns, 
+        rows, 
+        spawnRequestsReusable, 
+        refs, 
+        currentTime
+    );
+    if (pointsFromBombExplosions > 0) {
+        callbacks.updateScoreCallback(pointsFromBombExplosions);
+    }
+
+    updateBalls(refs, callbacks, spawnRequestsReusable, currentTime, gameSpeedFactor, scaledDeltaTime, columns, rows, elapsedTime); 
+    updateLasers(refs, callbacks, spawnRequestsReusable, currentTime, scaledDeltaTime, columns, rows); 
     updatePointsFields(refs.pointsFieldsRef.current, currentTime); 
     checkPointsFieldCollisions(refs.ballsRef.current, refs.pointsFieldsRef.current, callbacks.updateScoreCallback);
 
-    // --- DRAWING --- 
     ctx.save();
     ctx.clearRect(0, 0, BOARD_WIDTH, BOARD_HEIGHT);
-    drawBricks(ctx, refs.bricksRef.current, columns, rows);
-    drawPaddle( ctx, refs.paddleXRef.current, refs.paddleWidthRef.current, refs.laserShotsRef.current, refs.stickyPaddleChargesRef.current );
+    drawBricks(ctx, refs.bricksRef.current, columns, rows, currentTime); // drawBricks will handle drawing glowing bombs
+
+    let visualPaddleWidth = refs.paddleWidthRef.current;
+    let visualPaddleX = refs.paddleXRef.current;
+    if (refs.paddleVisualEffectActiveRef?.current && refs.paddleVisualEffectStartTimeRef?.current) {
+        const effectElapsedTime = currentTime - refs.paddleVisualEffectStartTimeRef.current;
+        if (effectElapsedTime < PADDLE_WIDEN_VISUAL_EFFECT_DURATION_MS) {
+            const progress = effectElapsedTime / PADDLE_WIDEN_VISUAL_EFFECT_DURATION_MS;
+            const offset = PADDLE_WIDEN_VISUAL_EFFECT_AMOUNT * Math.sin(progress * Math.PI);
+            visualPaddleWidth = refs.paddleWidthRef.current + offset;
+            visualPaddleX = refs.paddleXRef.current - offset / 2; 
+        } else {
+            refs.paddleVisualEffectActiveRef.current = false;
+            refs.paddleVisualEffectStartTimeRef.current = null;
+        }
+    }
+
+    drawPaddle(
+        ctx, 
+        visualPaddleX, 
+        visualPaddleWidth, 
+        refs.laserShotsRef.current, 
+        refs.stickyPaddleChargesRef.current,
+        refs.collectionFieldHeightRef.current, 
+        refs.collectionFieldWidthOffsetRef.current
+    );
     drawPointsFields(ctx, refs.pointsFieldsRef.current); 
     drawGameInfo(
         ctx,
@@ -151,54 +490,65 @@ export const gameUpdate = (
         refs.targetScoreRef.current,
         refs.goldRef.current,
         refs.bonusGoldRef.current,
-        isTestMode,
+        gameMode === 'test', 
         refs.livesRef.current,
         refs.bonusGoldTimerCountdownRef.current
     );
     drawSafetyNet(ctx, refs.safetyNetCountRef.current);
-    if (refs.collectionFieldHeightRef.current > 0 || refs.collectionFieldWidthOffsetRef.current > 0) {
-        drawCollectionFieldRect(ctx, refs.paddleXRef.current, refs.paddleWidthRef.current, refs.collectionFieldHeightRef.current, refs.collectionFieldWidthOffsetRef.current);
-    }
 
-    if (!refs.isGameStartedRef.current) {
-        drawBalls(ctx, [], refs.stuckBallsRef.current); 
+    if (!refs.isGameStartedRef.current && !isTestPreview) { 
+        drawBalls(ctx, [], refs.stuckBallsRef.current, currentTime); 
         if (gameMode === 'main') {
-            drawPowerUpPreviews(ctx, refs.spawnablePowerUpsRef.current);
         }
-        ctx.restore();
-        return;
+    } 
+    
+    if (isTestPreview && !refs.isGameStartedRef.current) {
+        drawBalls(ctx, [], refs.stuckBallsRef.current, currentTime);
     }
     
     collectedPowerUpTypesReusable.length = 0; 
-    updateLasers(refs, callbacks, spawnRequestsReusable, currentTime, scaledDeltaTime, columns, rows);
 
-    const currentFallingPowerUpCount = refs.powerUpsRef.current.reduce((count, p) => {
-        return p.status === 'falling' ? count + 1 : count;
-    }, 0);
-    
-    const availablePowerUpsForSpawning = gameMode === 'main'
-        ? refs.spawnablePowerUpsRef.current
-        : refs.enabledPowerUpsRef.current;
+    const availablePowerUpsForSpawning = gameMode === 'test' 
+        ? refs.enabledPowerUpsRef.current
+        : refs.spawnablePowerUpsRef.current;
 
     const { newPowerUps, newBalls } = handleSpawnEvents(
         spawnRequestsReusable, 
-        currentFallingPowerUpCount,
+        refs.powerUpsRef.current.reduce((count, p) => p.status === 'falling' ? count + 1 : count, 0),
         availablePowerUpsForSpawning,
         gameMode,
         currentTime,
-        gameSpeedFactor
+        gameSpeedFactor,
+        refs.particlesRef,
+        refs // Pass gameStateRefs here
     );
 
-    if (newBalls.length > 0) {
+    if (newPowerUps.length > 0) {
+        refs.powerUpsRef.current.push(...newPowerUps);
+    }
+    if (newBalls.length > 0) { 
         refs.ballsRef.current.push(...newBalls);
     }
 
-    updatePowerUps( refs, gameSpeedFactor, newPowerUps, collectedPowerUpTypesReusable, scaledDeltaTime );
-    applyPowerUpEffects(refs, callbacks, collectedPowerUpTypesReusable, currentTime, gameSpeedFactor);
+    if (refs.isGameStartedRef.current || isTestPreview) {
+        updatePowerUps( refs, gameSpeedFactor, [], collectedPowerUpTypesReusable, scaledDeltaTime );
+        applyPowerUpEffects(refs, callbacks, collectedPowerUpTypesReusable, currentTime, gameSpeedFactor); 
+    }
 
-    drawBalls(ctx, refs.ballsRef.current, refs.stuckBallsRef.current);
-    drawPowerUps(ctx, refs.powerUpsRef.current);
+    drawBalls(ctx, refs.ballsRef.current, (isTestPreview || !refs.isGameStartedRef.current) ? [] : refs.stuckBallsRef.current, currentTime); 
+    drawPowerUps(ctx, refs.powerUpsRef.current); 
     drawLasers(ctx, refs.lasersRef.current);
+    drawParticles(ctx, refs.particlesRef.current); 
+
+    // Draw Homing Trails
+    if (refs.homingTrailsRef?.current) {
+        drawHomingTrails(
+            ctx,
+            refs.homingTrailsRef.current,
+            currentTime,
+            HOMING_TRAIL_DURATION
+        );
+    }
 
     if (gameSpeedFactor !== BASE_BALL_SPEED_FACTOR) {
         ctx.font = "12px Arial"; ctx.fillStyle = POWER_UP_COLORS['SPEED_UP'] || '#e74c3c'; ctx.textAlign = 'right';
@@ -208,4 +558,15 @@ export const gameUpdate = (
 
     checkGameStatus(refs, callbacks, previousBallCount);
 
+    if (isTestPreview && 
+        refs.ballsRef.current.length === 0 && 
+        refs.stuckBallsRef.current.length === 0 && 
+        previousBallCount > 0 &&
+        refs.gameOverStateRef.current === 'menu' 
+    ) {
+        if (callbacks.triggerTestLevelReset) {
+            console.log("Test preview: All balls lost, triggering direct test level reset.");
+            callbacks.triggerTestLevelReset();
+        }
+    }
 };

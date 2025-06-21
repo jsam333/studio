@@ -1,22 +1,26 @@
-import { Brick, CollisionResult, Ball, SpawnMarker, PowerUpSpawnEvent, GameMode } from './interfaces';
+import { Brick, CollisionResult, Ball, SpawnMarker, PowerUpSpawnEvent, GameMode, GameStateRefs } from './interfaces';
 import {
     BOARD_WIDTH, BOARD_HEIGHT, BALL_SIZE, BIG_BALL_SIZE_INCREASE, PADDLE_Y,
     BRICK_PADDING, BRICK_OFFSET_LEFT, BRICK_OFFSET_TOP,
     NORMAL_BRICK_STRENGTH, REINFORCED_BRICK_STRENGTH, UPGRADED_BRICK_STRENGTH, BUILDER_BRICK_STRENGTH,
     BOMB_BRICK_POINTS,
     MAX_BRICK_UPGRADE_LEVEL,
-    INITIAL_PADDLE_WIDTH
+    INITIAL_PADDLE_WIDTH,
+    POWER_UP_SPAWN_THRESHOLD, // Added for main mode spawn chance
+    BOMB_GLOW_DURATION,
+    TARGET_TOTAL_BRICK_GRID_HEIGHT
 } from './constants';
 
-export const initializeBricks = (columns: number, rows: number, brickHeight: number, currentLevel: number, gameMode: GameMode | null): Brick[][] => {
+export const initializeBricks = (columns: number, rows: number, brickHeight: number, currentLevel: number, gameMode: GameMode | null, actualGridHeight?: number): Brick[][] => {
     const newBricks: Brick[][] = [];
 
     let currentBrickOffsetLeft = BRICK_OFFSET_LEFT;
     let actualBoardWidth = BOARD_WIDTH;
+    const totalGridHeight = actualGridHeight ?? TARGET_TOTAL_BRICK_GRID_HEIGHT; // Use provided or default
 
-    if (gameMode === 'main' && currentLevel === 1) { // Added this block
+    if (gameMode === 'main' && currentLevel === 1) { 
         actualBoardWidth = BOARD_WIDTH * (4 / 5);
-        currentBrickOffsetLeft = (BOARD_WIDTH / 10) + BRICK_OFFSET_LEFT / 2; // Center within 4/5 width
+        currentBrickOffsetLeft = (BOARD_WIDTH / 10) + BRICK_OFFSET_LEFT / 2; 
     } else if (gameMode === 'main' && currentLevel === 2) {
         actualBoardWidth = BOARD_WIDTH * (2 / 3);
         currentBrickOffsetLeft = (BOARD_WIDTH / 6) + BRICK_OFFSET_LEFT / 2; 
@@ -25,7 +29,8 @@ export const initializeBricks = (columns: number, rows: number, brickHeight: num
     const availableWidth = actualBoardWidth - 2 * BRICK_OFFSET_LEFT;
     const totalPaddingWidth = (columns - 1) * BRICK_PADDING;
     const calculatedBrickWidth = (availableWidth - totalPaddingWidth) / columns;
-    const calculatedBrickHeight = brickHeight;
+    // brickHeight is now the individual height passed in, derived from totalGridHeight and rows in useLevelLogic
+    const calculatedBrickHeight = brickHeight; 
 
     let skipColumns: number[] = [];
     if (gameMode === 'main') {
@@ -66,7 +71,7 @@ export const initializeBricks = (columns: number, rows: number, brickHeight: num
             y: brickY, 
             width: calculatedBrickWidth, 
             height: calculatedBrickHeight, 
-            status: 1, 
+            status: 1, // Initial status: Active
             strength: NORMAL_BRICK_STRENGTH, 
             isSpecial: false, 
             upgradeLevel: 0, 
@@ -85,9 +90,9 @@ export const initialBallState: Ball = {
   speedY: 0, 
   id: 0, 
   stuckOffset: INITIAL_PADDLE_WIDTH / 2, 
-  isBlack: false, 
-  blackEndTime: undefined, 
-  blackPausedDuration: undefined, 
+  isDouble: false, 
+  doubleEndTime: undefined, 
+  doublePausedDuration: undefined, 
   isBlue: false, 
   blueEndTime: undefined, 
   bluePausedDuration: undefined, 
@@ -97,125 +102,239 @@ export const initialBallState: Ball = {
   isSplitting: false, 
   splittingEndTime: undefined, 
   splittingPausedDuration: undefined, 
+  splitsRemaining: undefined,
   isHoming: false,
   lastFramePointsFieldIds: new Set(),
   // @ts-ignore 
   pierceHitsRemaining: 0 
 };
 
-const damageBrick = (brick: Brick, bricks: Brick[][], columns: number, rows: number, spawnEvents: PowerUpSpawnEvent[]): number => {
+// Returns points awarded. Modifies brick status directly.
+export const damageBrick = (brick: Brick, spawnEvents: PowerUpSpawnEvent[], gameStateRefs: GameStateRefs, currentTime: number): number => {
+    // Brick must be active (status 1) to be damaged or to start glowing if it's a bomb.
     if (brick.status !== 1) return 0;
+
     let points = 0;
-    let destroyed = false;
-    let wasHoldingBall = brick.holdsBall ?? false; 
+    let wasHoldingBall = brick.holdsBall ?? false;
+    let willBeDestroyed = false;
 
-    if (brick.isSpecial) { points = 1; brick.status = 0; destroyed = true; }
-    else if (brick.isBomb) { points = BOMB_BRICK_POINTS; brick.status = 0; destroyed = true; }
-    else if (brick.holdsBall) { points = 1; brick.status = 0; destroyed = true; }
-    else { points = 1; if (brick.upgradeLevel && brick.upgradeLevel > 0) { brick.upgradeLevel--; } else { brick.status = 0; destroyed = true; } }
+    if (brick.isBomb) {
+        // Instead of immediate destruction, start the glow
+        brick.status = 3; // Set to bomb_glowing phase
+        brick.isBombGlowActive = true;
+        brick.bombGlowStartTime = currentTime;
+        // No points awarded yet, points come when it explodes
+        return 0; 
+    } else if (brick.isSpecial) {
+        points = 1; 
+        willBeDestroyed = true;
+    } else if (brick.holdsBall) {
+        points = 1; 
+        willBeDestroyed = true;
+    } else { // Regular brick
+        points = 1;
+        if (brick.upgradeLevel && brick.upgradeLevel > 0) {
+            brick.upgradeLevel--;
+            // Brick is damaged but not destroyed yet, no status change or flashing
+        } else {
+            willBeDestroyed = true;
+        }
+    }
 
-    if (destroyed) {
-        let marker: SpawnMarker = 'PENDING';
+    if (willBeDestroyed) {
+        brick.status = 2; // Set to Destroying phase
+        brick.isFlashing = true; // Start flashing animation
+        brick.flashStartTime = currentTime; // Set flash start time
+        // fadeOutAlpha will be handled by updateBrickAnimations
+
+        // Handle ball spawning from ball bricks
         if (wasHoldingBall) {
-            marker = 'SPAWN_BALL'; 
-        } else if (brick.isSpecial) {
-            marker = 'SPAWN_SPECIAL';
+            spawnEvents.push({ marker: 'SPAWN_BALL', brickX: brick.x, brickY: brick.y, brickWidth: brick.width, brickHeight: brick.height });
         }
 
-        if (!brick.isBomb) {
-            spawnEvents.push({ marker, brickX: brick.x, brickY: brick.y, brickWidth: brick.width, brickHeight: brick.height });
+        // Handle power-up spawning
+        if (brick.isSpecial) {
+            spawnEvents.push({ marker: 'SPAWN_SPECIAL', brickX: brick.x, brickY: brick.y, brickWidth: brick.width, brickHeight: brick.height });
+        } else { // Regular and ball bricks can spawn PENDING powerups
+            const gameMode = gameStateRefs.gameModeRef.current;
+            if (gameMode === 'test') {
+                const chance = gameStateRefs.testPowerUpSpawnChanceRef.current;
+                const randomVal = Math.random();
+                if (randomVal < chance) {
+                    spawnEvents.push({ marker: 'PENDING', brickX: brick.x, brickY: brick.y, brickWidth: brick.width, brickHeight: brick.height });
+                }
+            } else { 
+                // For main mode, always push a PENDING event. The actual chance is rolled in handleSpawnEvents.
+                spawnEvents.push({ marker: 'PENDING', brickX: brick.x, brickY: brick.y, brickWidth: brick.width, brickHeight: brick.height });
+            }
         }
     }
     return points;
 };
 
-export const handleBombExplosion = ( bombC: number, bombR: number, bricks: Brick[][], columns: number, rows: number, spawnEvents: PowerUpSpawnEvent[] ): number => {
-    let explosionPoints = 0; const neighbors = [ { nc: bombC + 1, nr: bombR }, { nc: bombC - 1, nr: bombR }, { nc: bombC, nr: bombR + 1 }, { nc: bombC, nr: bombR - 1 } ];
-    neighbors.forEach(({ nc, nr }) => { if (nc >= 0 && nc < columns && nr >= 0 && nr < rows) { const neighborBrick = bricks[nc]?.[nr]; if (neighborBrick && neighborBrick.status === 1) { const pointsFromNeighborHit = damageBrick(neighborBrick, bricks, columns, rows, spawnEvents); explosionPoints += pointsFromNeighborHit; if (neighborBrick.isBomb && neighborBrick.status === 0) { explosionPoints += handleBombExplosion(nc, nr, bricks, columns, rows, spawnEvents); } } } });
+export const updateBombGlowsAndTriggerExplosions = (bricks: Brick[][], columns: number, rows: number, spawnEvents: PowerUpSpawnEvent[], gameStateRefs: GameStateRefs, currentTime: number): number => {
+    let totalPointsFromExplosions = 0;
+    for (let c = 0; c < columns; c++) {
+        if (!bricks[c]) continue;
+        for (let r = 0; r < rows; r++) {
+            const brick = bricks[c][r];
+            if (brick && brick.isBombGlowActive && brick.bombGlowStartTime && (currentTime - brick.bombGlowStartTime >= BOMB_GLOW_DURATION)) {
+                brick.isBombGlowActive = false; // End glow
+                gameStateRefs.soundSystemRef.current?.playExplosionSound(); // Play explosion sound
+                
+                // Now, actually "destroy" the bomb brick
+                brick.status = 2; // Set to Destroying phase
+                brick.isFlashing = true; // Start flashing animation
+                brick.flashStartTime = currentTime; // Set flash start time
+                totalPointsFromExplosions += BOMB_BRICK_POINTS; // Award points for this bomb
+
+                // Bomb bricks should have a chance to drop power-ups too
+                const gameMode = gameStateRefs.gameModeRef.current;
+                let marker: SpawnMarker = 'NONE';
+                if (gameMode === 'test') {
+                    const chance = gameStateRefs.testPowerUpSpawnChanceRef.current;
+                    if (Math.random() < chance) {
+                        marker = 'PENDING';
+                    }
+                } else {
+                    marker = 'PENDING';
+                }
+                if (marker === 'PENDING') {
+                    spawnEvents.push({ marker, brickX: brick.x, brickY: brick.y, brickWidth: brick.width, brickHeight: brick.height });
+                }
+
+                // Trigger explosion for its neighbors
+                totalPointsFromExplosions += handleBombExplosion(brick, c, r, bricks, columns, rows, spawnEvents, gameStateRefs, currentTime);
+            }
+        }
+    }
+    return totalPointsFromExplosions;
+};
+
+// This function is now called *after* a bomb has finished glowing and its status is 2.
+export const handleBombExplosion = (bombBrick: Brick, bombC: number, bombR: number, bricks: Brick[][], columns: number, rows: number, spawnEvents: PowerUpSpawnEvent[], gameStateRefs: GameStateRefs, currentTime: number): number => {
+    let explosionPoints = 0; 
+
+    const neighbors = [ { nc: bombC + 1, nr: bombR }, { nc: bombC - 1, nr: bombR }, { nc: bombC, nr: bombR + 1 }, { nc: bombC, nr: bombR - 1 } ];
+    neighbors.forEach(({ nc, nr }) => { 
+        if (nc >= 0 && nc < columns && nr >= 0 && nr < rows) { 
+            const neighborBrick = bricks[nc]?.[nr]; 
+            // Only damage active (status 1) neighbors or start glow for other active bombs
+            if (neighborBrick && neighborBrick.status === 1) { 
+                // damageBrick will set other bombs to glowing (status 3) or destroy other types (status 2)
+                const pointsFromNeighborHit = damageBrick(neighborBrick, spawnEvents, gameStateRefs, currentTime); 
+                explosionPoints += pointsFromNeighborHit; // This will be 0 if neighbor is a bomb, >0 for other types
+            } 
+        } 
+    });
     return explosionPoints;
 };
 
-export const checkBrickCollision = ( ball: Ball, bricks: Brick[][], columns: number, rows: number, deltaTime: number ): CollisionResult => {
+export const checkBrickCollision = ( ball: Ball, bricks: Brick[][], columns: number, rows: number, deltaTime: number, gameStateRefs: GameStateRefs, currentTime: number ): CollisionResult => {
     let newSpeedX = ball.speedX; let newSpeedY = ball.speedY; let pointsAwarded = 0; const spawnEvents: PowerUpSpawnEvent[] = []; let pierceOccurred = false; let builderHitOccurred = false; let collisionDetected = false; let brickWasHit = false; const currentBallSize = ball.isBig ? BALL_SIZE + BIG_BALL_SIZE_INCREASE : BALL_SIZE; const nextBallX = ball.x + ball.speedX * deltaTime; const nextBallY = ball.y + ball.speedY * deltaTime; const checkRadius = currentBallSize;
+    let hitUnderside = false;
+    
     for (let c = 0; c < columns; c++) {
          if (!bricks[c] || bricks[c].length === 0) continue; 
          for (let r = 0; r < rows; r++) {
              const brick = bricks[c][r];
-             if (brick && brick.status === 1) {
+             // Only check for collision with bricks that are active (status 1)
+             // Bomb glow (status 3) bricks are no longer active for collision until they explode.
+             if (brick && brick.status === 1) { 
                  if (nextBallX + checkRadius > brick.x && nextBallX - checkRadius < brick.x + brick.width && nextBallY + checkRadius > brick.y && nextBallY - checkRadius < brick.y + brick.height) {
-                     brickWasHit = true;
-                     collisionDetected = true;
-                     let tempSpeedX = ball.speedX;
-                     let tempSpeedY = ball.speedY;
-                     // @ts-ignore
-                     if (!(ball.pierceHitsRemaining && ball.pierceHitsRemaining > 0)) {
-                         const brickCenterX = brick.x + brick.width / 2;
-                         const brickCenterY = brick.y + brick.height / 2;
-                         const vecX = ball.x - brickCenterX;
-                         const vecY = ball.y - brickCenterY;
-                         const w = (brick.width / 2) + checkRadius;
-                         const h = (brick.height / 2) + checkRadius;
-                         const crossWidth = w * vecY;
-                         const crossHeight = h * vecX;
-                         if (Math.abs(crossWidth) > Math.abs(crossHeight)) {
-                             tempSpeedY = -ball.speedY;
-                         } else {
-                             tempSpeedX = -ball.speedX;
-                         }
-                     }
-                     // @ts-ignore
+                    brickWasHit = true;
+                    collisionDetected = true;
+                    gameStateRefs.soundSystemRef.current?.playBrickHitSound(); // Play brick hit sound
+                    let tempSpeedX = ball.speedX;
+                    let tempSpeedY = ball.speedY;
+                    
+                    // @ts-ignore
+                    if (!(ball.pierceHitsRemaining && ball.pierceHitsRemaining > 0)) {
+                        const brickCenterX = brick.x + brick.width / 2;
+                        const brickCenterY = brick.y + brick.height / 2;
+                        const vecX = ball.x - brickCenterX;
+                        const vecY = ball.y - brickCenterY;
+                        const w = (brick.width / 2) + checkRadius;
+                        const h = (brick.height / 2) + checkRadius;
+                        const crossWidth = w * vecY; // Added definition
+                        const crossHeight = h * vecX; // Added definition
+                        if (Math.abs(crossWidth) > Math.abs(crossHeight)) {
+                            // Top or bottom collision
+                            if (ball.speedY < 0 && vecY > 0) { // Ball moving up, hits bottom of brick
+                                hitUnderside = true;
+                            }
+                            tempSpeedY = -ball.speedY;
+                        } else {
+                            tempSpeedX = -ball.speedX;
+                        }
+                    }
+                    
+                    // @ts-ignore
                     if (ball.pierceHitsRemaining && ball.pierceHitsRemaining > 0) {
-                         pierceOccurred = true;
-                         // @ts-ignore
-                         ball.pierceHitsRemaining--;
-                         pointsAwarded += damageBrick(brick, bricks, columns, rows, spawnEvents);
-                         if (brick.isBomb && brick.status === 0) {
-                             pointsAwarded += handleBombExplosion(c, r, bricks, columns, rows, spawnEvents);
-                         }
-                         newSpeedX = ball.speedX; 
-                         newSpeedY = ball.speedY;
-                     } else if (ball.isBlue) {
-                         builderHitOccurred = true;
-                         if (!brick.isSpecial && !brick.isBomb && !brick.holdsBall) { 
-                             brick.upgradeLevel = Math.min((brick.upgradeLevel || 0) + 1, MAX_BRICK_UPGRADE_LEVEL);
-                             brick.isSpecial = false; 
-                         }
-                         newSpeedX = tempSpeedX; 
-                         newSpeedY = tempSpeedY;
-                     } else {
-                         const pointsFromHit = damageBrick(brick, bricks, columns, rows, spawnEvents);
-                         pointsAwarded += pointsFromHit;
-                         const brickDestroyed = brick.status === 0;
-                         newSpeedX = tempSpeedX; 
-                         newSpeedY = tempSpeedY;
-                         if (brick.isBomb && brickDestroyed) {
-                             pointsAwarded += handleBombExplosion(c, r, bricks, columns, rows, spawnEvents);
-                         } else if (brickDestroyed && ball.isBlack) { 
-                             const neighbors = [{ nc: c + 1, nr: r }, { nc: c - 1, nr: r }, { nc: c, nr: r + 1 }, { nc: c, nr: r - 1 }];
-                             const validNeighbors: { brick: Brick, col: number, row: number }[] = [];
-                             neighbors.forEach(n => {
-                                 if (n.nc >= 0 && n.nc < columns && n.nr >= 0 && n.nr < rows) {
-                                     const neighborBrick = bricks[n.nc]?.[n.nr];
-                                     if (neighborBrick && neighborBrick.status === 1) {
-                                         validNeighbors.push({ brick: neighborBrick, col: n.nc, row: n.nr });
-                                     }
-                                 }
-                             });
-                             if (validNeighbors.length > 0) {
-                                 const targetNeighborData = validNeighbors[Math.floor(Math.random() * validNeighbors.length)];
-                                 const targetNeighbor = targetNeighborData.brick;
-                                 const splashPoints = damageBrick(targetNeighbor, bricks, columns, rows, spawnEvents);
-                                 pointsAwarded += splashPoints;
-                                 if(targetNeighbor.isBomb && targetNeighbor.status === 0){
-                                      pointsAwarded += handleBombExplosion(targetNeighborData.col, targetNeighborData.row, bricks, columns, rows, spawnEvents);
-                                 }
-                             }
-                         }
-                     }
-                     return { collision: true, newSpeedX, newSpeedY, spawnEvents, pointsAwarded, pierceOccurred, builderHitOccurred, brickHit: true };
+                        pierceOccurred = true;
+                        // @ts-ignore
+                        ball.pierceHitsRemaining--;
+                        // damageBrick will handle starting glow for bombs, or destroying others
+                        pointsAwarded += damageBrick(brick, spawnEvents, gameStateRefs, currentTime); 
+                        newSpeedX = ball.speedX; // Ball continues without changing direction
+                        newSpeedY = ball.speedY;
+                    } else if (ball.isBlue) { // Builder Ball
+                        builderHitOccurred = true;
+                        // Builder ball does not trigger bomb glow, it upgrades or does nothing to bombs
+                        if (!brick.isSpecial && !brick.isBomb && !brick.holdsBall) { 
+                            brick.upgradeLevel = Math.min((brick.upgradeLevel || 0) + 1, MAX_BRICK_UPGRADE_LEVEL);
+                            brick.isDarkFlashActive = true;
+                            brick.darkFlashStartTime = currentTime;
+                            brick.isFlashing = false;
+                            delete brick.flashStartTime;
+                            brick.isRegenVisualEffectActive = false;
+                            delete brick.regenVisualEffectStartTime;
+                            brick.isSpecialFlashActive = false;
+                            delete brick.specialFlashStartTime;
+                        }
+                        newSpeedX = tempSpeedX; 
+                        newSpeedY = tempSpeedY;
+                    } else { // Regular hit
+                        // damageBrick handles starting glow for bombs, or destroying others
+                        pointsAwarded += damageBrick(brick, spawnEvents, gameStateRefs, currentTime);
+                        newSpeedX = tempSpeedX; 
+                        newSpeedY = tempSpeedY;
+
+                        // If ball is double, apply splash damage to a neighbor
+                        if (ball.isDouble) {
+                            const neighbors = [{ nc: c + 1, nr: r }, { nc: c - 1, nr: r }, { nc: c, nr: r + 1 }, { nc: c, nr: r - 1 }];
+                            const validNeighbors: { brick: Brick, col: number, row: number }[] = [];
+                            neighbors.forEach(n => {
+                                if (n.nc >= 0 && n.nc < columns && n.nr >= 0 && n.nr < rows) {
+                                    const neighborBrick = bricks[n.nc]?.[n.nr];
+                                    // Only splash active (status 1) neighbors
+                                    if (neighborBrick && neighborBrick.status === 1) { 
+                                        validNeighbors.push({ brick: neighborBrick, col: n.nc, row: n.nr });
+                                    }
+                                }
+                            });
+                            if (validNeighbors.length > 0) {
+                                const targetNeighborData = validNeighbors[Math.floor(Math.random() * validNeighbors.length)];
+                                const targetNeighbor = targetNeighborData.brick;
+                                // damageBrick handles starting glow for bombs, or destroying others
+                                const splashPoints = damageBrick(targetNeighbor, spawnEvents, gameStateRefs, currentTime);
+                                pointsAwarded += splashPoints;
+                            }
+                        }
+                    }
+                    /*
+                    if (brickCollisionResult.hitUnderside) {
+                        const targetResult = attemptToCreatePaddleTarget(ball, currentSpeedX, currentSpeedY, refs, currentTime, gameSpeedFactor, refs.bricksRef.current, columns, rows);
+                        if (targetResult) {
+                            currentSpeedY = targetResult.finalSpeedY;
+                            refs.paddleTargetsRef.current.push(targetResult.newTarget);
+                        }
+                    }
+                    */
+                    return { collision: true, newSpeedX, newSpeedY, spawnEvents, pointsAwarded, pierceOccurred, builderHitOccurred, brickHit: true, hitUnderside };
                  }
              }
          }
      }
-    return { collision: false, newSpeedX: ball.speedX, newSpeedY: ball.speedY, spawnEvents: [], pointsAwarded: 0, pierceOccurred: false, builderHitOccurred: false, brickHit: false };
+    return { collision: false, newSpeedX: ball.speedX, newSpeedY: ball.speedY, spawnEvents: [], pointsAwarded: 0, pierceOccurred: false, builderHitOccurred: false, brickHit: false, hitUnderside: false };
 };

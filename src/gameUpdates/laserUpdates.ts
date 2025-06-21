@@ -1,111 +1,97 @@
-import { Laser, Brick, PowerUp, SpawnMarker, PowerUpSpawnEvent, PowerUpType } from '../interfaces'; 
-import { GameStateRefs } from '../interfaces'; 
-import { GameLoopCallbacks } from '../interfaces';
+import { Laser, Brick, PowerUp, SpawnMarker, PowerUpSpawnEvent, PowerUpType, Particle, GameStateRefs, GameLoopCallbacks } from '../interfaces'; 
 import {
-    BOMB_BRICK_POINTS
+    BOMB_BRICK_POINTS,
+    POWER_UP_SPAWN_THRESHOLD,
+    LASER_TRAIL_PARTICLE_COUNT_PER_FRAME,
+    LASER_TRAIL_PARTICLE_SPEED_MIN_Y,
+    LASER_TRAIL_PARTICLE_SPEED_MAX_Y,
+    LASER_TRAIL_PARTICLE_SPREAD_X,
+    LASER_TRAIL_PARTICLE_SIZE,
+    LASER_TRAIL_PARTICLE_LIFESPAN_MS,
+    LASER_TRAIL_PARTICLE_COLOR
 } from '../constants';
-import { handleBombExplosion } from '../gameLogic';
+import { damageBrick, handleBombExplosion } from '../gameLogic';
+
+let nextLaserParticleId = 0; // Local ID counter for laser particles
 
 export const updateLasers = (
     refs: GameStateRefs,
     callbacks: GameLoopCallbacks,
     spawnRequests: PowerUpSpawnEvent[], 
     currentTime: number,
-    deltaTime: number, 
+    deltaTime: number, // This is scaledDeltaTime from gameLoop
     columns: number, 
     rows: number     
 ): void => { 
     let nextLasersArray: Laser[] = [];
     refs.lasersRef.current.forEach(laser => {
-        let laserHit = false;
-        const movement = laser.speed * deltaTime;
+        let laserHitBrick = false; 
+        const movement = laser.speed * deltaTime; // Use scaledDeltaTime for movement
         const nextLaserY = laser.y - movement;
-        let brickDestroyed = false;
-        // --- MODIFIED: Added dBrickHeight and dBrickHoldsBall ---
-        let dBrickX = 0, dBrickY = 0, dBrickWidth = 0, dBrickHeight = 0, dBrickWasSpecial = false, dBrickWasBomb = false, dBrickHoldsBall = false, hitBrickC = -1, hitBrickR = -1;
-        // --- END MODIFICATION ---
 
-        for (let c = 0; c < columns && !laserHit; c++) {
+        // Spawn trail particles before collision check for the current frame position
+        for (let i = 0; i < LASER_TRAIL_PARTICLE_COUNT_PER_FRAME; i++) {
+            const speedX = (Math.random() - 0.5) * 2 * LASER_TRAIL_PARTICLE_SPREAD_X;
+            const speedY = LASER_TRAIL_PARTICLE_SPEED_MIN_Y + Math.random() * (LASER_TRAIL_PARTICLE_SPEED_MAX_Y - LASER_TRAIL_PARTICLE_SPEED_MIN_Y);
+            const particle: Particle = {
+                id: nextLaserParticleId++, // Use local ID counter
+                x: laser.x + laser.width / 2, // Center X of the laser
+                y: laser.y + laser.height,    // Bottom of the laser
+                speedX: speedX,
+                speedY: speedY,               // Positive for downward
+                size: LASER_TRAIL_PARTICLE_SIZE,
+                color: LASER_TRAIL_PARTICLE_COLOR,
+                alpha: 1.0,
+                lifespan: LASER_TRAIL_PARTICLE_LIFESPAN_MS,
+                createdAt: currentTime,
+            };
+            refs.particlesRef.current.push(particle);
+        }
+
+        for (let c = 0; c < columns && !laserHitBrick; c++) {
              if (!refs.bricksRef.current[c]) continue; 
-            for (let r = 0; r < rows && !laserHit; r++) {
+            for (let r = 0; r < rows && !laserHitBrick; r++) {
                 const brick = refs.bricksRef.current[c]?.[r];
                 if (brick && brick.status === 1 &&
                     laser.x < brick.x + brick.width && 
                     laser.x + laser.width > brick.x && 
-                    nextLaserY < brick.y + brick.height && 
+                    nextLaserY < brick.y + brick.height && // Use nextLaserY for collision
                     laser.y > brick.y) { 
 
-                    laserHit = true; 
-                    let pointsFromHit = 0;
+                    laserHitBrick = true; 
 
-                    if (brick.isSpecial) {
-                        pointsFromHit = 1; // Special bricks might have different point values later
-                        brick.status = 0;
-                        brickDestroyed = true;
-                        dBrickWasSpecial = true;
-                        dBrickHoldsBall = false; // Explicitly false if special
-                    // --- MODIFIED: Added check for holdsBall ---
-                    } else if (brick.holdsBall) {
-                         pointsFromHit = 1; // Or specific points for BALL_BRICK if desired
-                         brick.status = 0;
-                         brickDestroyed = true;
-                         dBrickHoldsBall = true;
-                         dBrickWasSpecial = false; // Explicitly false if holds ball
-                    // --- END MODIFICATION ---
-                    } else if (brick.isBomb) {
-                        pointsFromHit = BOMB_BRICK_POINTS; // Points for the direct hit
-                        brick.status = 0;
-                        brickDestroyed = true;
-                        dBrickWasBomb = true;
-                        dBrickWasSpecial = false; // Explicitly false if bomb
-                        dBrickHoldsBall = false; // Explicitly false if bomb
-                        hitBrickC = c; // Store coords for explosion
-                        hitBrickR = r;
-                        pointsFromHit += handleBombExplosion(c, r, refs.bricksRef.current, columns, rows, spawnRequests);
-                    } else { // Regular brick or upgradeable brick
-                        pointsFromHit = 1;
-                        if (brick.upgradeLevel && brick.upgradeLevel > 0) {
-                            brick.upgradeLevel--; 
-                            // Brick is damaged but not destroyed
-                        } else {
-                            brick.status = 0; 
-                            brickDestroyed = true;
-                            dBrickWasSpecial = false;
-                            dBrickHoldsBall = false;
+                    if (brick.isBomb) {
+                        // Bomb hit by laser: Explode it instantly
+                        // Mark the bomb brick itself as destroyed
+                        brick.status = 2; // Set to Destroying phase
+                        brick.isFlashing = true; // Start flashing animation
+                        brick.flashStartTime = currentTime;
+                        
+                        let pointsFromExplosion = BOMB_BRICK_POINTS; // Points for the bomb itself
+                        
+                        // Play explosion sound
+                        refs.soundSystemRef.current?.playExplosionSound();
+
+                        // Handle explosion for neighbors
+                        pointsFromExplosion += handleBombExplosion(brick, c, r, refs.bricksRef.current, columns, rows, spawnRequests, refs, currentTime);
+                        
+                        if (pointsFromExplosion > 0) {
+                            callbacks.updateScoreCallback(pointsFromExplosion);
                         }
-                    }
-
-                    if (pointsFromHit > 0) {
-                        callbacks.updateScoreCallback(pointsFromHit);
-                    }
-
-                    if (brickDestroyed) {
-                        dBrickX = brick.x;
-                        dBrickY = brick.y;
-                        dBrickWidth = brick.width;
-                        // --- MODIFIED: Capture height ---
-                        dBrickHeight = brick.height;
-                        // --- END MODIFICATION ---
+                        // No need to push to nextLasersArray as it's destroyed
+                    } else {
+                        // Non-bomb brick hit by laser
+                        let pointsFromHit = 0;
+                        pointsFromHit += damageBrick(brick, spawnRequests, refs, currentTime);
+                        if (pointsFromHit > 0) {
+                            callbacks.updateScoreCallback(pointsFromHit);
+                        }
                     }
                 }
             }
         }
 
-        // --- MODIFIED: Updated spawn logic ---
-        if (brickDestroyed && !dBrickWasBomb) {
-            let marker: SpawnMarker = 'PENDING'; // Default for normal bricks
-            if (dBrickHoldsBall) {
-                marker = 'SPAWN_BALL';
-            } else if (dBrickWasSpecial) {
-                marker = 'SPAWN_SPECIAL';
-            }
-            // Pass height to the event
-            spawnRequests.push({ marker, brickX: dBrickX, brickY: dBrickY, brickWidth: dBrickWidth, brickHeight: dBrickHeight }); 
-        }
-        // --- END MODIFICATION ---
-
-
-        if (!laserHit && nextLaserY + laser.height > 0) {
+        if (!laserHitBrick && nextLaserY + laser.height > 0) {
             nextLasersArray.push({ ...laser, y: nextLaserY });
         }
     });

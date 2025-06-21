@@ -4,45 +4,46 @@
 
 html,
 body {
-  overscroll-behavior-y: contain; /* Prevent pull-to-refresh/scroll beyond limits vertically */
-  overscroll-behavior-x: none; /* Prevent horizontal scroll */
-  touch-action: none; /* Disable default touch actions like scrolling/zooming on the whole page */
+  overscroll-behavior-y: contain; 
+  overscroll-behavior-x: none; 
+  touch-action: none; 
   width: 100%;
-  height: 100%;
+  height: 100%; /* Ensure html and body take full viewport height */
   margin: 0;
   padding: 0;
-  overflow: hidden; /* Hide scrollbars */
+  overflow-x: hidden; /* Allow vertical scroll on body/html, hide horizontal */
 }
 
 body {
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-inter), Arial, Helvetica, sans-serif;
+  /* Body will now show scrollbar if its content is too tall */
 }
 
 canvas {
-  touch-action: none; /* Specifically disable touch actions on the canvas */
-  display: block; /* Prevent potential extra space below canvas */
-  max-width: 100%; /* Ensure canvas doesn't overflow its container horizontally */
-  max-height: 100%; /* Ensure canvas doesn't overflow its container vertically */
+  touch-action: none; 
+  display: block; 
+  max-width: 100%; 
+  max-height: 100%; 
 }
 
 
 @layer base {
   :root {
-    --background: 218 39% 11%; /* Dark Gray (#111827) - For game area */
-    --page-background: 34 33% 78%; /* Tan - Fallback color */
-    --foreground: 0 0% 100%; /* White (#ffffff) */
-    --card: 218 39% 11%; /* Match game area */
-    --card-foreground: 0 0% 100%; /* White */
+    --background: 218 39% 11%; 
+    --page-background: 34 33% 78%; 
+    --foreground: 0 0% 100%; 
+    --card: 218 39% 11%; 
+    --card-foreground: 0 0% 100%; 
     --popover: 0 0% 100%;
     --popover-foreground: 0 0% 3.9%;
-    --primary: 0 0% 100%; /* White (#ffffff) */
-    --primary-foreground: 218 39% 11%; /* Dark Gray for contrast */
+    --primary: 0 0% 100%; 
+    --primary-foreground: 218 39% 11%; 
     --secondary: 0 0% 96.1%;
     --secondary-foreground: 0 0% 9%;
     --muted: 0 0% 96.1%;
     --muted-foreground: 0 0% 45.1%;
-    --accent: 29 82% 52%; /* Orange (#e67e22) */
-    --accent-foreground: 0 0% 100%; /* White (#ffffff) */
+    --accent: 29 82% 52%; 
+    --accent-foreground: 0 0% 100%; 
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 0 0% 98%;
     --border: 0 0% 89.8%;
@@ -59,11 +60,11 @@ canvas {
     --sidebar-ring: 217.2 91.2% 59.8%;
   }
   .dark {
-    --background: 218 39% 11%; /* Dark Gray (#111827) - For game area */
-    --page-background: 34 33% 78%; /* Tan - Fallback color */
-    --foreground: 0 0% 100%; /* White (#ffffff) */
-    --card: 218 39% 11%; /* Match game area */
-    --card-foreground: 0 0% 100%; /* White */
+    --background: 218 39% 11%; 
+    --page-background: 34 33% 78%; 
+    --foreground: 0 0% 100%; 
+    --card: 218 39% 11%; 
+    --card-foreground: 0 0% 100%; 
     --popover: 0 0% 3.9%;
     --popover-foreground: 0 0% 98%;
     --primary: 0 0% 98%;
@@ -72,8 +73,8 @@ canvas {
     --secondary-foreground: 0 0% 98%;
     --muted: 0 0% 14.9%;
     --muted-foreground: 0 0% 63.9%;
-    --accent: 29 82% 52%; /* Orange (#e67e22) */
-    --accent-foreground: 0 0% 98%; /* White (#ffffff) */
+    --accent: 29 82% 52%; 
+    --accent-foreground: 0 0% 98%; 
     --destructive: 0 62.8% 30.6%;
     --destructive-foreground: 0 0% 98%;
     --border: 0 0% 14.9%;
@@ -95,10 +96,9 @@ canvas {
     @apply border-border;
   }
   body {
-    /* Corrected path to image in public/images */
     background-image: url('/images/bbubg2.png');
     background-repeat: repeat;
-    background-color: hsl(var(--page-background)); /* Fallback color */
+    background-color: hsl(var(--page-background)); 
     @apply text-foreground;
   }
 }
